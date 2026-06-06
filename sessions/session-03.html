@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Session 3: Activities, the Lifecycle, Intents &amp; Multi-Screen Navigation. live-coding, lab, and assessments." name="description"/>
+<title>Session 3 — Activities, Lifecycle, Intents &amp; Navigation | COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .lo-list { list-style: none; padding-left: 0; display: grid; gap: var(--space-3); margin: 0; }
+    .lo-list > li { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4);
+      background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+    .lo-list > li > .clo-tag { flex: 0 0 auto; margin-top: 2px; }
+    /* lifecycle "ladder" diagram — pure CSS, no images */
+    .lc-ladder { display: grid; gap: 6px; margin: var(--space-4) 0; counter-reset: lc; }
+    .lc-step { display: grid; grid-template-columns: auto 1fr; gap: var(--space-3); align-items: center;
+      background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green);
+      border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); }
+    .lc-step code { white-space: nowrap; }
+    .lc-step .lc-when { color: var(--muted); font-size: var(--fs-sm); }
+    .lc-step--down { border-left-color: var(--danger); }
+    .lc-step--up { border-left-color: var(--green); }
+    .lc-arrow { text-align: center; color: var(--muted); font-weight: 800; line-height: 1; }
+    .agenda-clock { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: stretch; }
+    .agenda-clock .timer { flex: 0 0 auto; align-self: stretch; justify-content: center; }
+    .agenda-clock .timeblock__body { flex: 1 1 320px; min-width: 0; }
+    .agenda-flex { display: grid; grid-template-columns: 1fr; gap: var(--space-3); margin: var(--space-3) 0; }
+    @media (min-width: 760px) {
+      .tb-with-timer { grid-template-columns: 130px 1fr 240px; }
+      .tb-with-timer .timer { grid-column: 3; grid-row: 1; align-self: start; }
+    }
+    .legend-key { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }
+    .legend-key .swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid var(--line); }
+    .twoscreen { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
+    @media (min-width: 680px) { .twoscreen { grid-template-columns: 1fr auto 1fr; align-items: center; } }
+    .phone { border: 2px solid var(--teal-2); border-radius: 20px; padding: var(--space-4); background: var(--surface);
+      box-shadow: var(--shadow); }
+    .phone__bar { height: 6px; width: 46px; background: var(--line); border-radius: 999px; margin: 0 auto var(--space-3); }
+    .phone__screen { font-family: var(--font-mono); font-size: var(--fs-sm); }
+    .flow-arrow { text-align: center; font-size: 1.6rem; color: var(--green-dark); font-weight: 800; }
+    @media (max-width: 680px) { .flow-arrow { transform: rotate(90deg); } }
+  </style>
+</head>
+<body>
+<!-- ===================================================================== -->
+<!-- TOP NAV                                                               -->
+<!-- ===================================================================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▲</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-02.html" title="Previous session">‹ S2</a>
+<a aria-current="page" href="session-03.html">S3</a>
+<a href="session-04.html" title="Next session">S4 ›</a>
+<a href="../labs/lifecycle-explorer.html">Lifecycle Lab</a>
+<a href="../labs/intents-navigator.html">Intents Lab</a>
+<button aria-label="Toggle dark mode" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ================================================================= -->
+<!-- 1. SESSION HERO                                                   -->
+<!-- ================================================================= -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:var(--space-3)">
+<span class="pill pill--green">Session 3 of 12</span>
+<span class="pill">Week 1</span>
+<span class="pill">Foundations: Android Essentials &amp; Ecosystem</span>
+</div>
+<h1 class="hero-title" id="hero-title">Activities, the Lifecycle, Intents &amp; Multi-Screen Navigation</h1>
+<p class="hero-sub">
+        Today students learn the original building block of every Android app — the <strong>Activity</strong> —
+        watch its <strong>lifecycle</strong> fire live in Logcat, and use <strong>Intents</strong> to move between screens
+        and pass data, building the mental model that Jetpack Compose navigation rests on next week.
+      </p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 1</span>
+<span class="clo-tag">CLO 3</span>
+<span class="pill">Unit 1</span>
+<span class="pill">Kotlin · Jetpack Compose · Material 3</span>
+</div>
+</section>
+<!-- on-page section index (auto-filled by app.js) -->
+<aside aria-label="On this page" class="card no-print mb">
+<div class="card__title">🔗 On this page</div>
+<nav aria-label="Table of contents" data-toc="main"></nav>
+</aside>
+<!-- ================================================================= -->
+<!-- 2. LEARNING OBJECTIVES                                            -->
+<!-- ================================================================= -->
+<section aria-labelledby="lo-h" class="slide">
+<h2 id="lo-h">Learning Objectives</h2>
+<div class="card card--accent">
+<p class="muted" style="margin-top:0">By the end of this session, you will be able to:</p>
+<ul class="lo-list">
+<li><span class="clo-tag">CLO 1</span><span>Explain what an <strong>Activity</strong> is, identify it in <code>AndroidManifest.xml</code>, and describe how the OS uses it as an entry point into an app.</span></li>
+<li><span class="clo-tag">CLO 1</span><span>Name the seven core lifecycle callbacks in order (<code>onCreate</code> → <code>onStart</code> → <code>onResume</code> → <code>onPause</code> → <code>onStop</code> → <code>onDestroy</code>, plus <code>onRestart</code>) and predict which fire on rotation and backgrounding.</span></li>
+<li><span class="clo-tag">CLO 3</span><span>Write Kotlin that <strong>logs</strong> each lifecycle callback and read the output in Logcat with a filter tag.</span></li>
+<li><span class="clo-tag">CLO 3</span><span>Launch a second Activity with an <strong>explicit Intent</strong> and pass data using <strong>intent extras</strong>.</span></li>
+<li><span class="clo-tag">CLO 3</span><span>Fire an <strong>implicit Intent</strong> to hand a task (open a URL, dial a number, share text) to another app via the system.</span></li>
+<li><span class="clo-tag">CLO 1</span><span>Contrast the classic Activity/Intent navigation model with the modern <strong>single-Activity + Compose</strong> mindset they will adopt in Week 2.</span></li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p style="margin-bottom:0">This session advances <strong>CLO 1</strong> (Android essentials &amp; ecosystem) and <strong>CLO 3</strong> (building apps in an industry-current language, Kotlin). The two-screen lab and project proposal directly seed the course Project feature checklist item <strong>(a) ≥2 screens with navigation</strong>.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ================================================================= -->
+<!-- ================================================================= -->
+<!-- ================================================================= -->
+<!-- ================================================================= -->
+<!-- ================================================================= -->
+<!-- 6. LECTURE / CONCEPT NOTES                                        -->
+<!-- ================================================================= -->
+<section aria-labelledby="concept-h" class="slide">
+<h2 id="concept-h">Lecture / Concept Notes</h2>
+<p class="muted">Teaching content for Concept Block A is below.</p>
+<!-- 6.1 Activity & Manifest -->
+<h3 id="concept-activity">1 · The Activity as an entry point + the AndroidManifest</h3>
+<div class="card">
+<p>An <strong>Activity</strong> is a single, focused thing the user can do — historically "one screen." It is the component the Android OS knows how to <em>start</em>. When the user taps your app icon, the system creates an instance of your launcher Activity and calls <code>onCreate()</code>. That is the answer to the warm-up question.</p>
+<p><strong>Analogy:</strong> Think of an Activity like a <em>front desk</em> in a building. The OS is the city: it doesn't walk into your office, it walks up to the front desk (the Activity) and says "a visitor is here." The desk decides what to show. The building's <em>directory</em> that tells the city which desks exist and which one is the main entrance is the <code>AndroidManifest.xml</code>.</p>
+<p>Every Activity must be declared in the manifest. The one with the <code>MAIN</code> action + <code>LAUNCHER</code> category is the one that gets the home-screen icon and starts when tapped:</p>
+<div class="codeblock">
+<span class="codeblock__lang">XML — AndroidManifest.xml</span>
+<pre><code>&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;application
+        android:label="@string/app_name"
+        android:theme="@style/Theme.LifecycleIntentsDemo"&gt;
+
+        &lt;!-- The launcher Activity: gets the home-screen icon --&gt;
+        &lt;activity
+            android:name=".MainActivity"
+            android:exported="true"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.MAIN" /&gt;
+                &lt;category android:name="android.intent.category.LAUNCHER" /&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+
+        &lt;!-- A second screen. No intent-filter = not launchable from outside,
+             but WE can start it from inside our app with an explicit Intent. --&gt;
+        &lt;activity android:name=".SecondActivity" /&gt;
+
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Modern reality check</span>
+<p style="margin-bottom:0">Most production Compose apps today use a <strong>single Activity</strong> and switch <em>screens</em> with the Navigation Compose library — not many Activities. We still teach multiple Activities here because (a) the lifecycle is clearest with them and (b) you will see them in older code and in samples. Next week we collapse to one Activity.</p>
+</div>
+</div>
+<h4>A minimal Compose Activity (what Session 2 generated)</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — MainActivity.kt</span>
+<pre><code>package com.example.lifecycleintentsdemo
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // setContent is the bridge from the Activity world into Compose.
+        setContent {
+            MaterialTheme {
+                Surface {
+                    Text("Hello from MainActivity")
+                }
+            }
+        }
+    }
+}</code></pre>
+</div>
+<p class="muted"><code>ComponentActivity</code> is the modern, Compose-friendly base class. <code>setContent { }</code> is the one line that says "everything inside this lambda is my UI, drawn with Compose."</p>
+</div>
+<!-- 6.2 The lifecycle -->
+<h3 id="concept-lifecycle">2 · The Activity lifecycle</h3>
+<div class="card">
+<p>The OS controls when your Activity is created, shown, hidden, and destroyed — you don't. It tells you what's happening by calling <strong>lifecycle callbacks</strong>. You override the ones you care about. Read the ladder bottom-up on the way in, top-down on the way out:</p>
+<div aria-label="Activity lifecycle callback ladder" class="lc-ladder">
+<div class="lc-step lc-step--up"><code>onCreate()</code><span class="lc-when">Created once. Build UI here (<code>setContent</code>), wire up state. <code>savedInstanceState</code> may hold restored data.</span></div>
+<div aria-hidden="true" class="lc-arrow">↓</div>
+<div class="lc-step lc-step--up"><code>onStart()</code><span class="lc-when">Activity becomes <strong>visible</strong> (not yet interactive).</span></div>
+<div aria-hidden="true" class="lc-arrow">↓</div>
+<div class="lc-step lc-step--up"><code>onResume()</code><span class="lc-when">Activity is in the <strong>foreground &amp; interactive</strong>. The "running" state.</span></div>
+<div aria-hidden="true" class="lc-arrow">↕ user interacts</div>
+<div class="lc-step lc-step--down"><code>onPause()</code><span class="lc-when">Losing focus but maybe still partly visible (dialog, split screen). Keep it fast — don't do heavy work here.</span></div>
+<div aria-hidden="true" class="lc-arrow">↓</div>
+<div class="lc-step lc-step--down"><code>onStop()</code><span class="lc-when">No longer visible (Home pressed, fully covered). Safe to release resources.</span></div>
+<div aria-hidden="true" class="lc-arrow">↓</div>
+<div class="lc-step lc-step--down"><code>onDestroy()</code><span class="lc-when">Going away (back pressed, <code>finish()</code>, or config change recreating it). Final cleanup.</span></div>
+<div aria-hidden="true" class="lc-arrow">↻ returning?</div>
+<div class="lc-step lc-step--up"><code>onRestart()</code><span class="lc-when">Coming back from <em>stopped</em> (not destroyed) → then <code>onStart()</code> → <code>onResume()</code> again.</span></div>
+</div>
+<div class="row" style="margin:var(--space-2) 0 var(--space-4)">
+<span class="legend-key"><span class="swatch" style="background:var(--green)"></span> coming up / becoming visible</span>
+<span class="legend-key"><span class="swatch" style="background:var(--danger)"></span> winding down / leaving</span>
+</div>
+<p><strong>Two scenarios students must be able to trace:</strong></p>
+<div aria-label="Lifecycle scenarios" class="tabs" role="tablist">
+<button class="tab" data-tab="rotate" type="button">Rotate the screen</button>
+<button class="tab" data-tab="home" type="button">Press Home, then return</button>
+<button class="tab" data-tab="back" type="button">Press Back</button>
+</div>
+<div class="tabpanel" data-tabpanel="rotate">
+<p>A rotation is a <strong>configuration change</strong>. By default Android <em>destroys and recreates</em> the Activity so it can load the right layout/resources:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Logcat — on rotation</span>
+<pre><code>onPause   → onStop → onDestroy        // old instance torn down
+onCreate  → onStart → onResume       // brand-new instance built</code></pre>
+</div>
+<p class="muted">This is <em>the</em> reason a counter stored in a plain <code>var</code> resets when you rotate. The fix is durable state — the cliff-hanger for Compose's <code>remember</code> / <code>rememberSaveable</code> next week.</p>
+</div>
+<div class="tabpanel" data-tabpanel="home">
+<div class="codeblock">
+<span class="codeblock__lang">Logcat — Home then relaunch</span>
+<pre><code>onPause   → onStop                     // pressed Home (still alive, stopped)
+onRestart → onStart → onResume       // tapped the app again</code></pre>
+</div>
+<p class="muted">Note <code>onRestart()</code> — it fires only on this "was stopped, now coming back" path, never on a fresh launch.</p>
+</div>
+<div class="tabpanel" data-tabpanel="back">
+<div class="codeblock">
+<span class="codeblock__lang">Logcat — Back button</span>
+<pre><code>onPause   → onStop → onDestroy        // Back finishes the Activity</code></pre>
+</div>
+<p class="muted">Back <em>finishes</em> the Activity — it is destroyed and (unless relaunched) will go through <code>onCreate</code> fresh next time.</p>
+</div>
+</div>
+<!-- 6.3 Logging the lifecycle -->
+<h3 id="concept-logging">3 · Logging the lifecycle (and why state matters)</h3>
+<div class="card">
+<p>The fastest way to <em>believe</em> the lifecycle is to log it and watch Logcat. Override every callback and emit a line with a shared tag so you can filter:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — MainActivity.kt (instrumented)</span>
+<pre><code>package com.example.lifecycleintentsdemo
+
+import android.os.Bundle
+import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+
+private const val TAG = "LIFECYCLE"
+
+class MainActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate")
+        setContent {
+            MaterialTheme { Surface { Text("Watch Logcat, then rotate me!") } }
+        }
+    }
+
+    override fun onStart()   { super.onStart();   Log.d(TAG, "onStart") }
+    override fun onResume()  { super.onResume();  Log.d(TAG, "onResume") }
+    override fun onPause()   { super.onPause();   Log.d(TAG, "onPause") }
+    override fun onStop()    { super.onStop();    Log.d(TAG, "onStop") }
+    override fun onRestart() { super.onRestart(); Log.d(TAG, "onRestart") }
+    override fun onDestroy() { super.onDestroy(); Log.d(TAG, "onDestroy") }
+}</code></pre>
+</div>
+<p>In Logcat, type <code>tag:LIFECYCLE</code> in the filter box to see only your lines. <code>Log.d</code> = debug; the signature is <code>Log.d(tag, message)</code>.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Always call super first</span>
+<p style="margin-bottom:0">Every override calls <code>super.onX()</code>. Forgetting <code>super.onCreate()</code> throws <code>SuperNotCalledException</code> at launch — a guaranteed student crash. Point it out before they hit it.</p>
+</div>
+</div>
+</div>
+<!-- 6.4 Intents -->
+<h3 id="concept-intents">4 · Intents — explicit vs implicit</h3>
+<div class="card">
+<p>An <strong>Intent</strong> is a message that says "I want something to happen." It is how one component starts another — even across app boundaries.</p>
+<ul>
+<li><strong>Explicit Intent</strong> — you name <em>exactly</em> which component to start (usually your own Activity). "Open <em>this specific</em> screen."</li>
+<li><strong>Implicit Intent</strong> — you describe an <em>action</em> and let the system pick a capable app. "Open <em>some</em> browser for this URL." / "Let the user <em>share</em> this text."</li>
+</ul>
+<p><strong>Analogy:</strong> an explicit Intent is calling a coworker's direct extension; an implicit Intent is calling the front desk and saying "connect me to whoever handles refunds."</p>
+<div aria-label="Intent kinds" class="tabs" role="tablist">
+<button class="tab" data-tab="explicit" type="button">Explicit + extras</button>
+<button class="tab" data-tab="implicit" type="button">Implicit (URL / dial / share)</button>
+<button class="tab" data-tab="receive" type="button">Receiving extras</button>
+</div>
+<div class="tabpanel" data-tabpanel="explicit">
+<p>Launch a named Activity and attach data with <code>putExtra(key, value)</code>:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — launch SecondActivity</span>
+<pre><code>// Constants for extra keys avoid typos (a top class-stuck-point!)
+const val EXTRA_NAME = "com.example.lifecycleintentsdemo.EXTRA_NAME"
+
+// Inside a click handler that has access to `context`:
+val intent = Intent(context, SecondActivity::class.java).apply {
+    putExtra(EXTRA_NAME, "Ada Lovelace")
+}
+context.startActivity(intent)</code></pre>
+</div>
+<p class="muted">In Compose you get a <code>context</code> with <code>val context = LocalContext.current</code>. In a plain Activity you would use <code>this</code> as the context.</p>
+</div>
+<div class="tabpanel" data-tabpanel="implicit">
+<p>Describe an action; the system finds an app that can do it:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — implicit Intents</span>
+<pre><code>// 1. Open a web page in whatever browser the user has
+val openUrl = Intent(Intent.ACTION_VIEW, Uri.parse("https://developer.android.com"))
+context.startActivity(openUrl)
+
+// 2. Open the dialer pre-filled (does NOT place the call)
+val dial = Intent(Intent.ACTION_DIAL, Uri.parse("tel:+13055551234"))
+context.startActivity(dial)
+
+// 3. Share plain text via the Android share sheet
+val share = Intent(Intent.ACTION_SEND).apply {
+    type = "text/plain"
+    putExtra(Intent.EXTRA_TEXT, "Check out my COP4667 app idea!")
+}
+context.startActivity(Intent.createChooser(share, "Share via"))</code></pre>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Emulator gotcha</span>
+<p style="margin-bottom:0">A bare emulator may have <em>no</em> browser or phone app, so an implicit Intent can crash with <code>ActivityNotFoundException</code>. Two fixes: test on an emulator <strong>with Google Play</strong> (has Chrome), or guard with a <code>try/catch</code> (shown in the lab). <code>ACTION_DIAL</code> almost always resolves; prefer it for a reliable classroom demo.</p>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="receive">
+<p>The receiving Activity reads the extra from its own <code>intent</code> property:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — SecondActivity.kt</span>
+<pre><code>class SecondActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // `intent` is the Intent that started this Activity.
+        val name = intent.getStringExtra(EXTRA_NAME) ?: "stranger"
+        setContent {
+            MaterialTheme {
+                Surface {
+                    Text("Hello, $name! (passed via an explicit Intent)")
+                }
+            }
+        }
+    }
+}</code></pre>
+</div>
+<p class="muted">The <code>?: "stranger"</code> is Kotlin's Elvis operator — a safe default when the extra is missing (<code>getStringExtra</code> returns a nullable <code>String?</code>).</p>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">↩️</span>
+<div class="callout__body">
+<span class="callout__label">Getting a result back (modern vs legacy)</span>
+<p style="margin-bottom:0">So far data flows one way: A → B. To get a <em>result</em> back from Screen B, use the modern <strong>Activity Result API</strong> — <code>rememberLauncherForActivityResult(...)</code> in Compose — which <strong>replaces the deprecated <code>startActivityForResult()</code> / <code>onActivityResult()</code></strong> pair you'll still see in older code. Worked example in the lab's <em>Push further</em> box below.</p>
+</div>
+</div>
+</div>
+<!-- 6.5 Classic vs Compose navigation -->
+<h3 id="concept-compose">5 · Navigating screens: classic Intents vs the Compose mindset</h3>
+<div class="card">
+<p>You now have the <em>classic</em> model: one Activity per screen, Intents to move, extras to carry data. The <em>modern</em> model keeps a <strong>single Activity</strong> and swaps composable screens with the Navigation Compose library. Same idea, less ceremony. We do classic today, Compose next week — seeing both makes you fluent.</p>
+<div aria-label="Navigation approaches" class="tabs" role="tablist">
+<button class="tab" data-tab="nav-classic" type="button">Classic (today)</button>
+<button class="tab" data-tab="nav-compose" type="button">Compose Navigation (preview, Wk2)</button>
+</div>
+<div class="tabpanel" data-tabpanel="nav-classic">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — classic: separate Activities + Intent</span>
+<pre><code>// Screen A is MainActivity; Screen B is SecondActivity.
+// Moving forward = build an Intent and startActivity().
+val intent = Intent(context, SecondActivity::class.java)
+intent.putExtra(EXTRA_NAME, name)
+context.startActivity(intent)
+// Moving back = the system Back button / finish().</code></pre>
+</div>
+<p class="muted">Two Activity classes, a Manifest entry per screen, data marshalled through extras.</p>
+</div>
+<div class="tabpanel" data-tabpanel="nav-compose">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — Compose: one Activity, many composable screens</span>
+<pre><code>// ONE Activity. Screens are composables. A NavController moves between them.
+@Composable
+fun AppNav() {
+    val navController = rememberNavController()
+    NavHost(navController, startDestination = "screenA") {
+        composable("screenA") {
+            ScreenA(onSubmit = { name -&gt;
+                navController.navigate("screenB/$name")   // pass data in the route
+            })
+        }
+        composable("screenB/{name}") { backStackEntry -&gt;
+            val name = backStackEntry.arguments?.getString("name") ?: "stranger"
+            ScreenB(name = name)
+        }
+    }
+}</code></pre>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Preview only</span>
+<p style="margin-bottom:0">Don't type this in today — it needs the <code>navigation-compose</code> dependency and is the heart of Session 4 (Unit 4). Just read it side-by-side and notice that <code>navigate("route")</code> is the spiritual successor to <code>startActivity(intent)</code>, and route arguments replace extras.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Flashcards reinforcement -->
+<h3 id="concept-flashcards">Quick-review flashcards</h3>
+<p class="muted">Use these for a quick retrieval rep once you have worked through the concepts. Click a card to flip.</p>
+<div data-flashcards="fc-data"></div>
+<script id="fc-data" type="application/json">
+      [
+        { "front": "Where does an Android app start when you tap its icon?", "back": "The OS creates the launcher Activity and calls onCreate(). The launcher Activity is the one with the MAIN action + LAUNCHER category in the Manifest.", "tag": "Activities" },
+        { "front": "Name the 7 lifecycle callbacks in 'launch' order.", "back": "onCreate → onStart → onResume → (running) → onPause → onStop → onDestroy. onRestart fires when returning from stopped.", "tag": "Lifecycle" },
+        { "front": "Which callbacks fire when you ROTATE the screen?", "back": "onPause → onStop → onDestroy (old instance), then onCreate → onStart → onResume (new instance). A rotation is a configuration change that recreates the Activity.", "tag": "Lifecycle" },
+        { "front": "onPause vs onStop?", "back": "onPause: lost focus but maybe still partly visible (dialog/split-screen). onStop: no longer visible at all (Home pressed / fully covered).", "tag": "Lifecycle" },
+        { "front": "Explicit vs implicit Intent?", "back": "Explicit names the exact component to start (your own Activity). Implicit describes an action (ACTION_VIEW, ACTION_DIAL, ACTION_SEND) and lets the system choose a capable app.", "tag": "Intents" },
+        { "front": "How do you attach and read data on an Intent?", "back": "Sender: intent.putExtra(KEY, value). Receiver: intent.getStringExtra(KEY). Use a const String key to avoid typos.", "tag": "Intents" },
+        { "front": "Why does a counter reset when the phone rotates?", "back": "Rotation destroys and recreates the Activity, so plain variables are lost. Durable state (rememberSaveable / ViewModel) fixes it — that's next week.", "tag": "State" }
+      ]
+      </script>
+</section>
+<!-- ================================================================= -->
+<!-- 7. GUIDED LIVE-CODING                                             -->
+<!-- ================================================================= -->
+<section aria-labelledby="livecoding-h" class="slide">
+<h2 id="livecoding-h">Guided Live-Coding</h2>
+<p class="muted">Each step is typed live; follow along on your own machine. Project: <code>LifecycleIntentsDemo</code> (Empty Compose Activity, Kotlin, minSDK 24+).</p>
+<ol class="stepper">
+<li class="step">
+<h4>Confirm everyone is at the same starting line</h4>
+<p>Open <code>MainActivity.kt</code>. It should have an <code>onCreate</code> with <code>setContent { ... }</code>. Run once on the emulator so everyone sees the default screen. Open Logcat now.</p>
+</li>
+<li class="step">
+<h4>Instrument every lifecycle callback</h4>
+<p>Type the overrides yourself, reading them as you go: one constant <code>TAG</code>, then each override calls super and then logs.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>private const val TAG = "LIFECYCLE"
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate")
+        setContent { MaterialTheme { Surface { Text("Rotate me, then read Logcat!") } } }
+    }
+    override fun onStart()   { super.onStart();   Log.d(TAG, "onStart") }
+    override fun onResume()  { super.onResume();  Log.d(TAG, "onResume") }
+    override fun onPause()   { super.onPause();   Log.d(TAG, "onPause") }
+    override fun onStop()    { super.onStop();    Log.d(TAG, "onStop") }
+    override fun onRestart() { super.onRestart(); Log.d(TAG, "onRestart") }
+    override fun onDestroy() { super.onDestroy(); Log.d(TAG, "onDestroy") }
+}</code></pre>
+</div>
+<p><strong>You should see:</strong> on Run, Logcat prints <code>onCreate → onStart → onResume</code>. Filter with <code>tag:LIFECYCLE</code>.</p>
+</li>
+<li class="step">
+<h4>Provoke the lifecycle live</h4>
+<p>Do each action and read the log aloud as a class:</p>
+<ul>
+<li><strong>Rotate</strong> (Ctrl+F11 / rotate button): <code>onPause → onStop → onDestroy → onCreate → onStart → onResume</code>.</li>
+<li><strong>Press Home</strong>: <code>onPause → onStop</code>. <strong>Reopen</strong>: <code>onRestart → onStart → onResume</code>.</li>
+<li><strong>Press Back</strong>: <code>onPause → onStop → onDestroy</code>.</li>
+</ul>
+</li>
+<li class="step">
+<h4>Add a second screen: SecondActivity</h4>
+<p>File → New → Activity → Empty Activity, name it <code>SecondActivity</code> (Android Studio auto-adds it to the Manifest — verify the <code>&lt;activity&gt;</code> tag appeared). Replace its body:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — SecondActivity.kt</span>
+<pre><code>const val EXTRA_NAME = "com.example.lifecycleintentsdemo.EXTRA_NAME"
+
+class SecondActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val name = intent.getStringExtra(EXTRA_NAME) ?: "stranger"
+        setContent {
+            MaterialTheme {
+                Surface { Text("Screen B received: $name") }
+            }
+        }
+    }
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Launch it with an explicit Intent + extra</h4>
+<p>Back in <code>MainActivity</code>, replace the placeholder text with a button. Introduce <code>LocalContext.current</code>:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — inside setContent { }</span>
+<pre><code>setContent {
+    MaterialTheme {
+        Surface {
+            val context = LocalContext.current
+            Button(onClick = {
+                val intent = Intent(context, SecondActivity::class.java).apply {
+                    putExtra(EXTRA_NAME, "Ada Lovelace")
+                }
+                context.startActivity(intent)
+            }) {
+                Text("Go to Screen B")
+            }
+        }
+    }
+}</code></pre>
+</div>
+<p><strong>You should see:</strong> tapping the button opens Screen B showing "Screen B received: Ada Lovelace". Press Back to return to Screen A.</p>
+</li>
+<li class="step">
+<h4>Fire implicit Intents</h4>
+<p>Add two more buttons. These leave your app entirely:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// Open a web page (browser)
+Button(onClick = {
+    context.startActivity(
+        Intent(Intent.ACTION_VIEW, Uri.parse("https://developer.android.com"))
+    )
+}) { Text("Open Android docs") }
+
+// Open the dialer (most reliable on a bare emulator)
+Button(onClick = {
+    context.startActivity(
+        Intent(Intent.ACTION_DIAL, Uri.parse("tel:+13055551234"))
+    )
+}) { Text("Open dialer") }</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Tie it back</span>
+<p style="margin-bottom:0">Switch Logcat back to <code>tag:LIFECYCLE</code> before tapping "Open dialer": you'll see <code>onPause → onStop</code> as your app goes to the background, then <code>onRestart → onStart → onResume</code> when you come back. The implicit Intent and the lifecycle lessons fuse into one picture.</p>
+</div>
+</div>
+</li>
+<li class="step">
+<h4>Recap &amp; transition to the lab</h4>
+<p>Recap the three moves you just practiced: <em>log the lifecycle</em>, <em>explicit Intent + extra</em>, <em>implicit Intent</em>. In the lab you'll do this yourself, but Screen A <em>collects</em> the name from a text field instead of hard-coding it.</p>
+</li>
+</ol>
+</section>
+<!-- ================================================================= -->
+<!-- 8. HANDS-ON LAB                                                   -->
+<!-- ================================================================= -->
+<section aria-labelledby="lab-h" class="slide">
+<h2 id="lab-h">Hands-On Lab — Two-Screen App</h2>
+<div class="grid grid-2">
+<div class="card card--teal">
+<div class="card__title">🎯 The goal</div>
+<p>Build <strong>GreetingForwarder</strong>: Screen A collects a name in a text field; tapping a button passes it via an <strong>explicit Intent + extra</strong> to Screen B, which greets the user. Add <strong>one implicit Intent</strong> (share the greeting or open a URL). Confirm lifecycle logs while you navigate.</p>
+<p class="muted">Feeds Project feature checklist item <strong>(a) ≥2 screens with navigation</strong>. Companion tool: <a href="../labs/intents-navigator.html">Intents Navigator</a>.</p>
+</div>
+<div class="card">
+<div class="card__title">✅ Done-when checklist</div>
+<ul class="checklist">
+<li>Screen A collects a name in a <strong>stateful</strong> text field (<code>OutlinedTextField</code> + <code>remember { mutableStateOf("") }</code>).</li>
+<li>An <strong>explicit Intent</strong> with a shared <code>const val EXTRA_NAME</code> key passes the name to Screen B (same constant on both sides).</li>
+<li>Screen B reads the extra and <strong>greets the user by name</strong> (Elvis default <code>?: "stranger"</code> for the empty case).</li>
+<li>One <strong>guarded implicit Intent</strong> (share or dial) works, and falls back with a Toast instead of crashing on a bare emulator.</li>
+<li>Lifecycle logs verified in Logcat for <code>A → B → Back</code> <em>and</em> on rotation (you can read the sequence aloud).</li>
+</ul>
+</div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Create the project</h4>
+<p>New Project → <strong>Empty Activity</strong> (Compose) → name <code>GreetingForwarder</code>, package <code>com.example.greetingforwarder</code>, language Kotlin, minSDK 24. Run once to confirm it builds.</p>
+<p class="muted"><strong>Hint:</strong> reuse your live-coding instincts — you already did all the moving parts.</p>
+</li>
+<li class="step">
+<h4>Build Screen A with a stateful text field</h4>
+<p>In <code>MainActivity</code>, capture input with Compose state. Here is the scaffold — you fill the navigation:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — MainActivity.kt</span>
+<pre><code>const val EXTRA_NAME = "com.example.greetingforwarder.EXTRA_NAME"
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent { MaterialTheme { Surface { ScreenA() } } }
+    }
+}
+
+@Composable
+fun ScreenA() {
+    val context = LocalContext.current
+    var name by remember { mutableStateOf("") }   // local UI state
+
+    Column(Modifier.padding(24.dp)) {
+        Text("Enter your name", style = MaterialTheme.typography.titleLarge)
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") }
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = {
+            // TODO: build an explicit Intent to SecondActivity,
+            //       putExtra(EXTRA_NAME, name), then startActivity.
+        }) { Text("Greet me on Screen B") }
+    }
+}</code></pre>
+</div>
+<p class="muted"><strong>Hint:</strong> <code>var name by remember { mutableStateOf("") }</code> is how a composable "remembers" the typed text between recompositions. (You will go deep on this next week.)</p>
+</li>
+<li class="step">
+<h4>Create Screen B and read the extra</h4>
+<p>Add an Empty Activity named <code>SecondActivity</code>; verify it appears in the Manifest. Read the name and display a greeting (see the live-coding code for the exact pattern). Use the Elvis operator for a safe default.</p>
+</li>
+<li class="step">
+<h4>Wire the explicit Intent</h4>
+<p>Fill the <code>TODO</code> in Screen A's button: construct <code>Intent(context, SecondActivity::class.java)</code>, attach <code>putExtra(EXTRA_NAME, name)</code>, then <code>context.startActivity(intent)</code>. Run it: type a name, tap, see it on Screen B.</p>
+</li>
+<li class="step">
+<h4>Add one implicit Intent</h4>
+<p>On Screen B, add a "Share greeting" button (<code>ACTION_SEND</code>, <code>type = "text/plain"</code>, <code>EXTRA_TEXT</code> = the greeting) <em>or</em> an "Open docs" button (<code>ACTION_VIEW</code> + a URL). Wrap it in a guard so a bare emulator won't crash:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — safe implicit Intent</span>
+<pre><code>Button(onClick = {
+    val share = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, "Hello, $name, from GreetingForwarder!")
+    }
+    val chooser = Intent.createChooser(share, "Share via")
+    // Guard: only launch if some app can handle it.
+    if (share.resolveActivity(context.packageManager) != null) {
+        context.startActivity(chooser)
+    } else {
+        Toast.makeText(context, "No app can handle this on this device", Toast.LENGTH_SHORT).show()
+    }
+}) { Text("Share greeting") }</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Verify the lifecycle</h4>
+<p>Add the <code>TAG</code> + lifecycle overrides to <em>both</em> Activities (different message per Activity, e.g. <code>"A:onResume"</code> / <code>"B:onResume"</code>). Navigate A→B→Back and rotate each screen; confirm the Logcat sequence matches what you predicted.</p>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">🔧</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting</span>
+<ul style="margin:0">
+<li><strong>App crashes when tapping the button (<code>ActivityNotFoundException</code>):</strong> SecondActivity isn't in the Manifest, or the class name is misspelled. Open <code>AndroidManifest.xml</code> and confirm <code>&lt;activity android:name=".SecondActivity" /&gt;</code> exists.</li>
+<li><strong>Screen B shows "stranger":</strong> the extra key on send and receive don't match. Use the <em>same</em> <code>EXTRA_NAME</code> constant in both places — don't retype the string.</li>
+<li><strong>Unresolved reference <code>LocalContext</code> / <code>Intent</code> / <code>Uri</code> / <code>Toast</code>:</strong> missing import. Press Alt+Enter (Option+Enter on Mac) on the red symbol and let Studio import it.</li>
+<li><strong>Text field won't type / resets:</strong> you forgot <code>remember</code>, or you're not feeding <code>value = name</code> back in. State must be both read (<code>value</code>) and written (<code>onValueChange</code>).</li>
+<li><strong>Nothing in Logcat:</strong> wrong filter. Clear the search box and type <code>tag:LIFECYCLE</code>; confirm the device dropdown points at your running emulator.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Push further</span>
+<p style="margin-bottom:0">Return a result from Screen B to Screen A using the modern Activity Result API instead of just navigating one-way:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin — ActivityResult (extension)</span>
+<pre><code>// In Screen A composable:
+val launcher = rememberLauncherForActivityResult(
+    ActivityResultContracts.StartActivityForResult()
+) { result -&gt;
+    if (result.resultCode == Activity.RESULT_OK) {
+        val reply = result.data?.getStringExtra("REPLY")
+        // show `reply` back on Screen A
+    }
+}
+Button(onClick = {
+    launcher.launch(Intent(context, SecondActivity::class.java).putExtra(EXTRA_NAME, name))
+}) { Text("Greet (and wait for a reply)") }
+
+// In SecondActivity, before finish():
+setResult(Activity.RESULT_OK, Intent().putExtra("REPLY", "Thanks, $name!"))
+finish()</code></pre>
+</div>
+</div>
+</div>
+</section>
+<!-- ================================================================= -->
+<!-- 9. ASSESSMENTS TODAY                                              -->
+<!-- ================================================================= -->
+<section aria-labelledby="assess-h" class="slide">
+<h2 id="assess-h">Assessments Today</h2>
+<p class="muted">No exam or quiz this session (Quiz 1 + Project Milestone 1 land in Session 6).</p>
+<div class="grid grid-2">
+<div class="card">
+<div class="card__title">🔗 Linked assessment pages</div>
+<ul>
+<li><strong>Assignment 1 (Unit 1)</strong> — detailed brief &amp; submission are posted on the <strong>LMS</strong> (no standalone page in this guide).</li>
+<li><a href="#discussion-h">Week 1 Discussion Board</a> — prompt &amp; expectations (see the section below on this page).</li>
+</ul>
+</div>
+</div>
+<h3 id="selfcheck-h">Optional self-check</h3>
+<p class="muted">Run this whenever you want to check your grasp of today's ideas. Answers reveal only after Submit.</p>
+<div data-quiz="quiz-data" data-topic="architecture"></div>
+<script id="quiz-data" type="application/json">
+      {
+        "title": "Lifecycle & Intents — quick self-check",
+        "intro": "Five questions. Just confirm the concepts stuck before the lab.",
+        "passingScore": 0.7,
+        "shuffle": false,
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "prompt": "When the user taps your app icon for the first time, which callbacks fire, in order?",
+            "options": [
+              { "id": "a", "text": "onResume → onStart → onCreate" },
+              { "id": "b", "text": "onCreate → onStart → onResume" },
+              { "id": "c", "text": "onCreate → onResume → onStart" },
+              { "id": "d", "text": "onRestart → onStart → onResume" }
+            ],
+            "correct": ["b"],
+            "explanation": "Fresh launch always goes onCreate → onStart → onResume. onRestart only fires when returning from the stopped state, never on first launch."
+          },
+          {
+            "id": "q2",
+            "type": "truefalse",
+            "prompt": "Rotating the device destroys and recreates the Activity by default.",
+            "correct": true,
+            "explanation": "A rotation is a configuration change. By default Android tears down the Activity (onPause → onStop → onDestroy) and builds a new instance (onCreate → onStart → onResume). This is why un-saved variable state is lost."
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "prompt": "You want to open whatever browser the user has installed to view a URL. Which Intent type is this?",
+            "options": [
+              { "id": "a", "text": "Explicit Intent" },
+              { "id": "b", "text": "Implicit Intent" },
+              { "id": "c", "text": "A broadcast Intent" },
+              { "id": "d", "text": "A pending Intent" }
+            ],
+            "correct": ["b"],
+            "explanation": "Implicit: you describe an action (ACTION_VIEW + a URL) and let the system pick a capable app. Explicit would name a specific component/class."
+          },
+          {
+            "id": "q4",
+            "type": "multi",
+            "prompt": "Which are required for Screen A to pass a name to Screen B via an explicit Intent? (Select all)",
+            "options": [
+              { "id": "a", "text": "Build Intent(context, SecondActivity::class.java)" },
+              { "id": "b", "text": "Attach the value with putExtra(KEY, value)" },
+              { "id": "c", "text": "Read it on Screen B with intent.getStringExtra(KEY)" },
+              { "id": "d", "text": "Register a BroadcastReceiver in the Manifest" }
+            ],
+            "correct": ["a", "b", "c"],
+            "explanation": "Explicit launch + matching putExtra/getStringExtra keys is all you need. A BroadcastReceiver is unrelated to launching an Activity with data."
+          },
+          {
+            "id": "q5",
+            "type": "short",
+            "prompt": "What method must every lifecycle override call first (e.g., inside onCreate)? Write just the method name.",
+            "correct": ["super.onCreate", "super", "super.onCreate()", "the super method"],
+            "explanation": "Each override must call the matching super method first (super.onCreate(savedInstanceState), super.onStart(), etc.). Skipping super.onCreate throws SuperNotCalledException."
+          }
+        ]
+      }
+      </script>
+</section>
+<!-- ================================================================= -->
+<!-- 10. DISCUSSION BOARD PROMPT                                       -->
+<!-- ================================================================= -->
+<section aria-labelledby="discussion-h" class="slide">
+<h2 id="discussion-h">Discussion Board Prompt — Week 1</h2>
+<div class="card card--teal">
+<div class="card__title">💬 Prompt (post to the LMS Discussion Board)</div>
+<blockquote>
+<p><strong>"Post your app idea + which CLO features it will hit."</strong></p>
+<p>In one short post (150–250 words): name your proposed Project app and its purpose, then map it to the Project feature checklist. For each of the five required features, write one sentence describing how your app will satisfy it:</p>
+<ol>
+<li>(a) Two or more screens with navigation — <em>which screens?</em></li>
+<li>(b) Jetpack Compose UI driven by state — <em>what changes on screen as state changes?</em></li>
+<li>(c) Local persistence (DataStore or Room/SQLite) — <em>what data is saved on the device?</em></li>
+<li>(d) Data from a web API over the network — <em>which specific API?</em></li>
+<li>(e) Clean architecture (ViewModel + repository) — <em>acknowledge you'll use this structure.</em></li>
+</ol>
+</blockquote>
+</div>
+
+</section>
+<!-- ================================================================= -->
+<!-- 11. HOMEWORK / NEXT CLASS                                         -->
+<!-- ================================================================= -->
+<section aria-labelledby="hw-h" class="slide">
+<h2 id="hw-h">Homework / Next Class</h2>
+<div class="grid grid-3">
+<div class="card">
+<div class="card__title">📖 Read</div>
+<ul>
+<li><a href="https://developer.android.com/guide/components/activities/activity-lifecycle" rel="noopener" target="_blank">Activity Lifecycle</a> — the official guide; re-read the state diagram now that you've seen it in Logcat.</li>
+<li><span class="muted">Skim ahead:</span> <a href="https://developer.android.com/courses/android-basics-compose/unit-2" rel="noopener" target="_blank">Unit 2 (Building app UI &amp; state)</a> — the <code>remember</code>/state ideas we previewed today.</li>
+</ul>
+</div>
+<div class="card">
+<div class="card__title">✓ Do (async)</div>
+<ul>
+<li>Finish <strong>Assignment 1 (Unit 1)</strong> (brief on the LMS) — due end of Week 1.</li>
+<li>Complete the Two-Screen Lab if you haven't finished it yet.</li>
+<li>Post the <a href="#discussion-h">Week 1 Discussion Board</a> entry (and plan your 2 replies).</li>
+</ul>
+</div>
+<div class="card card--accent">
+<div class="card__title">🚀 Project</div>
+<ul>
+<li>Submit your <strong>1-paragraph proposal + wireframe</strong> (≥2 screens) if not done in the share-out. Maps to feature checklist (a).</li>
+<li>Lock in the <strong>specific web API</strong> your app will use for feature (d).</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">➡️</span>
+<div class="callout__body">
+<span class="callout__label">Next class — Session 4</span>
+<p style="margin-bottom:0">We adopt the modern pattern: <strong>single Activity + Jetpack Compose navigation</strong> (Unit 4). Everything you did with Intents and extras today gets re-expressed as <code>navController.navigate("route")</code> with route arguments. Bring today's GreetingForwarder — we'll discuss converting it. See <a href="session-04.html">Session 4</a>.</p>
+</div>
+</div>
+</section>
+<!-- ================================================================= -->
+<!-- 12. MASTER IT — worked example, misconceptions, production, recall -->
+<!-- ================================================================= -->
+<section aria-labelledby="master-h" class="card slide">
+<h2 id="master-h">🧠 Master it — lifecycle &amp; intents, the way a pro reasons</h2>
+<p class="muted">
+        This is the part that separates someone who <em>memorized</em> the callback list from someone who can
+        <strong>predict the OS's behaviour cold</strong> and pass data that survives a rotation. Work it actively:
+        predict before you run, fix the broken code, then mark each challenge solved to grow your mastery bar.
+      </p>
+<!-- ---------------------------------------------------------------- -->
+<!-- 12.1 WORKED EXAMPLE → FADE                                       -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-worked">1 · Worked example — reading the lifecycle like the OS does</h3>
+<p>
+        The single hardest idea in this session is not <em>naming</em> the seven callbacks — it is
+        <strong>predicting the exact sequence</strong> the OS emits for a given user action, because that sequence is
+        what tells you where to save state, release resources, and refresh data. Let's build a tiny pure-Kotlin
+        <em>model</em> of the lifecycle so you can reason about it without an emulator. We model the Activity as a
+        <strong>state machine</strong>: it is always in one of <code>DESTROYED → CREATED → STARTED → RESUMED</code>,
+        and each user action drives it up or down that ladder.
+      </p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🪜</span>
+<div class="callout__body">
+<span class="callout__label">The reasoning, step by step</span>
+<ol style="margin:0">
+<li><strong>Where am I now?</strong> A fresh launch starts at <code>DESTROYED</code> and climbs all the way to <code>RESUMED</code>: it must pass through <em>every</em> rung, emitting <code>onCreate → onStart → onResume</code>.</li>
+<li><strong>Which direction does the action push me?</strong> Pressing <strong>Home</strong> pushes <em>down</em> to <code>CREATED</code> (visible→invisible) but not all the way to <code>DESTROYED</code>: <code>onPause → onStop</code>.</li>
+<li><strong>Coming back up the ladder?</strong> Returning from <code>CREATED</code> to <code>RESUMED</code> is the <em>only</em> path that emits <code>onRestart</code> (it sits between stopped and started): <code>onRestart → onStart → onResume</code>.</li>
+<li><strong>Rotation is special:</strong> it pushes all the way down to <code>DESTROYED</code> <em>and immediately back up</em> — a full tear-down + rebuild: <code>onPause → onStop → onDestroy → onCreate → onStart → onResume</code>. That round trip is exactly why in-memory state is lost.</li>
+</ol>
+</div>
+</div>
+<p>
+        Here is that reasoning expressed as runnable code — a function that, given the current state and an action, returns
+        the <em>ordered list of callbacks</em> the OS fires. Read it, then <strong>predict the printed output before you Run</strong>:
+      </p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable — predict the output, then Run</div>
+<pre><code>// The four lifecycle states, low → high on the "visibility ladder".
+enum class State { DESTROYED, CREATED, STARTED, RESUMED }
+
+// The callback emitted when CROSSING from one rung to the next.
+fun stepUp(from: State): Pair&lt;State, String&gt; = when (from) {
+    State.DESTROYED -&gt; State.CREATED to "onCreate"
+    State.CREATED   -&gt; State.STARTED to "onStart"
+    State.STARTED   -&gt; State.RESUMED to "onResume"
+    State.RESUMED   -&gt; State.RESUMED to ""          // already at the top
+}
+
+fun stepDown(from: State): Pair&lt;State, String&gt; = when (from) {
+    State.RESUMED   -&gt; State.STARTED to "onPause"
+    State.STARTED   -&gt; State.CREATED to "onStop"
+    State.CREATED   -&gt; State.DESTROYED to "onDestroy"
+    State.DESTROYED -&gt; State.DESTROYED to ""
+}
+
+// Walk from `start` to `target`, collecting each callback crossed.
+fun transition(start: State, target: State): List&lt;String&gt; {
+    val out = mutableListOf&lt;String&gt;()
+    var cur = start
+    var justCreated = false   // did THIS walk pass through onCreate?
+    while (cur != target) {
+        val (next, cb) = if (cur.ordinal &lt; target.ordinal) stepUp(cur) else stepDown(cur)
+        // onRestart fires when climbing UP out of CREATED — but ONLY if we were
+        // stopped (not freshly created). A fresh onCreate goes straight to onStart.
+        if (cur == State.CREATED &amp;&amp; next == State.STARTED &amp;&amp; !justCreated) out.add("onRestart")
+        if (cb == "onCreate") justCreated = true
+        if (cb.isNotEmpty()) out.add(cb)
+        cur = next
+    }
+    return out
+}
+
+fun main() {
+    // Fresh launch: DESTROYED all the way up to RESUMED.
+    println("launch   : " + transition(State.DESTROYED, State.RESUMED))
+    // Press Home: RESUMED down to CREATED (still alive, just stopped).
+    println("home     : " + transition(State.RESUMED, State.CREATED))
+    // Reopen from Home: CREATED back up to RESUMED (note onRestart!).
+    println("reopen   : " + transition(State.CREATED, State.RESUMED))
+    // Back button: RESUMED all the way down to DESTROYED.
+    println("back     : " + transition(State.RESUMED, State.DESTROYED))
+}</code></pre>
+</div>
+<p class="muted">
+        Notice the model <em>derives</em> the sequences instead of hard-coding them — that is the senior move: encode the
+        rule once, and every scenario falls out for free. A rotation is just <code>transition(RESUMED, DESTROYED)</code>
+        immediately followed by <code>transition(DESTROYED, RESUMED)</code>.
+      </p>
+<h4>Now you — the faded challenge</h4>
+<p>
+        Time to <strong>fade the scaffolding</strong>. Below, the test harness is written for you, but the core function
+        <code>callbacksFor(action)</code> is blanked out. Use the state-machine reasoning above to fill in the
+        <code>// YOUR CODE</code> region so every case prints <code>✓ passed</code>. You've got it when you see
+        <strong>ALL TESTS PASSED 🎉</strong>.
+      </p>
+<div class="codeblock" data-challenge="s03-lifecycle-seq" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge — make every case go green</div>
+<pre><code>// Return the EXACT ordered list of callbacks the OS fires for each action.
+// Actions: "launch", "home", "reopen", "back", "rotate".
+//
+// Reminders from the worked example:
+//   launch : DESTROYED -&gt; RESUMED
+//   home   : RESUMED   -&gt; CREATED (stopped, still alive)
+//   reopen : CREATED   -&gt; RESUMED  (includes onRestart!)
+//   back   : RESUMED   -&gt; DESTROYED
+//   rotate : tear down to DESTROYED, then rebuild to RESUMED
+
+fun callbacksFor(action: String): List&lt;String&gt; {
+    // ----- YOUR CODE: return the right list for each action -----
+    return when (action) {
+        "launch" -&gt; TODO("onCreate, onStart, onResume")
+        "home"   -&gt; TODO("onPause, onStop")
+        "reopen" -&gt; TODO("onRestart, onStart, onResume")
+        "back"   -&gt; TODO("onPause, onStop, onDestroy")
+        "rotate" -&gt; TODO("the full back-down then up sequence")
+        else     -&gt; emptyList()
+    }
+    // ----- END YOUR CODE -----
+}
+
+// ---------- test harness (do not edit) ----------
+fun main() {
+    val cases = listOf(
+        "launch" to listOf("onCreate", "onStart", "onResume"),
+        "home"   to listOf("onPause", "onStop"),
+        "reopen" to listOf("onRestart", "onStart", "onResume"),
+        "back"   to listOf("onPause", "onStop", "onDestroy"),
+        "rotate" to listOf("onPause", "onStop", "onDestroy",
+                           "onCreate", "onStart", "onResume")
+    )
+    var allPass = true
+    for ((action, expected) in cases) {
+        val got = callbacksFor(action)
+        if (got == expected) {
+            println("✓ passed: $action -&gt; $got")
+        } else {
+            allPass = false
+            println("✗ FAILED: $action -&gt; expected $expected, got $got")
+        }
+    }
+    println(if (allPass) "ALL TESTS PASSED 🎉" else "Keep going — some cases are red.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body">
+<p style="margin-top:0">Each list is literally the sequence you traced in the live-coding section. The only "gotcha" is
+            <strong>where <code>onRestart</code> goes</strong>: it leads <code>reopen</code> (returning from stopped), but it
+            <em>never</em> appears in <code>launch</code> or <code>rotate</code>, because those start from
+            <code>DESTROYED</code> — there is nothing to <em>re</em>start. <code>rotate</code> is just <code>back</code>'s
+            list (down to destroy) concatenated with <code>launch</code>'s list (up to resume).</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin — reference</div>
+<pre><code>fun callbacksFor(action: String): List&lt;String&gt; = when (action) {
+    "launch" -&gt; listOf("onCreate", "onStart", "onResume")
+    "home"   -&gt; listOf("onPause", "onStop")
+    "reopen" -&gt; listOf("onRestart", "onStart", "onResume")
+    "back"   -&gt; listOf("onPause", "onStop", "onDestroy")
+    "rotate" -&gt; listOf("onPause", "onStop", "onDestroy",
+                       "onCreate", "onStart", "onResume")
+    else     -&gt; emptyList()
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<h4>A second rep — model the Intent router</h4>
+<p>
+        The other core skill today is choosing <strong>explicit vs implicit</strong> and resolving an Intent to a route. A
+        senior engineer thinks of <code>startActivity</code> as "resolve this Intent-spec to a target." Model that pure
+        decision: explicit Intents name a component; implicit Intents describe an action the system must match. Fill the
+        <code>// YOUR CODE</code> so the classifier is correct — including the <strong>null-guard</strong> (an unhandled
+        implicit Intent must <em>not</em> crash; return <code>"unresolved"</code>, the moral equivalent of a
+        <code>resolveActivity</code> check).
+      </p>
+<div class="codeblock" data-challenge="s03-intent-route" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge — resolve the Intent</div>
+<pre><code>// A tiny model of an Intent and the system that resolves it.
+data class IntentSpec(
+    val component: String? = null,   // non-null =&gt; EXPLICIT (names the target)
+    val action: String? = null       // e.g. "VIEW", "DIAL", "SEND" =&gt; IMPLICIT
+)
+
+// Apps installed on this device that can handle each action (the PackageManager).
+val installedHandlers = mapOf(
+    "VIEW" to "BrowserActivity",
+    "DIAL" to "DialerActivity"
+    // note: no handler for "SEND" — a bare emulator with no share app
+)
+
+// Resolve a spec to the route the OS would launch, or "unresolved" if nothing handles it.
+fun resolve(spec: IntentSpec): String {
+    // ----- YOUR CODE -----
+    // 1. If spec.component != null  =&gt; it's explicit; return that component directly.
+    // 2. Else look up spec.action in installedHandlers.
+    // 3. If no app handles it       =&gt; return "unresolved" (don't crash!).
+    TODO("implement the three rules above")
+    // ----- END YOUR CODE -----
+}
+
+// ---------- test harness (do not edit) ----------
+fun main() {
+    val cases = listOf(
+        IntentSpec(component = "SecondActivity") to "SecondActivity", // explicit
+        IntentSpec(action = "VIEW")              to "BrowserActivity", // implicit, handled
+        IntentSpec(action = "DIAL")              to "DialerActivity",  // implicit, handled
+        IntentSpec(action = "SEND")              to "unresolved"       // nothing handles it
+    )
+    var allPass = true
+    for ((spec, expected) in cases) {
+        val got = resolve(spec)
+        if (got == expected) {
+            println("✓ passed: $spec -&gt; $got")
+        } else {
+            allPass = false
+            println("✗ FAILED: $spec -&gt; expected $expected, got $got")
+        }
+    }
+    println(if (allPass) "ALL TESTS PASSED 🎉" else "Keep going — check the null-guard.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body">
+<p style="margin-top:0">Explicit wins first: if <code>spec.component</code> is non-null, just return it — the system never
+            has to <em>search</em>. Otherwise it's implicit, so look up <code>spec.action</code> in
+            <code>installedHandlers</code>. The Elvis operator gives you the safe default in one line:
+            <code>installedHandlers[spec.action] ?: "unresolved"</code>. That <code>?:</code> is the model of the
+            <code>resolveActivity(...) != null</code> guard you wrap real implicit Intents in.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin — reference</div>
+<pre><code>fun resolve(spec: IntentSpec): String {
+    // Explicit: the component is named, no system search needed.
+    spec.component?.let { return it }
+    // Implicit: ask the "PackageManager" which app handles this action.
+    return installedHandlers[spec.action] ?: "unresolved"
+}</code></pre>
+</div>
+<p class="muted" style="margin-bottom:0">In real Compose this is exactly why you write
+            <code>if (intent.resolveActivity(context.packageManager) != null) startActivity(intent)</code> — the
+            <code>?: "unresolved"</code> branch <em>is</em> the crash you are preventing.</p>
+</div>
+</div>
+</div>
+<!-- ---------------------------------------------------------------- -->
+<!-- 12.2 MISCONCEPTIONS                                              -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-misconceptions">2 · Common misconceptions &amp; pitfalls</h3>
+<p class="muted">Each one is a real bug that bites real Android developers. Read the wrong model, see why it fails, and lock in the correct one.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">❌ "An Android app starts at <code>main()</code>."</button>
+<div class="accordion__body">
+<p style="margin-top:0"><strong>Wrong mental model:</strong> like a console program, there's a <code>fun main()</code> somewhere that the OS calls to start your app.</p>
+<p><strong>Why it's wrong:</strong> Android apps have <em>no</em> app-authored <code>main()</code>. The OS instantiates your <strong>launcher Activity</strong> (the one with the <code>MAIN</code>/<code>LAUNCHER</code> intent-filter in the Manifest) and calls <code>onCreate()</code>. Your entry point is a <em>callback</em>, not a function you call.</p>
+<p><strong>Correct model:</strong> the Manifest is the OS's directory; the <code>MAIN</code>+<code>LAUNCHER</code> Activity is the front door; <code>onCreate()</code> is where <em>your</em> code first runs.</p>
+<p style="margin-bottom:0"><strong>Symptom you'd see:</strong> you put startup logic in a top-level <code>fun main()</code> and it simply never executes — or you can't figure out why the app shows a blank/wrong screen on launch (you instrumented the wrong entry point).</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">❌ "Rotating the screen keeps my in-memory state."</button>
+<div class="accordion__body">
+<p style="margin-top:0"><strong>Wrong mental model:</strong> a rotation just re-lays-out the same running Activity, so my <code>var count</code> is untouched.</p>
+<p><strong>Why it's wrong:</strong> a rotation is a <strong>configuration change</strong>. By default Android <em>destroys and recreates</em> the Activity (<code>onPause → onStop → onDestroy → onCreate → onStart → onResume</code>) so it can load configuration-correct resources. A brand-new instance means brand-new fields — your <code>var</code> is gone.</p>
+<p><strong>Correct model:</strong> any data that must outlive a recreation needs <em>durable</em> storage: <code>rememberSaveable</code> for trivial UI state, a <code>ViewModel</code> for screen state, the Bundle / DataStore / Room for the rest. (You'll wire these in Weeks 2–5.)</p>
+<p style="margin-bottom:0"><strong>Symptom you'd see:</strong> your counter / typed text / scroll position silently resets to zero the instant the user turns the phone sideways — a classic "why does my app forget everything?" bug report.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">❌ "<code>onPause</code> is the place to save and release everything."</button>
+<div class="accordion__body">
+<p style="margin-top:0"><strong>Wrong mental model:</strong> <code>onPause</code> means "the app is leaving," so do all teardown — flush files, close the camera, stop heavy work — there.</p>
+<p><strong>Why it's wrong:</strong> <code>onPause</code> fires for <em>brief</em>, partial-focus events too: a permission dialog, a transparent Activity, split-screen. It is on the critical path before the next screen can draw, so anything slow here <strong>janks the transition</strong>. And the Activity may resume without ever stopping — so you'd needlessly tear down and rebuild.</p>
+<p><strong>Correct model:</strong> keep <code>onPause</code> tiny and fast (pause animations, commit a draft). Release real resources and persist in <code>onStop</code> (truly no longer visible). For business state, hoist it to a <code>ViewModel</code> so the lifecycle isn't your persistence layer at all.</p>
+<p style="margin-bottom:0"><strong>Symptom you'd see:</strong> visible stutter when a dialog appears, or your camera/sensor needlessly stops and restarts when a notification slides down.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">❌ "I'll just retype the extra-key string on both sides."</button>
+<div class="accordion__body">
+<p style="margin-top:0"><strong>Wrong mental model:</strong> <code>putExtra("name", value)</code> on Screen A and <code>getStringExtra("Name")</code> on Screen B — close enough, it's just a string.</p>
+<p><strong>Why it's wrong:</strong> Intent extras are a string-keyed map with <em>no compile-time checking</em>. A typo, a capitalization difference, or a stray space means the key won't match — <code>getStringExtra</code> returns <code>null</code> and there is <em>no error</em>.</p>
+<p><strong>Correct model:</strong> declare the key <strong>once</strong> as a <code>const val EXTRA_NAME = "..."</code> and reference that constant on both the send and receive side. The compiler now guarantees they match.</p>
+<p style="margin-bottom:0"><strong>Symptom you'd see:</strong> Screen B greets every user as <code>"stranger"</code> (your Elvis default) and you waste twenty minutes before realizing the keys differ by one character.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">❌ "An implicit Intent always finds an app — just <code>startActivity</code> it."</button>
+<div class="accordion__body">
+<p style="margin-top:0"><strong>Wrong mental model:</strong> every device can open a URL / share text / dial a number, so firing an implicit Intent is always safe.</p>
+<p><strong>Why it's wrong:</strong> a bare emulator (or a locked-down device) may have <em>no</em> browser or share target. An implicit Intent with no handler throws <code>ActivityNotFoundException</code> and crashes your app.</p>
+<p><strong>Correct model:</strong> treat "is there a handler?" as a real branch. Guard with <code>if (intent.resolveActivity(context.packageManager) != null)</code> before launching, and give the user a graceful message otherwise. (<code>ACTION_DIAL</code> is the most reliably-resolvable action for a demo.)</p>
+<p style="margin-bottom:0"><strong>Symptom you'd see:</strong> your app works on your phone but testers on a clean emulator report an instant crash the moment they tap "Share."</p>
+</div>
+</div>
+</div>
+<!-- ---------------------------------------------------------------- -->
+<!-- 12.3 IN PRODUCTION                                               -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-production">3 · In production — how a senior engineer actually does this</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">The idiomatic, current pattern</span>
+<p style="margin-top:0">In a modern Compose codebase, a senior engineer makes <strong>three moves</strong> that this session foreshadows:</p>
+<ul>
+<li><strong>One Activity, not many.</strong> The whole app lives in a single <code>ComponentActivity</code>; "screens" are composables swapped by a <code>NavController</code> (Navigation Compose). Multiple Activities are reserved for genuine OS-level entry points (a share target, a widget tap, a deep link) — not for ordinary in-app navigation.</li>
+<li><strong>State is hoisted out of the lifecycle.</strong> Screen state lives in a <code>ViewModel</code>, which <em>survives configuration changes</em> for free. The Activity lifecycle becomes almost boilerplate — you rarely override <code>onPause</code>/<code>onStop</code> at all, because the <code>ViewModel</code> already outlives them.</li>
+<li><strong>Pass IDs, not objects.</strong> When navigating, send a small identifier (a row id, a username) as a route argument or extra — never a whole heavy object. The destination re-fetches from the single source of truth (DataStore/Room/repository). This is the seed of the architecture you'll build in Weeks 4–6.</li>
+</ul>
+<p style="margin-bottom:0"><strong>One tasteful gotcha:</strong> the trap senior engineers still warn juniors about is treating the lifecycle as a persistence API — saving "just this one field" in <code>onPause</code>, "just this list" in <code>onStop</code>. It always rots: the next state-loss bug appears, and you bolt on another override. The durable move is to make a <code>ViewModel</code> (and a real data layer) the owner of state from day one, so <code>onCreate</code> stays a three-line method that only calls <code>setContent { }</code>.</p>
+</div>
+</div>
+<!-- ---------------------------------------------------------------- -->
+<!-- 12.4 RETRIEVAL CHECK                                             -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-recall">4 · Retrieval check — apply it, don't recall it</h3>
+<p class="muted">
+        These test whether you can <strong>reason about new situations</strong>, not whether you memorized a list. Answer
+        before revealing — generating the answer (even a wrong one) is what builds durable memory. This is your own
+        self-check — just for you.
+      </p>
+<div data-quiz="rc-3" data-topic="architecture"></div>
+<script id="rc-3" type="application/json">
+      {
+        "title": "Retrieval check — lifecycle & intents (application)",
+        "intro": "Six applied questions. Predict, then reveal. Aim to explain WHY, not just pick the letter.",
+        "passingScore": 0.7,
+        "shuffle": false,
+        "questions": [
+          {
+            "id": "rc3q1",
+            "type": "single",
+            "prompt": "A user is on Screen A, taps your 'Open dialer' button (a working implicit Intent), then immediately presses Back to return. Which sequence does Screen A's Activity log, start to finish?",
+            "options": [
+              { "id": "a", "text": "onPause → onStop → onDestroy → onCreate → onStart → onResume" },
+              { "id": "b", "text": "onPause → onStop → onRestart → onStart → onResume" },
+              { "id": "c", "text": "onStop → onResume" },
+              { "id": "d", "text": "onPause → onResume" }
+            ],
+            "correct": ["b"],
+            "explanation": "Launching another app (the dialer) backgrounds your Activity but does NOT destroy it: onPause → onStop. Returning from the stopped state is the one path that fires onRestart, then onStart → onResume. No onDestroy because the Activity was never finished — this is the 'home/reopen' shape, triggered here by leaving to and returning from another app."
+          },
+          {
+            "id": "rc3q2",
+            "type": "single",
+            "prompt": "Screen B reads `intent.getStringExtra(EXTRA_NAME)` and always shows 'stranger', even though Screen A clearly calls putExtra with a real name. The app does NOT crash. What is the single most likely cause?",
+            "options": [
+              { "id": "a", "text": "SecondActivity is missing from the Manifest" },
+              { "id": "b", "text": "The key string used in putExtra differs from the one used in getStringExtra" },
+              { "id": "c", "text": "You forgot to call super.onCreate()" },
+              { "id": "d", "text": "The Intent should have been implicit, not explicit" }
+            ],
+            "correct": ["b"],
+            "explanation": "'No crash + always the Elvis default' is the fingerprint of a key mismatch. A missing Manifest entry would throw ActivityNotFoundException (a crash). Missing super.onCreate() crashes with SuperNotCalledException. getStringExtra returns null on a key miss, so your `?: \"stranger\"` silently wins. Fix: use one shared `const val EXTRA_NAME` on both sides."
+          },
+          {
+            "id": "rc3q3",
+            "type": "multi",
+            "prompt": "Which of these actions, performed once, will by default cause the OS to call onDestroy on the current Activity? (Select all that apply.)",
+            "options": [
+              { "id": "a", "text": "Rotating the device" },
+              { "id": "b", "text": "Pressing the Home button" },
+              { "id": "c", "text": "Pressing the Back button on the only screen" },
+              { "id": "d", "text": "A dialog from another app appearing over your screen" }
+            ],
+            "correct": ["a", "c"],
+            "explanation": "Rotation destroys+recreates (configuration change), and Back finishes the Activity (onDestroy). Home only goes to onStop — the Activity stays alive in the background. A dialog over your screen typically only reaches onPause (you lose focus but stay partly visible). The distinction 'onStop = alive but invisible' vs 'onDestroy = gone' is the crux."
+          },
+          {
+            "id": "rc3q4",
+            "type": "single",
+            "prompt": "You want a button that lets the user share the text 'My COP4667 app' to any app they choose. Which Intent is correct?",
+            "options": [
+              { "id": "a", "text": "Intent(context, ShareActivity::class.java).putExtra(\"text\", \"My COP4667 app\")" },
+              { "id": "b", "text": "Intent(Intent.ACTION_SEND).apply { type = \"text/plain\"; putExtra(Intent.EXTRA_TEXT, \"My COP4667 app\") }" },
+              { "id": "c", "text": "Intent(Intent.ACTION_VIEW, Uri.parse(\"My COP4667 app\"))" },
+              { "id": "d", "text": "Intent(Intent.ACTION_DIAL).putExtra(Intent.EXTRA_TEXT, \"My COP4667 app\")" }
+            ],
+            "correct": ["b"],
+            "explanation": "Sharing arbitrary text to a user-chosen app is the textbook implicit ACTION_SEND with type=\"text/plain\" and EXTRA_TEXT, then optionally wrapped in createChooser. Option A is an EXPLICIT intent to a specific class — it can't let the user pick. ACTION_VIEW expects a URI to view, not free text. ACTION_DIAL is for phone numbers and ignores EXTRA_TEXT."
+          },
+          {
+            "id": "rc3q5",
+            "type": "truefalse",
+            "prompt": "Moving a long-running database write into onPause() is a safe, idiomatic place to persist data before the user leaves the screen.",
+            "correct": false,
+            "explanation": "False. onPause is on the critical path before the next screen can draw and fires even for brief, partial-focus events (dialogs, split-screen). Slow work there janks transitions. Persist in onStop at the latest, and prefer hoisting state to a ViewModel + a real data layer (Room/DataStore) so the lifecycle isn't your persistence mechanism at all."
+          },
+          {
+            "id": "rc3q6",
+            "type": "short",
+            "prompt": "In modern Compose apps, navigating between screens uses navController.navigate(\"route\") instead of startActivity(intent). What is the single Compose call that is the spiritual successor to startActivity(intent)? Write just the method name.",
+            "correct": ["navigate", "navController.navigate", "navigate()", "navController.navigate()"],
+            "explanation": "navController.navigate(\"route\") replaces startActivity(intent); route arguments (\"screenB/{name}\") replace intent extras. Same idea — declare a destination, hand off data — with far less ceremony and no per-screen Activity or Manifest entry. This is the heart of Session 4."
+          }
+        ]
+      }
+      </script>
+<!-- ---------------------------------------------------------------- -->
+<!-- 12.5 DELIBERATE PRACTICE                                         -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-practice">5 · Deliberate practice — what to do next</h3>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Your next reps (spaced &amp; deliberate)</span>
+<p style="margin-top:0">Mastery comes from <em>spaced, effortful</em> reps — not from re-reading this page. In order:</p>
+<ol style="margin:0 0 var(--space-3) 0">
+<li><strong>Lock in today's two challenges above</strong> — get both to <em>ALL TESTS PASSED 🎉</em>, then hit <em>Mark solved ✓</em> on each to grow your mastery bar.</li>
+<li><strong><a href="../practice/challenges.html">Challenges →</a></strong> Do the <code>kotlin</code> ladder (sealed <code>UiState</code> + exhaustive <code>when</code>, null-safe parse) — the same state-machine reasoning you used on the lifecycle, applied to UI state.</li>
+<li><strong><a href="../practice/debug-drills.html">Debug drills →</a></strong> Hunt the seeded bugs: "rotation loses state," "key mismatch on extras," "implicit Intent with no handler." Find the broken line, predict the symptom, then run the fix.</li>
+<li><strong><a href="../practice/spaced-repetition.html">Spaced repetition →</a></strong> Review the lifecycle &amp; Intents cards below and on the practice deck. Come back tomorrow — the scheduler will resurface exactly the cards you're about to forget.</li>
+<li><strong><a href="../path.html">Skill map →</a></strong> See where lifecycle/Intents sits on the road from Kotlin → Compose → State → Nav/VM. This node unlocks Compose navigation next.</li>
+</ol>
+<p class="muted" style="margin-bottom:0">Spaced micro-deck for this session — flip, rate, and the engine schedules your next review:</p>
+<div data-srs="srs-s03"></div>
+<script id="srs-s03" type="application/json">
+        {
+          "id": "srs-s03",
+          "cards": [
+            { "id": "s03c1", "topic": "architecture", "front": "Which user action destroys AND recreates the Activity by default, and why?", "back": "Rotation (a configuration change): onPause→onStop→onDestroy→onCreate→onStart→onResume, so Android can load configuration-correct resources. This is why in-memory state is lost." },
+            { "id": "s03c2", "topic": "architecture", "front": "Predict the callbacks: user presses Home, then reopens the app.", "back": "Home: onPause → onStop. Reopen: onRestart → onStart → onResume. onRestart fires ONLY when returning from the stopped (not destroyed) state." },
+            { "id": "s03c3", "topic": "architecture", "front": "onPause vs onStop — which is 'partly visible' and which is 'invisible'?", "back": "onPause = lost focus but possibly still partly visible (dialog/split-screen); keep it fast. onStop = no longer visible at all; safe to release resources / persist." },
+            { "id": "s03c4", "topic": "architecture", "front": "Explicit vs implicit Intent — give the one-line distinction.", "back": "Explicit names the exact component to start (Intent(context, X::class.java)). Implicit describes an action (ACTION_VIEW/DIAL/SEND) and lets the system pick a capable app." },
+            { "id": "s03c5", "topic": "architecture", "front": "How do you safely fire an implicit Intent that might have no handler?", "back": "Guard it: if (intent.resolveActivity(context.packageManager) != null) startActivity(intent) else show a fallback. Otherwise an unhandled implicit Intent throws ActivityNotFoundException." },
+            { "id": "s03c6", "topic": "architecture", "front": "Why declare extra keys as `const val`?", "back": "Intent extras are a string-keyed map with no compile-time checks. One shared const val on send + receive guarantees the keys match; retyping the string risks a silent null." },
+            { "id": "s03c7", "topic": "architecture", "front": "What is the Compose successor to startActivity(intent), and to intent extras?", "back": "navController.navigate(\"route\") replaces startActivity(intent); route arguments (\"screenB/{name}\") replace intent extras. One Activity, composable screens." }
+          ]
+        }
+        </script>
+</div>
+</div>
+<!-- mastery footer: personal progress for this session -->
+<div class="card no-print mt" style="margin-top:var(--space-5)">
+<div class="card__title">📈 Your progress on this session</div>
+<p class="muted" style="margin-top:0">Solve the two challenges and clear the retrieval check to light this up. Your streak and topic mastery are yours alone — a measure of your own growth, never a course grade.</p>
+<div class="kpi-grid" data-mastery-streak="">
+<div class="kpi"><div class="kpi__value" data-mastery="streak-current">0</div><div class="kpi__label">day streak</div></div>
+<div class="kpi"><div class="kpi__value" data-mastery="streak-longest">0</div><div class="kpi__label">longest streak</div></div>
+<div class="kpi"><div class="kpi__value" data-mastery="topic-architecture">0%</div><div class="kpi__label">Architecture mastery</div></div>
+<div class="kpi"><div class="kpi__value" data-mastery="global">0%</div><div class="kpi__label">overall mastery</div></div>
+</div>
+</div>
+<script>
+      // Wire the session-footer mastery tiles to the shared MASTERY engine.
+      (function () {
+        function pct(n) { return (n == null ? 0 : Math.round(n)) + '%'; }
+        function paint() {
+          if (typeof window.MASTERY === 'undefined') return;
+          var p = window.MASTERY.progress, st = p.streak();
+          var set = function (key, val) {
+            var node = document.querySelector('[data-mastery="' + key + '"]');
+            if (node) node.textContent = val;
+          };
+          set('streak-current', String(st.current));
+          set('streak-longest', String(st.longest));
+          set('topic-architecture', pct(p.topicMastery('architecture')));
+          set('global', pct(p.globalPercent()));
+        }
+        document.addEventListener('mastery:change', paint);
+        if (document.readyState !== 'loading') paint();
+        else document.addEventListener('DOMContentLoaded', paint);
+      })();
+      </script>
+</section>
+<!-- ================================================================= -->
+<!-- ================================================================= -->
+</main>
+<!-- ===================================================================== -->
+<!-- FOOTER                                                                -->
+<!-- ===================================================================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Session 3 of 12 · Week 1
+        <div class="muted">Activities, the Lifecycle, Intents &amp; Multi-Screen Navigation — CLO 1, CLO 3</div>
+</div>
+<div class="muted">
+        Keiser University · B.S. Software Engineering · 3.0 credit hours
+        <div><a href="../index.html">↩ Course hub</a> · <a href="session-02.html">‹ Session 2</a> · <a href="session-04.html">Session 4 ›</a></div>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

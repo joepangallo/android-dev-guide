@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Session 7 — Displaying Lists &amp; Material Design Components | COP4667</title>
+<meta content="COP4667 Android Development — Session 7: LazyColumn, Material 3 components (Scaffold, TopAppBar, Card, FAB), rendering data-class lists, and click handling." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* Page-specific tweaks — chrome still uses contract classes only */
+    .obj-list { list-style: none; padding-left: 0; display: grid; gap: 8px; margin: 0; }
+    .obj-list > li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+      background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+    .obj-list > li .clo-tag { flex: 0 0 auto; margin-top: 1px; }
+    .timeblock .timer { width: 100%; min-width: 0; margin-top: 10px; }
+    .lead { font-size: var(--fs-lg); color: var(--muted); max-width: 70ch; }
+    .anatomy { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.9; }
+    .anatomy .a-comp { color: var(--green-dark); font-weight: 700; }
+    [data-theme="dark"] .anatomy .a-comp { color: var(--green); }
+    .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    @media (max-width: 720px) { .twocol { grid-template-columns: 1fr; } }
+    .mini-note { font-size: var(--fs-sm); color: var(--muted); }
+    .pace { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted); }
+    .sec-anchor { scroll-margin-top: 80px; }
+  </style>
+</head>
+<body>
+<!-- =========================== TOP NAV =========================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▲</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-06.html">‹ Prev (S6)</a>
+<a aria-current="page" class="active" href="session-07.html">S7</a>
+<a href="session-08.html">Next (S8) ›</a>
+<a href="../labs/compose-playground.html">Lab: Playground</a>
+<a href="../assessments/quiz-1.html">Quiz 1</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- =========================== HERO =========================== -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<p class="row" style="gap:8px;margin:0 0 10px;">
+<span class="pill pill--green">Session 7 of 12</span>
+<span class="pill">Week 3</span>
+<span class="pill">Navigation, Architecture &amp; Local Data</span>
+</p>
+<h1 class="hero-title" id="hero-title">Displaying Lists &amp; Material Design Components</h1>
+<p class="hero-sub">
+        Today students learn to turn a list of Kotlin data objects into a smooth, scrollable
+        Material 3 UI — a <code>LazyColumn</code> of <code>Card</code>s inside a <code>Scaffold</code>
+        with a <code>TopAppBar</code> and a floating action button, complete with tap handling.
+      </p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 2</span>
+<span class="clo-tag">CLO 4</span>
+<span class="pill">Unit 3 · Lists &amp; Material Design</span>
+<span class="pill">Kotlin · Jetpack Compose · Material 3</span>
+</div>
+</section>
+<!-- On-page index -->
+<div aria-label="On this page" class="card no-print">
+<div class="card__title">On this page</div>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+<!-- =========================== 1. LEARNING OBJECTIVES =========================== -->
+<section aria-labelledby="obj-h" class="slide sec-anchor" id="objectives">
+<h2 id="obj-h">Learning Objectives</h2>
+<p class="lead">By the end of this session, each student can:</p>
+<div class="card card--accent">
+<ul class="obj-list">
+<li><span class="clo-tag">CLO 2</span><span><strong>Explain why lazy lists exist:</strong> describe how <code>LazyColumn</code>/<code>LazyRow</code> compose only visible items, and contrast this with a plain <code>Column</code> + <code>verticalScroll</code> that composes everything at once.</span></li>
+<li><span class="clo-tag">CLO 2</span><span><strong>Render a list of data objects into UI:</strong> drive a <code>LazyColumn</code> from a <code>List&lt;DataClass&gt;</code> using the <code>items()</code> DSL, supplying a stable <code>key</code> and sensible <code>contentPadding</code>.</span></li>
+<li><span class="clo-tag">CLO 2</span><span><strong>Compose Material 3 chrome:</strong> assemble a screen with <code>Scaffold</code>, <code>TopAppBar</code>, and a <code>FloatingActionButton</code>, and place list content correctly using the Scaffold's <code>innerPadding</code>.</span></li>
+<li><span class="clo-tag">CLO 2</span><span><strong>Build a reusable list-item composable:</strong> design a <code>Card</code>-based row that takes a data object plus a lambda callback for clicks (state hoisting on the event side).</span></li>
+<li><span class="clo-tag">CLO 2</span><span><strong>Handle item taps:</strong> wire <code>onClick</code> lambdas from a list item up to the screen and produce a side-effect (a <code>Toast</code> / log) for the tapped item.</span></li>
+<li><span class="clo-tag">CLO 4</span><span><strong>Connect UI to changing data:</strong> back the list with a <code>mutableStateList</code>/state holder so that adding an item via the FAB recomposes the list — the bridge to persistence in Sessions 9–10.</span></li>
+</ul>
+</div>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p>This session sits in <strong>Week 3 — Navigation, Architecture &amp; Local Data</strong> and covers
+          <strong>Unit 3 (Display lists &amp; Material Design)</strong>. It primarily advances
+          <strong>CLO 2</strong> (design UI from components and connect them to code) and seeds
+          <strong>CLO 4</strong> (the list state we build today becomes the data we persist later).
+          It directly supports the <em>Project</em> feature checklist item “a list/feed driven by Compose state.”</p>
+</div>
+</div>
+</section>
+<!-- =========================== 4. LECTURE / CONCEPT NOTES =========================== -->
+<section aria-labelledby="concepts-h" class="slide sec-anchor" id="concepts">
+<h2 id="concepts-h">Lecture / Concept Notes</h2>
+<p class="lead">Substantial teaching content. Each big idea has an explanation, an analogy, and copyable Kotlin/Compose code.</p>
+<!-- BIG IDEA 1 -->
+<h3>1 · Why lazy lists? <code>Column</code> vs <code>LazyColumn</code></h3>
+<p>A plain <code>Column</code> (with <code>Modifier.verticalScroll</code>) <strong>composes and lays out every child immediately</strong>,
+      whether it’s visible or not. For 10 items that’s fine. For 1,000 — or a feed that never ends — it’s a performance disaster:
+      you build 1,000 composables, hold them all in memory, and pay layout for all of them on the very first frame.</p>
+<p>A <code>LazyColumn</code> is <strong>lazy</strong>: it only composes the items currently on screen (plus a small buffer), and
+      <strong>recycles</strong> them as you scroll — the same way <code>RecyclerView</code> worked in the old View world, but with far less boilerplate.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Analogy</span>
+<p><strong>Column</strong> = printing an entire 1,000-page book and stacking every page on the desk before you read one.
+          <strong>LazyColumn</strong> = an e-reader that renders only the page you’re on and the next one or two. Same book, vastly less work.</p>
+</div>
+</div>
+<div aria-label="Column vs LazyColumn" class="tabs" role="tablist">
+<button class="tab" data-tab="plain">Column (eager)</button>
+<button class="tab" data-tab="lazy">LazyColumn (lazy)</button>
+</div>
+<div class="tabpanel" data-tabpanel="plain">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// ❌ Fine for a handful of items, BAD for long/unbounded lists.
+// Every Text() is composed up front; nothing is recycled.
+@Composable
+fun NamesColumn(names: List&lt;String&gt;) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        for (name in names) {
+            Text(text = name, modifier = Modifier.padding(16.dp))
+        }
+    }
+}</code></pre></div>
+<p class="mini-note">Use a plain <code>Column</code> only when the number of children is small and fixed (e.g., a form with 5 fields).</p>
+</div>
+<div class="tabpanel" data-tabpanel="lazy">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// ✅ Composes only visible rows; recycles as you scroll.
+// No manual scroll modifier needed — LazyColumn scrolls itself.
+@Composable
+fun NamesList(names: List&lt;String&gt;) {
+    LazyColumn {
+        items(names) { name -&gt;
+            Text(text = name, modifier = Modifier.padding(16.dp))
+        }
+    }
+}</code></pre></div>
+<p class="mini-note">Notice: no <code>verticalScroll</code>. A <code>LazyColumn</code> is itself the scroll container.</p>
+</div>
+<!-- BIG IDEA 2 -->
+<h3>2 · The <code>items()</code> DSL, keys, content padding &amp; spacing</h3>
+<p>Inside a <code>LazyColumn</code> you don’t write a normal <code>for</code> loop — you call the <strong>lazy list DSL</strong>:
+      <code>item { }</code> for a single child, and <code>items(list) { element -&gt; }</code> for a collection.
+      You can mix them (e.g., a header <code>item { }</code> followed by <code>items(data)</code>).</p>
+<p><strong>Keys matter.</strong> Give each item a stable, unique <code>key</code> (typically the data object’s <code>id</code>).
+      Without keys, Compose tracks items by <em>position</em>; insert/remove/reorder and it may reuse the wrong state, lose scroll
+      position, or mis-animate. With keys, Compose can correctly match items across data changes.</p>
+<p><strong><code>contentPadding</code></strong> pads the scrollable content <em>inside</em> the list (so the first/last items aren’t flush
+      against the edges) without clipping the scroll. <strong><code>verticalArrangement = Arrangement.spacedBy(...)</code></strong>
+      adds gaps between items — cleaner than putting margins on each row.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.unit.dp
+
+data class Course(val id: Int, val code: String, val title: String)
+
+@Composable
+fun CourseList(courses: List&lt;Course&gt;) {
+    LazyColumn(
+        contentPadding = PaddingValues(16.dp),          // inset top/bottom/sides
+        verticalArrangement = Arrangement.spacedBy(12.dp) // gap between rows
+    ) {
+        item {                                           // a one-off header
+            Text("Catalog", style = MaterialTheme.typography.titleLarge)
+        }
+        items(
+            items = courses,
+            key = { course -&gt; course.id }                // STABLE, UNIQUE key
+        ) { course -&gt;
+            Text("${course.code} — ${course.title}")
+        }
+    }
+}</code></pre></div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Two import gotchas</span>
+<p>The <code>items()</code> overload that takes a <code>List</code> lives in
+          <code>androidx.compose.foundation.lazy.items</code> — students often auto-import the wrong thing and get a
+          “type mismatch.” Also, a bare <code>items(5) { i -&gt; }</code> takes an <strong>Int count</strong>, not a list — different overload.
+          When in doubt, let Studio import after you type <code>items(</code>.</p>
+</div>
+</div>
+<!-- BIG IDEA 3 -->
+<h3>3 · Material 3 chrome: <code>Scaffold</code>, <code>TopAppBar</code>, <code>FAB</code></h3>
+<p>Real apps aren’t just a list — they have a top bar, maybe a bottom bar, and a floating action button. Compose Material 3 gives you
+      <strong><code>Scaffold</code></strong>: a layout that slots these standard pieces into the right places and hands your content the
+      <strong>leftover space</strong> as <code>innerPadding</code>. <em>You must apply that padding</em> or your list will hide behind the app bar.</p>
+<div class="card card--teal mb">
+<div class="card__title">🧩 Anatomy of a Scaffold</div>
+<pre class="anatomy">
+Scaffold(
+  topBar      = { <span class="a-comp">TopAppBar</span> }      // title, nav icon, actions
+  bottomBar   = { <span class="a-comp">NavigationBar</span> }  // (optional) bottom tabs
+  floatingActionButton = { <span class="a-comp">FAB</span> }   // the round + button
+) { <span class="a-comp">innerPadding</span> -&gt;            // ← MUST be applied to content
+      <span class="a-comp">LazyColumn</span>(Modifier.padding(innerPadding)) { ... }
+}</pre>
+</div>
+<div aria-label="Material components" class="tabs" role="tablist">
+<button class="tab" data-tab="scaf">Scaffold + TopAppBar + FAB</button>
+<button class="tab" data-tab="card">Card (an item)</button>
+<button class="tab" data-tab="legacy">Compose vs legacy Views</button>
+</div>
+<div class="tabpanel" data-tabpanel="scaf">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+
+@OptIn(ExperimentalMaterial3Api::class)   // TopAppBar is still experimental API
+@Composable
+fun CourseScreen(courses: List&lt;Course&gt;, onAdd: () -&gt; Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("My Courses") })
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAdd) {
+                Icon(Icons.Filled.Add, contentDescription = "Add course")
+            }
+        }
+    ) { innerPadding -&gt;
+        LazyColumn(
+            modifier = Modifier.padding(innerPadding),   // ← apply Scaffold padding
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(courses, key = { it.id }) { course -&gt;
+                Text("${course.code} — ${course.title}")
+            }
+        }
+    }
+}</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="card">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+
+@Composable
+fun CourseCard(course: Course, onClick: () -&gt; Unit) {
+    Card(
+        onClick = onClick,                               // Card has a clickable overload
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text(course.code, style = MaterialTheme.typography.titleMedium)
+            Text(course.title, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}</code></pre></div>
+<p class="mini-note">A <code>Card</code> is a Material surface with rounded corners + elevation. The <code>onClick</code> overload gives you ripple feedback for free.</p>
+</div>
+<div class="tabpanel" data-tabpanel="legacy">
+<div class="twocol">
+<div class="codeblock"><span class="codeblock__lang">Legacy (Views/XML)</span><pre><code>&lt;!-- activity_main.xml --&gt;
+&lt;androidx.recyclerview.widget.RecyclerView
+    android:id="@+id/list"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"/&gt;
+
+// + a RecyclerView.Adapter
+// + a ViewHolder
+// + an item_course.xml
+// + notifyDataSetChanged()
+// ... ~80 lines of boilerplate</code></pre></div>
+<div class="codeblock"><span class="codeblock__lang">Compose (today)</span><pre><code>LazyColumn {
+    items(courses, key = { it.id }) { course -&gt;
+        CourseCard(course) { /* onClick */ }
+    }
+}
+// No adapter. No ViewHolder.
+// No notifyDataSetChanged().
+// State change → automatic recompose.</code></pre></div>
+</div>
+<p class="mini-note">If you ever see <code>RecyclerView</code>/<code>Adapter</code> in old tutorials, that’s the legacy View toolkit. You do the same thing with <code>LazyColumn</code> + <code>items</code>.</p>
+</div>
+<!-- BIG IDEA 4 -->
+<h3>4 · Rendering a list of data objects</h3>
+<p>The data layer is just Kotlin. Model each row as a <strong><code>data class</code></strong> (free <code>equals</code>/<code>hashCode</code>/<code>toString</code>/<code>copy</code>),
+      build a <code>List</code> of them, and feed it to <code>items()</code>. Keep the data <em>dumb</em> (plain values) and let the composable decide how to draw it.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>data class Course(
+    val id: Int,
+    val code: String,
+    val title: String,
+    val credits: Int
+)
+
+// Sample data — in a real app this comes from a repository / API / Room.
+val sampleCourses = listOf(
+    Course(1, "COP1411C", "Data Structures &amp; Algorithms", 3),
+    Course(2, "COP4667",  "Android Development", 3),
+    Course(3, "COP3530",  "Advanced Data Structures", 3),
+    Course(4, "CEN3024C", "Software Development", 4),
+    Course(5, "COP3014",  "Foundations of Programming", 3)
+)</code></pre></div>
+<!-- BIG IDEA 5 -->
+<h3>5 · Click handling with lambda callbacks (state hoisting)</h3>
+<p>A reusable list item should <strong>not</strong> know <em>what</em> happens on tap — it just reports “I was tapped.”
+      We pass an <code>onClick: () -&gt; Unit</code> (or <code>onClick: (Course) -&gt; Unit</code>) <strong>into</strong> the item, and the parent screen
+      decides the behavior (toast, navigate, delete). This is <strong>event hoisting</strong>: the same principle as lifting state up that we saw in S6,
+      applied to events.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// Child: dumb &amp; reusable — receives data + an event lambda
+@Composable
+fun CourseCard(course: Course, onCourseClick: (Course) -&gt; Unit) {
+    Card(onClick = { onCourseClick(course) }, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text(course.code, style = MaterialTheme.typography.titleMedium)
+            Text(course.title)
+        }
+    }
+}
+
+// Parent: decides what the click MEANS
+@Composable
+fun CourseScreen(courses: List&lt;Course&gt;) {
+    val context = LocalContext.current
+    LazyColumn {
+        items(courses, key = { it.id }) { course -&gt;
+            CourseCard(course) { tapped -&gt;
+                Toast.makeText(context, "Tapped ${tapped.code}", Toast.LENGTH_SHORT).show()
+                Log.d("S7", "Clicked: $tapped")
+            }
+        }
+    }
+}</code></pre></div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🪝</span>
+<div class="callout__body">
+<span class="callout__label">Why hoist the event?</span>
+<p>The same <code>CourseCard</code> can be reused on a “favorites” screen where the tap navigates, and a “delete” screen where it removes.
+          The card stays identical — only the lambda the parent passes changes. Reusable + testable.</p>
+</div>
+</div>
+<!-- Connect to CLO4 -->
+<h3>6 · Making the list change: state-backed lists (the FAB)</h3>
+<p>To <em>add</em> an item and have the list update, the list must be <strong>observable state</strong>. Use
+      <code>remember { mutableStateListOf(...) }</code> (a Compose-aware list) or a <code>mutableStateOf(List)</code> you reassign.
+      Mutating a <code>mutableStateListOf</code> triggers recomposition automatically.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+
+@Composable
+fun CourseScreen() {
+    // State-backed list: add/remove → automatic recompose
+    val courses = remember { mutableStateListOf(*sampleCourses.toTypedArray()) }
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = {
+                val next = courses.size + 1
+                courses.add(Course(next, "NEW$next", "New course $next", 3))
+            }) { Icon(Icons.Filled.Add, contentDescription = "Add") }
+        }
+    ) { padding -&gt;
+        LazyColumn(Modifier.padding(padding)) {
+            items(courses, key = { it.id }) { course -&gt;
+                CourseCard(course) { /* onClick */ }
+            }
+        }
+    }
+}</code></pre></div>
+<!-- Quick recall flashcards -->
+<h3>7 · Quick-recall flashcards</h3>
+<p>A self-check deck — use it now for a quick retrieval rep, and again next session to warm up.</p>
+<div aria-label="Session 7 flashcards" data-flashcards="cards-s7"></div>
+<script id="cards-s7" type="application/json">
+      [
+        { "front": "Column + verticalScroll vs LazyColumn — when does each compose its children?", "back": "Column composes ALL children immediately. LazyColumn composes only on-screen items (+ a small buffer) and recycles them while scrolling.", "tag": "Lazy lists" },
+        { "front": "Which DSL renders a List<T> inside a LazyColumn?", "back": "items(list, key = { it.id }) { element -> ... }. Use item { } for a single one-off child like a header.", "tag": "items()" },
+        { "front": "Why give each lazy item a stable key?", "back": "So Compose matches items across data changes — preserving scroll position, state, and correct animations on insert/remove/reorder.", "tag": "Keys" },
+        { "front": "What does a Scaffold hand to its content lambda, and why must you use it?", "back": "innerPadding (PaddingValues). Apply it (e.g. Modifier.padding(innerPadding)) or content hides behind the TopAppBar / under the FAB.", "tag": "Scaffold" },
+        { "front": "How does a reusable list item stay reusable when taps do different things?", "back": "Event hoisting: the item takes an onClick lambda parameter; the parent decides the behavior (toast, navigate, delete).", "tag": "Hoisting" },
+        { "front": "What list type makes add/remove auto-recompose the UI?", "back": "remember { mutableStateListOf(...) } — a Compose-observable list. Mutating it triggers recomposition.", "tag": "State" },
+        { "front": "What does contentPadding do on a LazyColumn?", "back": "Pads the scrollable content inside the list (so first/last items aren't flush to edges) WITHOUT clipping the scroll.", "tag": "Padding" }
+      ]
+      </script>
+</section>
+<!-- =========================== 5. GUIDED LIVE-CODING =========================== -->
+<section aria-labelledby="live-h" class="slide sec-anchor" id="live">
+<h2 id="live-h">Guided Live-Coding</h2>
+<p class="lead">Build a complete <em>Courses</em> screen together: a <code>Scaffold</code> with a <code>TopAppBar</code> and a <code>FAB</code>
+      hosting a tappable <code>LazyColumn</code> of <code>Card</code>s. Type each step; pause and run.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">📦</span>
+<div class="callout__body">
+<span class="callout__label">Imports</span>
+<p>Let Android Studio auto-import (⌥/Alt + Enter). The key packages today: <code>androidx.compose.material3.*</code>,
+          <code>androidx.compose.foundation.lazy.LazyColumn</code> + <code>...lazy.items</code>, and
+          <code>androidx.compose.material.icons.*</code> (needs the <em>material-icons-extended</em> artifact for some icons).</p>
+</div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Define the data model</h4>
+<p>Create a <code>data class</code> and a sample list. Say: “The data is plain Kotlin — no Compose here.”</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>data class Course(
+    val id: Int,
+    val code: String,
+    val title: String,
+    val credits: Int
+)
+
+val sampleCourses = listOf(
+    Course(1, "COP1411C", "Data Structures &amp; Algorithms", 3),
+    Course(2, "COP4667",  "Android Development", 3),
+    Course(3, "COP3530",  "Advanced Data Structures", 3),
+    Course(4, "CEN3024C", "Software Development", 4),
+    Course(5, "COP3014",  "Foundations of Programming", 3),
+    Course(6, "MAC2311",  "Calculus I", 4)
+)</code></pre></div>
+<p class="mini-note"><strong>See:</strong> nothing on screen yet — this is just data.</p>
+</li>
+<li class="step">
+<h4>Build the reusable item: <code>CourseCard</code></h4>
+<p>A dumb, reusable card that takes a <code>Course</code> + a click lambda. Add a <code>@Preview</code> so it renders without the emulator.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun CourseCard(course: Course, onClick: () -&gt; Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(course.code, style = MaterialTheme.typography.titleMedium)
+                Text(course.title, style = MaterialTheme.typography.bodyMedium)
+            }
+            AssistChip(onClick = onClick, label = { Text("${course.credits} cr") })
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CourseCardPreview() {
+    CourseCard(sampleCourses.first(), onClick = {})
+}</code></pre></div>
+<p class="mini-note"><strong>See:</strong> the Preview pane shows one card with a credits chip. Click is wired but does nothing yet.</p>
+</li>
+<li class="step">
+<h4>Render the <code>LazyColumn</code></h4>
+<p>Now turn the list of data into a list of cards. Emphasize <code>key = { it.id }</code>, <code>contentPadding</code>, and spacing.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun CourseList(
+    courses: List&lt;Course&gt;,
+    onCourseClick: (Course) -&gt; Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(courses, key = { it.id }) { course -&gt;
+            CourseCard(course) { onCourseClick(course) }
+        }
+    }
+}</code></pre></div>
+<p class="mini-note"><strong>See:</strong> still no full screen — but a Preview of <code>CourseList(sampleCourses, {})</code> scrolls.</p>
+</li>
+<li class="step">
+<h4>Wrap it in a <code>Scaffold</code> with a <code>TopAppBar</code></h4>
+<p>Introduce the Scaffold and the <strong>critical</strong> <code>innerPadding</code> step. Deliberately forget it first, run, watch the first card hide under the bar, then fix it — this is the lesson that sticks.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CourseScreen() {
+    val context = LocalContext.current
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("My Courses") }
+            )
+        }
+    ) { innerPadding -&gt;
+        CourseList(
+            courses = sampleCourses,
+            onCourseClick = { course -&gt;
+                Toast.makeText(context, "Tapped ${course.code}", Toast.LENGTH_SHORT).show()
+                Log.d("S7", "Clicked ${course.code}")
+            },
+            modifier = Modifier.padding(innerPadding)   // ← the fix
+        )
+    }
+}</code></pre></div>
+<p class="mini-note"><strong>See (on emulator):</strong> a titled bar + a scrolling list of cards; tapping a card pops a Toast and logs to Logcat (filter tag <code>S7</code>).</p>
+</li>
+<li class="step">
+<h4>Make it live: state + a FAB that adds</h4>
+<p>Swap the static list for <code>mutableStateListOf</code> and add a FAB. Tapping <strong>+</strong> appends an item and the list recomposes instantly.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CourseScreen() {
+    val context = LocalContext.current
+    val courses = remember { mutableStateListOf(*sampleCourses.toTypedArray()) }
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("My Courses (${courses.size})") }) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {
+                val next = (courses.maxOfOrNull { it.id } ?: 0) + 1
+                courses.add(Course(next, "NEW$next", "New course $next", 3))
+            }) {
+                Icon(Icons.Filled.Add, contentDescription = "Add a course")
+            }
+        }
+    ) { innerPadding -&gt;
+        CourseList(
+            courses = courses,
+            onCourseClick = { course -&gt;
+                Toast.makeText(context, "Tapped ${course.code}", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
+}</code></pre></div>
+<p class="mini-note"><strong>See:</strong> the title count goes up and a new card appears at the bottom each FAB tap — no manual refresh, no adapter. That’s recomposition.</p>
+</li>
+<li class="step">
+<h4>Recap the data flow out loud</h4>
+<p>Trace the data flow yourself: <em>state list → <code>items()</code> → <code>CourseCard</code> → <code>onClick</code> lambda → parent side-effect</em>.
+          Ask yourself: <em>“if I sorted <code>courses</code>, what keeps each card’s scroll/animation correct?”</em> (the <code>key</code>).</p>
+</li>
+</ol>
+</section>
+<!-- =========================== 6. HANDS-ON LAB =========================== -->
+<section aria-labelledby="lab-h" class="slide sec-anchor" id="lab">
+<h2 id="lab-h">Hands-On Lab — Scrollable List App</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<div class="card__title">🎯 Goal</div>
+<p>Render a list of <strong>≥10 data-class items</strong> (use items relevant to <em>your</em> project) as <code>Card</code>s in a
+          <code>LazyColumn</code> inside a <code>Scaffold</code> with a <code>TopAppBar</code>. Tapping an item shows a <code>Toast</code> (and logs it).
+          <strong>Extension:</strong> a FAB that adds a new item to state.</p>
+<span class="tag">Deliverable: a screen recording or screenshot + the Kotlin file</span>
+</div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Model your data</h4>
+<p>Write a <code>data class</code> for <em>your</em> project’s rows (e.g., <code>Habit</code>, <code>Recipe</code>, <code>Workout</code>, <code>Movie</code>). Give it an <code>id</code> and at least two display fields. Build a <code>listOf(...)</code> with <strong>10+</strong> entries.</p>
+<p class="mini-note">Hint: a quick way to make 10 is <code>List(12) { i -&gt; Item(i, "Item $i", ...) }</code>.</p>
+</li>
+<li class="step">
+<h4>Build a reusable item card</h4>
+<p>Create <code>fun ItemCard(item: YourType, onClick: () -&gt; Unit)</code> using <code>Card(onClick = ...)</code>. Add a <code>@Preview</code> so you can iterate without the emulator.</p>
+</li>
+<li class="step">
+<h4>Render the LazyColumn</h4>
+<p>Use <code>items(list, key = { it.id }) { ... }</code>. Add <code>contentPadding = PaddingValues(16.dp)</code> and <code>Arrangement.spacedBy(12.dp)</code>.</p>
+</li>
+<li class="step">
+<h4>Add the Scaffold + TopAppBar</h4>
+<p>Wrap your list in a <code>Scaffold { innerPadding -&gt; ... }</code> with a <code>TopAppBar</code> titled for your app. <strong>Apply <code>Modifier.padding(innerPadding)</code></strong> to the list.</p>
+</li>
+<li class="step">
+<h4>Handle taps</h4>
+<p>In the parent, pass a lambda that shows <code>Toast.makeText(context, "...", Toast.LENGTH_SHORT).show()</code> and <code>Log.d("S7", ...)</code> the tapped item.</p>
+</li>
+<li class="step">
+<h4>Run &amp; verify</h4>
+<p>Scroll the list, tap several cards, confirm Toasts/logs match the tapped item. Capture a screenshot or short recording.</p>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">🛠️</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting (common errors &amp; fixes)</span>
+<ul style="margin:.3em 0 0;">
+<li><strong>“Unresolved reference: items”</strong> → wrong import. Use <code>import androidx.compose.foundation.lazy.items</code>.</li>
+<li><strong>First card hidden under the app bar</strong> → you didn’t apply <code>Modifier.padding(innerPadding)</code> from the Scaffold.</li>
+<li><strong>“TopAppBar … experimental”</strong> red squiggle → add <code>@OptIn(ExperimentalMaterial3Api::class)</code> above the composable.</li>
+<li><strong><code>Toast</code> won’t compile</strong> → you need a <code>Context</code>: <code>val context = LocalContext.current</code> at the top of the composable.</li>
+<li><strong>List won’t scroll</strong> → you used a plain <code>Column</code>, or you wrapped <code>LazyColumn</code> in another scrolling container. <code>LazyColumn</code> scrolls itself.</li>
+<li><strong>FAB add does nothing</strong> → the list is a plain <code>List</code>, not <code>remember { mutableStateListOf(...) }</code>; mutate the state list.</li>
+<li><strong>Duplicate-key crash</strong> → two items share the same <code>id</code>. Keys must be unique.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Push further</span>
+<ul style="margin:.3em 0 0;">
+<li>Add a <strong>header <code>item { }</code></strong> above the list (a count or title).</li>
+<li><strong>Long-press to remove</strong> an item from the state list (<code>Modifier.combinedClickable</code>).</li>
+<li>Show an <strong>empty state</strong> (a centered message) when the list is empty.</li>
+<li>Add a <code>LazyRow</code> of “featured” chips above the column.</li>
+<li>Hoist the state into a <code>ViewModel</code> now — a head start on Session 8.</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- =========================== 7. ASSESSMENTS TODAY =========================== -->
+<section aria-labelledby="assess-h" class="slide sec-anchor" id="assessments">
+<h2 id="assess-h">Assessments Today</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<div class="card__title">📝 Assignment 3 assigned (Unit 3)</div>
+<p><strong>Assignment 3</strong> is assigned today and is <strong>due end of Week 3</strong>. It extends today's lab into a polished list screen.</p>
+<p class="mt"><strong>Brief — submit a Kotlin file + a screenshot/recording showing:</strong></p>
+<ul style="margin:.3em 0 0;">
+<li>A <code>LazyColumn</code> of <strong>≥10</strong> data-class items rendered as <code>Card</code>s, each with a stable <code>key</code>.</li>
+<li>A <code>Scaffold</code> + <code>TopAppBar</code> with the list correctly offset by <code>innerPadding</code>.</li>
+<li>Tap handling that produces a per-item side-effect (<code>Toast</code> + <code>Log.d</code>).</li>
+<li>Material polish: <code>contentPadding</code>, <code>Arrangement.spacedBy</code>, and at least one extra component (FAB, <code>AssistChip</code>, or a header <code>item { }</code>).</li>
+</ul>
+<p class="mt mini-note">Full brief and submission link are in the <a href="#homework">Homework</a> section below.</p>
+</div>
+<div class="card card--teal">
+<div class="card__title">📅 At a glance &amp; self-check</div>
+<ul style="margin:.3em 0 0;">
+<li><strong>Assigned:</strong> Session 7 (today) · <strong>Due:</strong> end of Week 3.</li>
+<li><strong>Counts toward:</strong> CLO 2 (build UI from components) and seeds CLO 4 (state you persist in Weeks 4–5).</li>
+<li><strong>Discussion:</strong> Week 3 board post + reply — see <a href="#discussion">Discussion Board</a>.</li>
+</ul>
+<p class="mt">Before you submit, take the ungraded <a href="#master-it">Retrieval check</a> in <em>Master it</em> — it surfaces the exact mistakes (missing <code>key</code>, plain-list FAB, hardcoded padding) graders look for.</p>
+</div>
+</div>
+</section>
+<!-- =========================== 8. DISCUSSION BOARD =========================== -->
+<section aria-labelledby="disc-h" class="slide sec-anchor" id="discussion">
+<h2 id="disc-h">Discussion Board Prompt</h2>
+<div class="card">
+<div class="card__title">💬 Week 3 Discussion — “Lists in the wild”</div>
+<blockquote style="border-left:4px solid var(--green);margin:0 0 1em;padding:.2em 0 .2em 16px;color:var(--ink);">
+<p style="margin:0 0 .6em;"><strong>Prompt:</strong> Open an app you use daily (social, shopping, music, fitness…). Identify <strong>one scrollable list</strong> in it.</p>
+<ol style="margin:0;">
+<li>Describe the list item: what data fields does each row show, and what happens when you tap one?</li>
+<li>Sketch (in words or a screenshot) the <strong>data class</strong> you’d write to model one row.</li>
+<li>Would you implement it as a <code>LazyColumn</code> or <code>LazyRow</code>, and why? What would you use as the <code>key</code>?</li>
+<li>Post a <strong>screenshot of YOUR Session 7 lab list</strong> and name one Material 3 component you used (Scaffold, TopAppBar, Card, FAB).</li>
+</ol>
+</blockquote>
+
+</div>
+</section>
+<!-- =========================== 9. HOMEWORK / NEXT CLASS =========================== -->
+<section aria-labelledby="hw-h" class="slide sec-anchor" id="homework">
+<h2 id="hw-h">Homework &amp; Next Class</h2>
+<div class="grid grid-3">
+<div class="card">
+<div class="card__title">📚 Read / Work through</div>
+<ul>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-3" rel="noopener" target="_blank">Android Basics with Compose — Unit 3 (Display lists &amp; Material Design)</a></li>
+<li><a href="https://developer.android.com/develop/ui/compose/lists" rel="noopener" target="_blank">Official docs: Lists &amp; grids in Compose</a></li>
+<li><a href="https://developer.android.com/develop/ui/compose/components/scaffold" rel="noopener" target="_blank">Official docs: Scaffold</a></li>
+</ul>
+</div>
+<div class="card card--accent">
+<div class="card__title">✍️ Assignment</div>
+<ul>
+<li><strong>Assignment 3 (Unit 3)</strong> — due <strong>end of Week 3</strong>.
+            Based on <a href="https://developer.android.com/courses/android-basics-compose/unit-3" rel="noopener" target="_blank">Unit 3</a>:
+            extend today’s list with Material polish (dividers/spacing, a styled <code>TopAppBar</code>, item detail interaction).</li>
+<li>Finish the <a href="#lab">lab</a> if you haven’t submitted it yet.</li>
+<li>Post + reply on the <a href="#discussion">Week 3 Discussion Board</a>.</li>
+</ul>
+</div>
+<div class="card card--teal">
+<div class="card__title">🚧 Project task</div>
+<ul>
+<li>Wire your project’s main <strong>feed/list screen</strong> using today’s pattern — this satisfies the checklist item
+            “Jetpack Compose UI driven by state.”</li>
+<li>Use <em>your real domain</em> data class (you’ll connect it to Room/API in Week 4).</li>
+<li>Keep the item composable reusable — you’ll navigate from it in Session 8.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">⏭️</span>
+<div class="callout__body">
+<span class="callout__label">Next class — Session 8: Navigation &amp; app architecture (Unit 4)</span>
+<p>We make those list items <strong>tappable to a detail screen</strong> with the Navigation component, and move state out of composables into a
+          <strong>ViewModel</strong>. Today’s reusable <code>CourseCard</code>/<code>ItemCard</code> + event hoisting is exactly what we’ll route from. Tools:
+          <a href="../labs/compose-playground.html">Compose Playground lab</a> stays available for practice.</p>
+</div>
+</div>
+</section>
+<!-- ===================== LIVE, RUNNABLE COMPOSE (playground.js) ===================== -->
+<section aria-labelledby="til-h" class="card slide" id="try-it-live">
+<h2 class="card__title" id="til-h">► Try it live in your browser</h2>
+<div class="callout callout--warn">
+<span class="callout__icon">►</span>
+<div class="callout__body">
+<span class="callout__label">Live Compose — experimental</span>
+<p>A complete, editable Compose program. Press <strong>Run</strong> to compile to WebAssembly on JetBrains’ servers and render here. Compose-on-web is <strong>experimental</strong> — if it won’t compile on your network, use the offline <a href="../labs/compose-playground.html">visual simulator</a> or Android Studio. Try scrolling the list — <code>LazyColumn</code> only composes what’s visible.</p>
+</div>
+</div>
+<p class="mt"><strong>A scrollable list of Cards.</strong> <code>LazyColumn</code> renders a list of data objects; <code>key</code> keeps items stable.</p>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Kotlin + Compose · runnable</div>
+<pre><code>import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
+
+data class Task(val id: Int, val title: String)
+
+fun main() {
+    ComposeViewport(document.body!!) { App() }
+}
+
+@Composable
+fun App() {
+    val tasks = remember { (1..20).map { Task(it, "Task #$it") } }
+    MaterialTheme {
+        LazyColumn(
+            Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(tasks, key = { it.id }) { task -&gt;
+                Card(Modifier.fillMaxWidth()) {
+                    Text(task.title, Modifier.padding(16.dp))
+                }
+            }
+        }
+    }
+}</code></pre>
+</div>
+</section>
+<!-- =========================== MASTER IT (enrichment) =========================== -->
+<section aria-labelledby="master-h" class="card slide sec-anchor" id="master-it">
+<h2 class="card__title" id="master-h">⌁ Master it — lists that stay correct under change</h2>
+<p class="lead">The deepest idea in this session isn’t “draw a list.” It’s keeping each row’s
+      <strong>identity and state correct while the data underneath it changes</strong> — inserts, removals, reorders,
+      toggles. That is exactly where production list bugs live, and it’s the skill that separates a working demo
+      from a feed people trust. Work the example below, then complete the faded version yourself.</p>
+<!-- ---------- 1. WORKED EXAMPLE → FADED ---------- -->
+<h3>Worked example: why <code>key</code> + observable state are one idea</h3>
+<p>Picture a to-do feed. Each row is selectable (a checkbox), and you can delete the top item. The data is a
+      <code>List&lt;Task&gt;</code>; the per-row “is this expanded / is the checkbox bouncing” lives in Compose,
+      keyed by item identity. Reason through what happens when you <strong>delete index 0</strong>:</p>
+<ol class="stepper">
+<li class="step"><h4>Without keys — Compose tracks by <em>position</em></h4>
+<p>Row slot #0 used to render Task A. After deletion, slot #0 now renders Task B — but the
+        <em>remembered state</em> attached to slot #0 (selection highlight, scroll-into-view animation) stays put.
+        Result: B suddenly looks selected, or animates as if it were A moving. The state “bleeds” onto the wrong item.</p></li>
+<li class="step"><h4>With <code>key = { it.id }</code> — Compose tracks by <em>identity</em></h4>
+<p>Now Compose knows slot-for-A is gone and B already had its own slot. It disposes A’s remembered state,
+        keeps B’s, and animates the removal correctly. <strong>The key is what makes “the same item” a stable concept across recompositions.</strong></p></li>
+<li class="step"><h4>The state must be observable, or nothing recomposes at all</h4>
+<p>Delete from a plain <code>List</code> and the UI never updates — Compose didn’t observe a change.
+        Use <code>mutableStateListOf</code> (or hoist to a <code>StateFlow</code> you reassign with <code>copy()</code>).
+        <em>Keys decide which row is which; observable state decides whether a redraw happens.</em></p></li>
+</ol>
+<p>Below is that exact reduce logic as <strong>pure Kotlin</strong> you can run right here — the same
+      <code>add / remove / toggle</code> operations a <code>mutableStateListOf</code> performs, plus an
+      identity check proving the toggled item is matched by <code>id</code>, not position. Predict each printed line,
+      then press <strong>Run</strong> to confirm.</p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable</div>
+<pre><code>data class Task(val id: Int, val title: String, val done: Boolean = false)
+
+// The three operations every state-backed list supports.
+fun List&lt;Task&gt;.added(t: Task): List&lt;Task&gt; = this + t
+fun List&lt;Task&gt;.removed(id: Int): List&lt;Task&gt; = filterNot { it.id == id }
+fun List&lt;Task&gt;.toggled(id: Int): List&lt;Task&gt; =
+    map { if (it.id == id) it.copy(done = !it.done) else it }   // match by IDENTITY, not index
+
+fun main() {
+    var tasks = listOf(Task(1, "Wireframe"), Task(2, "Build list"), Task(3, "Ship"))
+
+    tasks = tasks.toggled(2)                 // flip "Build list" by its id
+    println(tasks.first { it.id == 2 }.done) // -&gt; true
+
+    tasks = tasks.removed(1)                 // delete "Wireframe" (was index 0)
+    println(tasks.map { it.id })             // -&gt; [2, 3]  (item 2 kept its done=true)
+    println(tasks.first { it.id == 2 }.done) // -&gt; true   (state did NOT bleed to a neighbor)
+
+    tasks = tasks.added(Task(4, "Polish"))
+    println(tasks.size)                      // -&gt; 3
+}</code></pre>
+</div>
+<p class="mini-note">Mapping to Compose: <code>added/removed/toggled</code> are what the FAB and a checkbox call;
+      <code>items(tasks, key = { it.id })</code> is the line that makes the identity-matching above survive on screen.</p>
+<h4>Now you finish it (faded)</h4>
+<p>Same model, but <strong>you</strong> write the reducer the UI calls and the parse step. Fill in the
+      <code>// YOUR CODE</code> region so all cases pass. A <code>reduce(state, event)</code> function takes the
+      current list plus one user event and returns the next list — this is the unidirectional pattern you’ll formalize in Session 8.
+      Press <strong>Run</strong> for instant pass/fail feedback.</p>
+<div class="codeblock" data-challenge="s07-reduce-list" data-run="kotlin" data-topic="lists">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class Item(val id: Int, val label: String, val selected: Boolean = false)
+
+sealed interface ListEvent {
+    data class Add(val item: Item) : ListEvent
+    data class Remove(val id: Int) : ListEvent
+    data class Toggle(val id: Int) : ListEvent
+    data object Clear : ListEvent
+}
+
+// ---------- YOUR CODE ----------
+// Return the NEXT list for each event. Rules:
+//  • Add    -&gt; append the item
+//  • Remove -&gt; drop the item whose id matches
+//  • Toggle -&gt; flip ONLY the matching item's `selected` (match by id, not index)
+//  • Clear  -&gt; empty list
+// Do NOT mutate the input; return a new list (this mirrors immutable Compose state).
+fun reduce(state: List&lt;Item&gt;, event: ListEvent): List&lt;Item&gt; {
+    return state // &lt;- replace this
+}
+
+// `isEmptyState` decides whether the UI shows the empty placeholder vs the list.
+fun isEmptyState(state: List&lt;Item&gt;): Boolean {
+    return false // &lt;- replace this
+}
+// -------- END YOUR CODE --------
+
+fun main() {
+    var pass = true
+    fun check(name: String, cond: Boolean) {
+        if (cond) println("✓ passed: $name")
+        else { pass = false; println("✗ FAILED: $name") }
+    }
+
+    val start = listOf(Item(1, "A"), Item(2, "B"), Item(3, "C"))
+
+    val added = reduce(start, ListEvent.Add(Item(4, "D")))
+    check("Add appends", added.map { it.id } == listOf(1, 2, 3, 4))
+
+    val removed = reduce(start, ListEvent.Remove(2))
+    check("Remove drops by id", removed.map { it.id } == listOf(1, 3))
+
+    val toggled = reduce(start, ListEvent.Toggle(2))
+    check("Toggle flips only the match", toggled.single { it.id == 2 }.selected)
+    check("Toggle leaves neighbors alone", toggled.none { it.id != 2 &amp;&amp; it.selected })
+
+    val idempotentIdentity = reduce(reduce(start, ListEvent.Toggle(3)), ListEvent.Remove(1))
+    check("State survives a later removal", idempotentIdentity.single { it.id == 3 }.selected)
+
+    check("Clear empties", reduce(start, ListEvent.Clear).isEmpty())
+    check("Original list is untouched (immutability)", start.none { it.selected } &amp;&amp; start.size == 3)
+
+    check("Empty state true when empty", isEmptyState(emptyList()))
+    check("Empty state false when populated", !isEmptyState(start))
+
+    if (pass) println("ALL TESTS PASSED 🎉") else println("Keep going — fix the ✗ lines above.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body">
+<p>Use a <code>when (event)</code> over the sealed interface so the compiler forces you to handle every case.
+            <code>Add</code> → <code>state + event.item</code>. <code>Remove</code> → <code>state.filterNot { it.id == event.id }</code>.
+            <code>Toggle</code> → <code>state.map { if (it.id == event.id) it.copy(selected = !it.selected) else it }</code>.
+            <code>Clear</code> → <code>emptyList()</code>. <code>isEmptyState</code> → <code>state.isEmpty()</code>.
+            None of these reassign or mutate <code>state</code> — they each return a brand-new list.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun reduce(state: List&lt;Item&gt;, event: ListEvent): List&lt;Item&gt; = when (event) {
+    is ListEvent.Add    -&gt; state + event.item
+    is ListEvent.Remove -&gt; state.filterNot { it.id == event.id }
+    is ListEvent.Toggle -&gt; state.map {
+        if (it.id == event.id) it.copy(selected = !it.selected) else it
+    }
+    ListEvent.Clear     -&gt; emptyList()
+}
+
+fun isEmptyState(state: List&lt;Item&gt;): Boolean = state.isEmpty()</code></pre></div>
+<p class="mini-note">Exhaustive <code>when</code> over a sealed type means adding a new event later won’t silently
+            compile — the compiler flags every reducer that forgot it. That’s why production UDF code models events as sealed types.</p>
+</div>
+</div>
+</div>
+<p class="muted mt">You’ve got it when every case prints green and you see <strong>ALL TESTS PASSED 🎉</strong>. Mark it solved below to log mastery.</p>
+<!-- ---------- 2. MISCONCEPTIONS & PITFALLS ---------- -->
+<h3>Common misconceptions &amp; pitfalls</h3>
+<div class="accordion">
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ “A missing <code>key</code> is just cosmetic — the list still shows the right rows.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> keys are an optional optimization you can skip until things feel slow.</p>
+<p><strong>Why it’s wrong:</strong> without keys, Compose identifies items by their <em>position</em> in the list.
+          The <em>data</em> shown is always correct, but anything <code>remember</code>ed for a row — animation in-flight,
+          a <code>TextField</code>’s focus/cursor, an expanded/selected flag, even scroll anchoring — is tied to the slot,
+          not the item. Insert at the top or reorder, and that remembered state stays on the slot and lands on the wrong item.</p>
+<p><strong>Correct model:</strong> <code>items(list, key = { it.id })</code> binds remembered state to item identity,
+          so Compose moves/disposes state with the item, not the slot.</p>
+<p><strong>Symptom you’d see:</strong> after inserting a new item at the top, the wrong row appears highlighted/expanded,
+          a delete animation plays on a neighbor, or a half-typed text field jumps to a different row.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ “I’ll just mutate the <code>List</code> I already have and the screen will update.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> a Compose UI is “bound” to your list, so changing the list redraws it.</p>
+<p><strong>Why it’s wrong:</strong> a plain <code>List</code> (even a <code>MutableList</code>) is invisible to Compose.
+          Recomposition only happens when something Compose <em>observes</em> changes. Calling <code>.add()</code> on an
+          ordinary <code>mutableListOf</code> changes data but triggers no recomposition.</p>
+<p><strong>Correct model:</strong> use observable state — <code>remember { mutableStateListOf(...) }</code> for a local list,
+          or hoist to a <code>StateFlow&lt;List&lt;T&gt;&gt;</code> that you replace with <code>copy()</code>/a new list (Session 8).
+          Mutating the state-backed container is what schedules the redraw.</p>
+<p><strong>Symptom you’d see:</strong> the FAB “does nothing” — data clearly changed (a log confirms it) but no new card appears until you rotate or navigate away and back.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ “The list hides under the <code>TopAppBar</code> — I’ll add top padding to fix it.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> hardcode something like <code>contentPadding = PaddingValues(top = 64.dp)</code> to clear the bar.</p>
+<p><strong>Why it’s wrong:</strong> <code>Scaffold</code> already computes the exact space its bars consume and hands it to you as
+          <code>innerPadding</code>. A magic number breaks on different bar heights, large/medium app bars, landscape, gesture
+          insets, and edge-to-edge devices. You’re re-deriving a value the framework already gave you.</p>
+<p><strong>Correct model:</strong> apply the Scaffold’s lambda parameter: <code>Modifier.padding(innerPadding)</code> on the content
+          (and pass <code>contentPadding</code> separately only for the breathing room <em>inside</em> the scroll).</p>
+<p><strong>Symptom you’d see:</strong> looks fine on your phone, then on a tablet or in landscape the first card is clipped or there’s a dead gap.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ “I’ll wrap my <code>LazyColumn</code> in a scrolling <code>Column</code> so the whole screen scrolls.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> put a header and the list in a <code>Column(Modifier.verticalScroll(...))</code> together.</p>
+<p><strong>Why it’s wrong:</strong> nesting a vertically-scrolling list inside a vertically-scrolling parent gives the
+          <code>LazyColumn</code> <em>infinite</em> height to measure, so it composes <strong>all</strong> items at once — you lose the
+          entire laziness benefit (and Compose may throw “Vertically scrollable component was measured with infinity max height”).</p>
+<p><strong>Correct model:</strong> let the <code>LazyColumn</code> own the scroll. Put the header as the first <code>item { }</code>
+          (or a <code>stickyHeader</code>) <em>inside</em> the lazy list, not a scrolling wrapper around it.</p>
+<p><strong>Symptom you’d see:</strong> a runtime crash about infinite height, or silent jank/memory spikes on long lists because nothing recycles.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ “Two items have the same <code>id</code> — keys just need to be ‘mostly’ unique.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> reuse a non-unique field (a name, a category) as the key, or default to the item’s index.</p>
+<p><strong>Why it’s wrong:</strong> Compose requires keys to be <em>unique within the list</em>. Duplicate keys throw at runtime,
+          and using the index as a key is the same as having no stable identity at all — it changes the moment you insert/remove.</p>
+<p><strong>Correct model:</strong> key on a genuinely unique, stable id (a database primary key, a server id, or a generated
+          <code>UUID</code> created when the item is added — never the loop index).</p>
+<p><strong>Symptom you’d see:</strong> <code>IllegalArgumentException: Key "…" was already used</code> crashing the screen, or with index keys, the same state-bleed bug from the first misconception.</p>
+</div>
+</div>
+</div>
+<!-- ---------- 3. IN PRODUCTION ---------- -->
+<h3>In production</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">How a senior engineer ships a list screen</span>
+<p>The list almost never owns its own data. State is hoisted to a <strong>ViewModel</strong> that exposes a single
+        immutable <code>StateFlow&lt;UiState&gt;</code>, collected with <code>collectAsStateWithLifecycle()</code>. The screen is a pure
+        function of that state and renders <strong>four cases by default</strong> — <em>Loading, Success(list), Empty, Error</em> —
+        because “Success with zero items” is a real, common, and very different screen from “still loading.” The list-item composable
+        stays dumb: it takes a data object plus event lambdas (<code>onClick</code>, <code>onToggle</code>) and reports up; the
+        ViewModel decides what those events mean. Keys come from the domain id, and the item composable carries a
+        <code>modifier: Modifier = Modifier</code> parameter so callers control sizing/placement — the convention every reusable
+        Compose component follows.</p>
+<p class="mt"><strong>Tasteful gotcha:</strong> if your data class holds a <code>List</code> or other field that doesn’t implement
+        a stable <code>equals</code>, Compose treats every row as “unstable” and may recompose rows that didn’t actually change.
+        Keep item models as <code>data class</code>es of primitives/immutable types (or mark them <code>@Immutable</code>), and you
+        get skipping for free — the difference between a buttery feed and one that drops frames while scrolling.</p>
+</div>
+</div>
+<p>That <code>isEmptyState</code> predicate you wrote in the challenge isn’t just bookkeeping — it’s the branch that decides
+      whether your <code>LazyColumn</code> shows the list or a friendly placeholder. Here is the four-state idea as the real Compose
+      code you’d type, with the <em>Empty</em> case rendered as a single centered <code>item { }</code> instead of <code>items()</code>:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun CourseList(courses: List&lt;Course&gt;, onCourseClick: (Course) -&gt; Unit, modifier: Modifier = Modifier) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (courses.isEmpty()) {
+            // EMPTY state — one centered placeholder, NOT items()
+            item {
+                Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No courses yet — tap + to add one.",
+                        style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        } else {
+            // SUCCESS state — the real rows, keyed by identity
+            items(courses, key = { it.id }) { course -&gt;
+                CourseCard(course) { onCourseClick(course) }
+            }
+        }
+    }
+}</code></pre></div>
+<p class="mini-note">Note <code>fillParentMaxSize()</code> (a <em>LazyColumn-scope</em> modifier) lets the placeholder fill the whole
+      viewport so the empty message is centered, not hugging the top. The <em>Loading</em> and <em>Error</em> cases pick the same
+      way — swap the body for a <code>CircularProgressIndicator</code> or a retry message — which is why production code models the
+      screen as one <code>when (uiState)</code> over a sealed <code>UiState</code> rather than a bare list.</p>
+<!-- ---------- 4. RETRIEVAL CHECK ---------- -->
+<h3>Retrieval check</h3>
+<p class="mini-note">Self-check, not a grade. These test whether you can <em>apply</em> the ideas, not recite them.
+      Answer, then read every explanation — the explanations are where the learning compounds.</p>
+<div data-quiz="rc-7" data-topic="lists"></div>
+<script id="rc-7" type="application/json">
+{
+  "title": "Session 7 — Retrieval check",
+  "intro": "Reason it through before you pick. Aim to justify the wrong answers too.",
+  "passingScore": 0.7,
+  "questions": [
+    {
+      "id": "rc7-key-insert",
+      "type": "single",
+      "prompt": "You insert a new item at the TOP of a LazyColumn that has no key set. Each row has a checkbox whose checked state is remembered in the composable. What does the user see right after the insert?",
+      "options": [
+        { "id": "a", "text": "Nothing changes; the insert is ignored until rotation." },
+        { "id": "b", "text": "The new row appears correctly and all existing checkmarks stay on their original items." },
+        { "id": "c", "text": "The checkmarks appear to shift onto the wrong rows, because remembered state is bound to position, not identity." },
+        { "id": "d", "text": "The app crashes with a duplicate-key exception." }
+      ],
+      "correct": ["c"],
+      "explanation": "Without a key, Compose identifies rows by position. Inserting at index 0 shifts every item down a slot, but the state remembered for each slot stays put — so the checked state lands on whatever item now occupies that slot. Add key = { it.id } and Compose moves the remembered state with the item. (A is wrong: the data list did change. D would only happen with duplicate keys, which requires keys to exist.)"
+    },
+    {
+      "id": "rc7-fab-noupdate",
+      "type": "single",
+      "prompt": "Your FAB's onClick calls courses.add(newCourse) and a log confirms the size grew, but no new card appears. What is the most likely cause?",
+      "options": [
+        { "id": "a", "text": "You forgot @OptIn(ExperimentalMaterial3Api::class)." },
+        { "id": "b", "text": "`courses` is a plain mutableListOf, not remember { mutableStateListOf(...) }, so Compose never observed the change." },
+        { "id": "c", "text": "You didn't apply contentPadding to the LazyColumn." },
+        { "id": "d", "text": "The new item is missing a stable key." }
+      ],
+      "correct": ["b"],
+      "explanation": "Recomposition only fires when Compose-observable state changes. A plain MutableList is invisible to Compose: .add() mutates data but schedules no redraw. Switching to mutableStateListOf (or hoisting to a StateFlow you reassign) makes the mutation observable. (A is a compile error, not a silent no-op. C is purely visual spacing. D would cause a crash or state-bleed, not a missing item.)"
+    },
+    {
+      "id": "rc7-innerpadding",
+      "type": "single",
+      "prompt": "A teammate hardcodes contentPadding = PaddingValues(top = 64.dp) so the list clears the TopAppBar. Why will a reviewer push back?",
+      "options": [
+        { "id": "a", "text": "contentPadding can't take a top value." },
+        { "id": "b", "text": "64.dp is a magic number; the Scaffold already provides the exact inset via its innerPadding lambda, which adapts to bar size, insets, and orientation." },
+        { "id": "c", "text": "You should never pad a LazyColumn at all." },
+        { "id": "d", "text": "TopAppBar is always exactly 56.dp, so 64 is simply the wrong number." }
+      ],
+      "correct": ["b"],
+      "explanation": "Scaffold computes how much space its bars consume and hands it back as innerPadding. Re-deriving that with a constant breaks on large/medium app bars, landscape, gesture/system insets, and edge-to-edge. Apply Modifier.padding(innerPadding) to the content; use contentPadding only for the breathing room INSIDE the scroll. (C is wrong — contentPadding for inner spacing is good practice.)"
+    },
+    {
+      "id": "rc7-nested-scroll",
+      "type": "single",
+      "prompt": "You wrap a LazyColumn inside Column(Modifier.verticalScroll(...)) to scroll a header along with the list. What's the production consequence?",
+      "options": [
+        { "id": "a", "text": "It's the recommended pattern for headers above lists." },
+        { "id": "b", "text": "The LazyColumn is given infinite height, composes ALL items at once (losing laziness) and may crash with an infinite-height error." },
+        { "id": "c", "text": "The header will refuse to render." },
+        { "id": "d", "text": "Item keys stop working." }
+      ],
+      "correct": ["b"],
+      "explanation": "A vertically-scrolling parent offers unbounded height, so the lazy list measures every item — you lose recycling entirely and can hit 'measured with infinity max height'. The fix: let the LazyColumn own the scroll and put the header as the first item { } (or a stickyHeader) inside it. (A is exactly the anti-pattern.)"
+    },
+    {
+      "id": "rc7-event-hoist",
+      "type": "single",
+      "prompt": "You want the SAME CourseCard to navigate on a 'browse' screen but delete on a 'manage' screen. What's the idiomatic way to make one card serve both?",
+      "options": [
+        { "id": "a", "text": "Add a Boolean isDeleteScreen parameter and branch inside the card." },
+        { "id": "b", "text": "Copy the card into two composables, one per screen." },
+        { "id": "c", "text": "Give the card an onClick: (Course) -> Unit parameter and let each parent screen decide what the tap means (event hoisting)." },
+        { "id": "d", "text": "Read a global variable inside the card to know which screen it's on." }
+      ],
+      "correct": ["c"],
+      "explanation": "Event hoisting keeps the item dumb and reusable: it only reports 'I was tapped' via a lambda; the parent owns the behavior. The card never learns which screen it's on. (A leaks screen-specific logic into a reusable component, B duplicates code, and D couples the card to global state — all harder to test and maintain.)"
+    },
+    {
+      "id": "rc7-stability",
+      "type": "single",
+      "prompt": "While scrolling a long, otherwise-unchanged list, you notice rows recomposing for no visible reason and frames dropping. What's a likely root cause and fix?",
+      "options": [
+        { "id": "a", "text": "The list item data class holds a field with no stable equals (e.g., a raw List), so Compose treats rows as unstable and can't skip them; make the model immutable/@Immutable." },
+        { "id": "b", "text": "You set a key, which forces recomposition; remove the key." },
+        { "id": "c", "text": "contentPadding is too large; reduce it." },
+        { "id": "d", "text": "LazyColumn always recomposes every visible row each frame; this is unavoidable." }
+      ],
+      "correct": ["a"],
+      "explanation": "Compose skips recomposing a composable when its inputs are 'stable' and unchanged. A data class containing a field without stable equals (like a plain List) is flagged unstable, defeating skipping, so unchanged rows recompose while scrolling. Keep item models as data classes of immutable/primitive types or annotate @Immutable. (B is backwards — keys help identity, they don't force recomposition. D is false; skipping is the whole point.)"
+    }
+  ]
+}
+</script>
+<!-- ---------- 5. SPACED RECALL DECK ---------- -->
+<h3>Spaced recall (returns over days)</h3>
+<p class="mini-note">A small Leitner deck. Review what’s due, rate your recall honestly, and the scheduler spaces the
+      cards out. Coming back tomorrow is the point — that’s when memory actually consolidates.</p>
+<div data-srs="srs-s7"></div>
+<script id="srs-s7" type="application/json">
+{
+  "id": "srs-s7",
+  "cards": [
+    { "topic": "lists", "front": "Why does <code>LazyColumn</code> outperform <code>Column(Modifier.verticalScroll())</code> for long lists?", "back": "Column composes & lays out <strong>every</strong> child immediately; LazyColumn composes only on-screen items (+ a small buffer) and recycles them as you scroll." },
+    { "topic": "lists", "front": "Fill in: <code>items(courses, key = { ___ }) { course -&gt; ... }</code> — what goes in the blank and why?", "back": "<code>it.id</code> — a stable, unique identity so Compose matches rows across inserts/removes/reorders, preserving each row's remembered state and animations." },
+    { "topic": "lists", "front": "What does a <code>Scaffold</code> pass to its content lambda, and what happens if you ignore it?", "back": "<code>innerPadding</code> (PaddingValues). Ignore it and content hides behind the TopAppBar / under the FAB. Apply <code>Modifier.padding(innerPadding)</code>." },
+    { "topic": "lists", "front": "Predict: you call <code>.add()</code> on a plain <code>mutableListOf</code> backing a list UI. Does the screen update?", "back": "No. A plain MutableList isn't observed by Compose, so no recomposition. Use <code>remember { mutableStateListOf(...) }</code> (or a hoisted StateFlow)." },
+    { "topic": "lists", "front": "Difference between <code>contentPadding</code> and <code>Modifier.padding(innerPadding)</code> on a LazyColumn?", "back": "<code>contentPadding</code> insets the scrollable content INSIDE the list (no clipping). <code>innerPadding</code> from Scaffold offsets the whole list so it clears the bars/FAB." },
+    { "topic": "lists", "front": "Produce the signature of a reusable, dumb list-item composable for a <code>Course</code>.", "back": "<code>@Composable fun CourseCard(course: Course, onClick: (Course) -&gt; Unit, modifier: Modifier = Modifier)</code> — data in, event lambda out, modifier last with a default." },
+    { "topic": "lists", "front": "Why model a screen's data class fields as immutable primitives (or <code>@Immutable</code>)?", "back": "So Compose marks the type stable and can <strong>skip</strong> recomposing unchanged rows. An unstable field (e.g. a raw List) defeats skipping → rows recompose while scrolling → dropped frames." },
+    { "topic": "lists", "front": "When does <code>item { }</code> (singular) belong inside a LazyColumn vs <code>items(list)</code>?", "back": "<code>item { }</code> for a one-off child (a header, a footer, an empty-state message); <code>items(list, key=...)</code> for a collection. You can mix them in one list." },
+    { "topic": "lists", "front": "Cloze: nesting a LazyColumn inside a vertically-scrolling Column gives the list ____ height, so it composes ____ items.", "back": "<strong>infinite</strong> height → composes <strong>all</strong> items at once (laziness lost; may crash with an infinite-height error). Let the LazyColumn own the scroll instead." },
+    { "topic": "lists", "front": "What's the 'four-state' UI model a list screen should render?", "back": "<strong>Loading, Success(list), Empty, Error</strong>. 'Success with zero items' (Empty) is a distinct, required screen — not the same as still loading." },
+    { "topic": "lists", "front": "Why is event hoisting (passing <code>onClick</code> in) better than a screen-type flag inside the card?", "back": "The card stays dumb, reusable, and testable: it only reports 'tapped'. Each parent decides the behavior (navigate, delete, toast) — no screen-specific branching leaks into the component." },
+    { "topic": "lists", "front": "Predict the crash: two rows share the same <code>key</code> value in a LazyColumn.", "back": "<code>IllegalArgumentException: Key \"…\" was already used</code> at runtime. Keys must be unique within the list — never use a non-unique field or the loop index." }
+  ]
+}
+</script>
+<!-- ---------- 6. DELIBERATE PRACTICE ---------- -->
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Deliberate practice — do these next, in order</span>
+<p>Practice is where this becomes automatic. Work the targeted drills below, then mark the challenge above solved
+        once you see <strong>ALL TESTS PASSED 🎉</strong>.</p>
+<ol style="margin:.3em 0 0;">
+<li><strong><a href="../practice/challenges.html">Challenges → Lists track</a></strong> — the faded ladder:
+          list <code>add/remove/toggle</code> reduce, the <em>key-correctness</em> model, a filter/sort pipeline, and empty-state mapping.</li>
+<li><strong><a href="../practice/debug-drills.html">Debug drills → Lists</a></strong> — find the bug in
+          “<code>Column</code> + <code>for</code> instead of Lazy,” a missing <code>key</code>, and a plain-list FAB that won’t recompose.</li>
+<li><strong><a href="../practice/spaced-repetition.html">Spaced repetition</a></strong> — add this session’s deck to your daily review and keep the streak alive.</li>
+<li><strong><a href="../path.html">Skill map</a></strong> — confirm <em>Lists</em> shows progress, then move toward
+          <em>Nav / ViewModel / Architecture</em>, where you’ll hoist this list’s state into a ViewModel.</li>
+</ol>
+</div>
+</div>
+</section>
+</main>
+<!-- =========================== FOOTER =========================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Session 7 of 12 ·
+        Week 3 — Navigation, Architecture &amp; Local Data
+      </div>
+<div class="muted">
+        Keiser University · B.S. Software Engineering · Face-to-Face · 3.0 credit hours.
+        Built with Kotlin + Jetpack Compose (Material 3). Resources:
+        <a href="https://developer.android.com/courses/android-basics-compose/course" rel="noopener" target="_blank">developer.android.com</a>.
+      </div>
+<div class="no-print">
+<a href="../index.html">← Course Hub</a> ·
+        <a href="session-06.html">‹ S6</a> ·
+        <a href="session-08.html">S8 ›</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

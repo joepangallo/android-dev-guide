@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Session 1 · Welcome, the Android Ecosystem &amp; Your First App · COP4667</title>
+<meta content="COP4667 Android Development — Session 1 of 12. Course overview, the Android ecosystem, installing and touring Android Studio, anatomy of a Compose project, and building your first @Composable 'Hello Android' app. live-coding, lab." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .session-layout { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 1040px) {
+      .session-layout { grid-template-columns: 220px 1fr; align-items: start; }
+      .session-rail { position: sticky; top: 76px; }
+    }
+    .session-rail .card { padding: var(--space-4); }
+    .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: var(--fs-xs); font-weight: 800; color: var(--green-dark); margin: 0 0 .35em; }
+    [data-theme="dark"] .eyebrow { color: var(--green); }
+    .lead { font-size: var(--fs-lg); color: var(--muted); }
+    .section-anchor { scroll-margin-top: 76px; }
+    .figure-frame { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); padding: var(--space-4); font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.7; overflow-x: auto; }
+    .figure-frame .dir { color: var(--teal-2); font-weight: 700; }
+    [data-theme="dark"] .figure-frame .dir { color: var(--green); }
+    .figure-frame .note { color: var(--muted); }
+    .tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: var(--space-4); }
+    .obj-list { list-style: none; padding-left: 0; }
+    .obj-list > li { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) 0; border-bottom: 1px dashed var(--line); }
+    .obj-list > li:last-child { border-bottom: none; }
+    .obj-list .obj-num { flex: 0 0 auto; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--teal-2); color: #DDF6F2; font-weight: 800; font-size: var(--fs-xs); }
+    .timeblock__time small { display: block; font-weight: 600; opacity: .85; margin-top: 4px; font-size: 11px; }
+    .seg-tag { font-size: var(--fs-xs); }
+    .kbd-row kbd { margin: 0 2px; }
+    .mini-legend { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0 0; }
+  </style>
+</head>
+<body>
+<!-- ====================== TOP NAV ====================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 teaching guide home" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▶</span>
+<span>COP4667
+          <small>Android Development</small>
+</span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a aria-current="page" class="active" href="session-01.html">S1</a>
+<a href="session-02.html">Next ›</a>
+<a href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a>
+<a href="../assessments/pre-test.html">Pre-Test</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">🖥️ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ====================== HERO ====================== -->
+<section aria-labelledby="hero-title" class="session-hero slide section-anchor" id="top">
+<p class="eyebrow" style="color:#9BE8C5;">Week 1 · Session 1 of 12</p>
+<h1 class="hero-title" id="hero-title">Welcome, the Android Ecosystem &amp; Your First App</h1>
+<p class="hero-sub">Today in a nutshell: we set the table for the whole course — what Android is, why Kotlin + Jetpack Compose, how to install and tour Android Studio — then everyone builds and runs a "Hello Android" Compose app on an emulator.</p>
+<div class="hero-meta">
+<span class="pill pill--green">Week 1: Foundations — Android Essentials &amp; Ecosystem</span>
+<span class="pill pill--accent">Unit 1 · Get started</span>
+<span class="pill"><span class="clo-tag">CLO 1</span></span>
+<span class="pill"><span class="clo-tag">CLO 3</span></span>
+</div>
+</section>
+<div class="session-layout">
+<!-- ----- left rail: on-page index ----- -->
+<aside aria-label="On this page" class="session-rail no-print">
+<div class="card">
+<p class="card__title">On this page</p>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+</aside>
+<div class="session-main">
+<!-- ====================== LEARNING OBJECTIVES ====================== -->
+<section aria-labelledby="h-objectives" class="slide section-anchor">
+<h2 id="h-objectives">Learning Objectives</h2>
+<div class="card card--accent">
+<p class="muted">By the end of this session, you will be able to:</p>
+<ul class="obj-list">
+<li>
+<span class="obj-num">1</span>
+<span><strong>Describe the Android ecosystem</strong> — the OS, AOSP, the range of devices, the Play Store, and how apps are distributed — and explain in their own words why Kotlin + Jetpack Compose is the modern default. <span class="clo-tag">CLO 1</span></span>
+</li>
+<li>
+<span class="obj-num">2</span>
+<span><strong>Navigate Android Studio</strong> confidently: the Project window, SDK Manager, Device Manager / AVD, the Gradle build, Logcat, and the Run button. <span class="clo-tag">CLO 1</span></span>
+</li>
+<li>
+<span class="obj-num">3</span>
+<span><strong>Identify the parts of an Android project</strong> — <code>AndroidManifest.xml</code>, the Gradle scripts, <code>res/</code>, the Kotlin source set, and <code>MainActivity</code>. <span class="clo-tag">CLO 1</span></span>
+</li>
+<li>
+<span class="obj-num">4</span>
+<span><strong>Write and run a first <code>@Composable</code> function</strong> in Kotlin, use <code>@Preview</code> to iterate, and run the app on an emulator. <span class="clo-tag">CLO 3</span></span>
+</li>
+<li>
+<span class="obj-num">5</span>
+<span><strong>Frame the term project</strong> against the required-feature checklist and produce 1–2 candidate app ideas. <span class="clo-tag">CLO 1</span></span>
+</li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p>This session serves <strong>CLO1 (essentials &amp; ecosystem)</strong> and begins <strong>CLO3 (build with an industry-current language — Kotlin)</strong>. It is the on-ramp for everything else: UI/state (Wk1 S2–S3), lists &amp; Material (Wk2), navigation &amp; architecture (Wk2–3), networking (Wk3), and persistence (Wk3–4).</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ====================== LECTURE / CONCEPT NOTES ====================== -->
+<section aria-labelledby="h-lecture" class="slide section-anchor">
+<h2 id="h-lecture">Lecture / Concept Notes</h2>
+<p class="lead">Substantial teaching content. Five big ideas, each with explanation, analogy, and copyable Kotlin/Compose examples.</p>
+<!-- Big idea 1 -->
+<h3 id="idea-course">1 · Course overview &amp; the term project</h3>
+<div class="card">
+<p>COP4667 is a hands-on, project-driven course. We meet 3 days a week for 4 hours, ~4 weeks. There is no textbook — the <a href="https://developer.android.com/courses/android-basics-compose/course">official Android Basics with Compose</a> course and the Android Developer docs are our reference.</p>
+<div class="kpi-grid">
+<div class="kpi"><span class="kpi__num">12</span><span class="kpi__label">sessions</span></div>
+<div class="kpi"><span class="kpi__num">4</span><span class="kpi__label">hr blocks</span></div>
+<div class="kpi"><span class="kpi__num">~4</span><span class="kpi__label">weeks</span></div>
+<div class="kpi"><span class="kpi__num">5</span><span class="kpi__label">required features</span></div>
+</div>
+<p><strong>The term project (student-choice app)</strong> threads through the whole course. Whatever app you pick, it must demonstrate the full skill set — these are the five required features you'll be graded against:</p>
+<ol class="obj-list">
+<li><span class="obj-num">1</span><span><strong>Two or more screens with navigation</strong> between them. <span class="clo-tag">CLO 2</span></span></li>
+<li><span class="obj-num">2</span><span><strong>A Compose UI driven by state</strong> — the screen is a function of its data, not hand-mutated widgets. <span class="clo-tag">CLO 2</span></span></li>
+<li><span class="obj-num">3</span><span><strong>Local persistence</strong> with DataStore or Room/SQLite so data survives an app restart. <span class="clo-tag">CLO 4</span></span></li>
+<li><span class="obj-num">4</span><span><strong>Data from a web API</strong> fetched over the network and shown in the UI. <span class="clo-tag">CLO 5</span></span></li>
+<li><span class="obj-num">5</span><span><strong>Clean architecture</strong> — a <code>ViewModel</code> plus a repository seam between UI and data. <span class="clo-tag">CLO 6</span></span></li>
+</ol>
+<p class="muted">Note: publishing to the Play Store is <em>not</em> required. Pick an app you'd actually want to build — a habit tracker, a recipe box, a movie/Pokémon browser over a public API — and we'll grow it feature by feature.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🗓️</span>
+<div class="callout__body">
+<span class="callout__label">Milestones</span>
+<p><strong>Milestone 1 (Week 2)</strong> = a working UI prototype with state. <strong>Final (Week 4)</strong> = a full app demo hitting all five features. Quiz 1 is in Session 6; the post-test and final demos are in Session 12.</p>
+</div>
+</div>
+</div>
+<!-- Big idea 2 -->
+<h3 id="idea-ecosystem">2 · What Android is — OS, AOSP, devices, the Play Store</h3>
+<div class="card">
+<p><strong>Android is an operating system</strong> built on the Linux kernel, maintained as the open-source <strong>AOSP</strong> (Android Open Source Project) and shipped by Google plus device makers (Samsung, Google Pixel, etc.). Your app's Kotlin compiles to bytecode that runs on the <strong>ART</strong> (Android Runtime) on the device.</p>
+<p><strong>Analogy:</strong> think of AOSP as the open recipe for the OS; manufacturers add their own "seasoning" (skins like One UI). Your app is a dish that has to taste right on any of their kitchens — which is why we design for many screen sizes and OS versions.</p>
+<div class="tile-grid">
+<div class="card card--teal"><strong>Device spectrum</strong><p class="muted">Phones, tablets, foldables, Wear OS watches, Android TV, Android Auto. Same toolkit, different form factors.</p></div>
+<div class="card card--teal"><strong>Distribution</strong><p class="muted">Google Play Store is the primary channel; apps ship as an <code>.aab</code> (App Bundle). Sideloading and alternative stores exist too.</p></div>
+<div class="card card--teal"><strong>Versions &amp; API levels</strong><p class="muted">Each Android release has an <em>API level</em> (e.g., Android 16 = API 36). You target a range from <code>minSdk</code> to <code>targetSdk</code>.</p></div>
+</div>
+<p>Two numbers you will set in every project and should understand today:</p>
+<div class="codeblock"><span class="codeblock__lang">Gradle (Kotlin DSL)</span><pre><code>android {
+    defaultConfig {
+        applicationId = "edu.keiser.cop4667.hello"
+        minSdk = 24        // oldest Android version your app supports (Android 7.0)
+        targetSdk = 36     // the version you tested/built against (Android 16)
+        versionCode = 1
+        versionName = "1.0"
+    }
+}</code></pre></div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Why minSdk matters</span>
+<p>A lower <code>minSdk</code> reaches more devices but means more old-version edge cases. A common, sane default for new apps is <strong>minSdk 24</strong> — it still covers the vast majority of active devices.</p>
+</div>
+</div>
+</div>
+<!-- Big idea 3 -->
+<h3 id="idea-studio">3 · Installing &amp; touring Android Studio</h3>
+<div class="card">
+<p><strong>Android Studio</strong> is the official IDE (built on IntelliJ). It bundles the editor, the <strong>Android SDK</strong>, the build system (<strong>Gradle</strong>), and the <strong>emulator</strong>. Install it from <a href="https://developer.android.com/studio">developer.android.com/studio</a>; the first launch runs a setup wizard that downloads the SDK.</p>
+<p>The five tools students must be able to find on day one:</p>
+<div class="accordion">
+<div class="accordion__item is-open">
+<button class="accordion__head" type="button">Project window — where your files live</button>
+<div class="accordion__body"><p>Top-left. Switch the dropdown to <strong>Android</strong> view for a friendly grouping (Gradle scripts together, <code>res</code> together) or <strong>Project</strong> view to see the true folder layout. We'll tour the anatomy in idea 4.</p></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">SDK Manager — install platforms &amp; tools</button>
+<div class="accordion__body"><p><em>Settings → Languages &amp; Frameworks → Android SDK</em>, or the toolbar icon. Here you install API platforms (e.g., Android 16 / API 36) and tools. If a build complains a platform is missing, this is where you fix it.</p></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Device Manager — create an emulator (AVD)</button>
+<div class="accordion__body"><p>Create an <strong>AVD</strong> (Android Virtual Device): pick a hardware profile (Pixel 9), a system image (an API level, e.g. Android 16 / API 36), and Finish. First boot is slow; after that, keep it running.</p></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Gradle — the build system</button>
+<div class="accordion__body"><p>Gradle compiles your Kotlin, merges resources, and packages the app. "Gradle sync" reads your build scripts and downloads dependencies. The first sync after creating a project is the slow one.</p></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Logcat &amp; the Run button</button>
+<div class="accordion__body"><p>The green <strong>▶ Run</strong> button builds + installs + launches on the selected device. <strong>Logcat</strong> (bottom) shows device logs — your first debugging tool. Use <code>android.util.Log</code> to print: <code>Log.d("TAG", "value = $x")</code>.</p></div>
+</div>
+</div>
+</div>
+<!-- Big idea 4 -->
+<h3 id="idea-anatomy">4 · Anatomy of an Android project</h3>
+<div class="card">
+<p>When Studio generates an Empty Activity (Compose) project, you get a predictable structure. Here is the map (Android view shown):</p>
+<div aria-label="Project structure tree" class="figure-frame" role="img">
+<span class="dir">app/</span>
+├─ <span class="dir">manifests/</span>
+│   └─ AndroidManifest.xml      <span class="note"># declares app, activities, permissions</span>
+├─ <span class="dir">kotlin+java/</span>
+│   └─ edu.keiser.cop4667.hello/
+│       ├─ MainActivity.kt      <span class="note"># entry point; hosts your Compose UI</span>
+│       └─ ui.theme/            <span class="note"># Color.kt, Theme.kt, Type.kt (Material 3)</span>
+├─ <span class="dir">res/</span>
+│   ├─ drawable/                <span class="note"># images / vector assets</span>
+│   ├─ mipmap/                  <span class="note"># launcher icons</span>
+│   ├─ values/                  <span class="note"># strings.xml, themes.xml, colors</span>
+│   └─ xml/                     <span class="note"># config files (backup rules, etc.)</span>
+└─ <span class="dir">Gradle Scripts/</span>
+    ├─ build.gradle.kts (Project)
+    ├─ build.gradle.kts (Module :app)   <span class="note"># dependencies, SDK levels</span>
+    ├─ gradle/libs.versions.toml         <span class="note"># version catalog</span>
+    └─ settings.gradle.kts
+            </div>
+<p>Two files to read closely on day one — the manifest and the module Gradle script:</p>
+<div aria-label="Key project files" class="tabs" role="tablist">
+<button class="tab" data-tab="manifest" role="tab">AndroidManifest.xml</button>
+<button class="tab" data-tab="gradle">build.gradle.kts (app)</button>
+<button class="tab" data-tab="strings">res/values/strings.xml</button>
+</div>
+<div class="tabpanel" data-tabpanel="manifest" role="tabpanel">
+<p>The manifest is the app's "table of contents" for the OS: it names the app, lists components (Activities), and declares permissions.</p>
+<div class="codeblock"><span class="codeblock__lang">XML</span><pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+
+    &lt;application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.Hello"&gt;
+
+        &lt;activity
+            android:name=".MainActivity"
+            android:exported="true"&gt;
+            &lt;!-- This intent-filter makes MainActivity the launcher entry point --&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.MAIN" /&gt;
+                &lt;category android:name="android.intent.category.LAUNCHER" /&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="gradle" hidden="" role="tabpanel">
+<p>The module-level <code>build.gradle.kts</code> sets SDK levels, turns on Compose, and lists dependencies (pulled from the version catalog).</p>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p>Every <code>libs.<em>something</em></code> in this file is a lookup into the <strong>version catalog</strong> — one central file, <code>gradle/libs.versions.toml</code>, that names each dependency together with its version number, so the build scripts themselves stay version-number-free.</p>
+</div>
+</div>
+<div class="codeblock"><span class="codeblock__lang">Gradle (Kotlin DSL)</span><pre><code>plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+}
+
+android {
+    namespace = "edu.keiser.cop4667.hello"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "edu.keiser.cop4667.hello"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1.0"
+    }
+    buildFeatures { compose = true }
+}
+
+dependencies {
+    implementation(libs.androidx.core.ktx)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.tooling.preview)
+    debugImplementation(libs.androidx.ui.tooling)
+}</code></pre></div>
+<h4 id="gradle-catalog-walkthrough">build.gradle.kts (app) — the four ideas in this file</h4>
+<ul>
+<li><strong><code>alias(libs.plugins.android.application)</code></strong> — <code>libs.plugins.android.application</code> is a name defined in the version catalog (<code>gradle/libs.versions.toml</code>); <code>alias(…)</code> just applies the plugin that name points to. Same idea as the dependencies — the plugin id and its version live in the TOML file, not here.</li>
+<li><strong><code>namespace = "edu.keiser.cop4667.hello"</code></strong> — a <em>build-time</em> identity: it is the package Gradle uses to generate the <code>R</code> class (the index of your resources) and to root your Kotlin package. It is not what identifies the app on the device.</li>
+<li><strong><code>applicationId = "edu.keiser.cop4667.hello"</code></strong> — the app's unique <em>install</em> ID on the device and on Google Play; two apps can't share one. It often matches <code>namespace</code> here, but they answer different questions — see the note below.</li>
+<li><strong><code>implementation(libs.androidx.core.ktx)</code></strong> — adds a dependency that is on the classpath at both compile time and runtime, in <em>every</em> build type (debug and release). <code>libs.androidx.core.ktx</code> is — again — a catalog lookup, no version number in sight.</li>
+<li><strong><code>implementation(platform(libs.androidx.compose.bom))</code></strong> — applies the Compose <strong>BOM</strong> (Bill of Materials). The <code>platform(…)</code> wrapper says "use this only to pin versions," so the Compose lines under it (<code>material3</code>, <code>ui</code>, …) are listed <em>without a version each</em> and the BOM guarantees they're a mutually-compatible set.</li>
+<li><strong><code>debugImplementation(libs.androidx.ui.tooling)</code></strong> — same as <code>implementation</code> but included <em>only in debug builds</em>. <code>ui-tooling</code> powers the <code>@Preview</code> renderer; you want it while developing but kept out of the shipped release build.</li>
+</ul>
+<p>Here is the other half of the picture — the catalog entries those <code>libs.*</code> names actually resolve to:</p>
+<div class="codeblock"><span class="codeblock__lang">TOML · gradle/libs.versions.toml (excerpt)</span><pre><code>[versions]
+coreKtx = "1.13.1"
+composeBom = "2024.09.00"
+
+[libraries]
+# libs.androidx.core.ktx  ->  this line
+androidx-core-ktx     = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+# libs.androidx.compose.bom  ->  this line
+androidx-compose-bom  = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+
+[plugins]
+# libs.plugins.android.application  ->  this line
+android-application   = { id = "com.android.application", version = "8.5.0" }</code></pre></div>
+<p class="muted">Notice every version number lives <em>here</em>, in one place. Bump <code>composeBom</code> on this line and the whole Compose stack moves together — no edits to <code>build.gradle.kts</code> at all.</p>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p>A <strong>BOM is not a library you call in your Kotlin code</strong> — it ships no classes and adds nothing to your app by itself. Its only job is to <em>align versions</em>: it tells Gradle which version each Compose artifact should be so they all work together. (And the version catalog isn't "magic" either — <code>libs.*</code> is just a lookup into that TOML table.) Likewise, don't conflate <code>namespace</code> with <code>applicationId</code>: the first is a build-time identity that generates your <code>R</code> class, the second is the app's unique ID on the device and Play Store. They can match, but they are not the same thing.</p>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="strings" hidden="" role="tabpanel">
+<p>User-facing text lives in <code>strings.xml</code> (never hard-coded) so the app can be translated and edited in one place.</p>
+<div class="codeblock"><span class="codeblock__lang">XML</span><pre><code>&lt;resources&gt;
+    &lt;string name="app_name"&gt;Hello Android&lt;/string&gt;
+    &lt;string name="greeting"&gt;Hello, %1$s!&lt;/string&gt;
+&lt;/resources&gt;</code></pre></div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common misconception</span>
+<p>Students assume "the app starts at <code>main()</code>". It does not. Android starts your <strong><code>Activity</code></strong> (declared in the manifest with the LAUNCHER intent-filter), and <code>MainActivity.onCreate()</code> is the entry point that sets your Compose UI.</p>
+</div>
+</div>
+</div>
+<!-- Big idea 5 -->
+<h3 id="idea-composable">5 · What a <code>@Composable</code> function is; <code>@Preview</code>; "Hello Android"</h3>
+<div class="card">
+<p>This is the most important idea in the entire course, so we'll take it slowly. Jetpack Compose is a <strong>declarative</strong> UI toolkit. The <em>old</em> way (XML + Views) was <strong>imperative</strong>: you built a widget once, then reached back in and <em>mutated</em> it by hand every time something changed (<code>textView.text = "…"</code>). The <em>Compose</em> way is <strong>declarative</strong>: you write a function that <em>describes</em> what the screen should look like for the current data, and when the data changes Compose <strong>re-runs that function for you</strong> and updates the screen. You describe the <em>what</em>; Compose handles the <em>how</em> and <em>when</em>.</p>
+<p><strong>Analogy.</strong> A declarative UI is like a <strong>thermostat display</strong>: you declare "show 72°," and when the temperature changes the display redraws itself to match. The old imperative way is like having to walk over and physically <em>move the needle</em> on a dial every single time the number changes — same result, far more to keep in sync by hand.</p>
+
+<h4 id="composable-defined">First: what does <code>@Composable</code> actually mean?</h4>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p><code>@Composable</code> is an annotation that marks a function as one that <strong>emits a piece of UI onto the screen</strong> — rather than returning a value the way an ordinary function does. You call a composable to <em>place</em> something on the screen, not to <em>compute and get back</em> a result.</p>
+</div>
+</div>
+<p>That little <code>@Composable</code> tag is not decoration — it flips a switch in the compiler. The <strong>Compose compiler plugin</strong> rewrites every <code>@Composable</code> function so Compose can track which data the function read and later re-run just the parts that need updating. Hold onto one mental model and the rest follows: <em>a composable is a function whose output (the UI) depends only on its inputs.</em></p>
+<p>The smallest possible composable is a function that emits a single piece of UI:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · the smallest composable</span><pre><code>@Composable
+fun Hello() {
+    Text("Hi!")          // emits one line of text onto the screen
+}</code></pre></div>
+<p><code>Text(…)</code> is itself a <code>@Composable</code> that Material 3 gives you — so <code>Hello()</code> works by <em>calling another composable</em>. You build UI by <strong>nesting composables inside composables</strong>, much like HTML tags nest inside tags. Here is one that emits three pieces of UI stacked vertically:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · composables nest to form a tree</span><pre><code>@Composable
+fun MiniCard() {
+    Column {                          // Column stacks its children top-to-bottom
+        Text("COP4667")               // child 1
+        Text("Android Development")   // child 2
+        Text("Welcome!")              // child 3
+    }
+}</code></pre></div>
+<p class="muted">The <code>{ … }</code> after <code>Column</code> is an ordinary Kotlin trailing lambda — here it is the column's <em>content</em>. Everything you call inside it becomes a child in the on-screen UI tree.</p>
+
+<p><strong>The four rules every <code>@Composable</code> follows.</strong> Internalize these and almost all of the day-one confusion disappears:</p>
+<ul class="obj-list">
+<li><span class="obj-num">1</span><span><strong>It emits; it doesn't return.</strong> A composable's "output" is UI drawn on the screen. Its Kotlin return type is <code>Unit</code> (nothing) — you never write <code>return Text(…)</code>. Compare: a normal function <code>fun add(a: Int, b: Int): Int</code> hands you back a number; <code>Greeting(…)</code> hands you back nothing and instead <em>puts text on the screen</em>.</span></li>
+<li><span class="obj-num">2</span><span><strong>It can only be called from another <code>@Composable</code>.</strong> Calling <code>Text()</code> inside <code>Greeting()</code> is fine. Calling <code>Greeting()</code> from a plain function or from <code>main()</code> is a compiler error. That is exactly why the Activity uses <code>setContent { … }</code> — that lambda is the official doorway from ordinary code into "composable land."</span></li>
+<li><span class="obj-num">3</span><span><strong>Name it like a UI noun, in <code>PascalCase</code>.</strong> <code>Greeting</code>, <code>Text</code>, <code>Column</code>, <code>Surface</code> — each names a <em>thing on the screen</em>, so it reads like a noun and is capitalized. (The rare composable that returns a value uses <code>camelCase</code> instead.)</span></li>
+<li><span class="obj-num">4</span><span><strong>It must be safe to re-run at any time.</strong> Compose may call your composable many times, skip it, or even run it on a background thread. So keep it fast and <strong>free of side effects</strong> — no network calls, no counters, no writing to outside variables in the body. Side-effecting work goes in a dedicated effect handler (Session 5).</span></li>
+</ul>
+<p><strong>Recomposition</strong> is simply the name for that re-running: when data a composable reads changes, Compose re-invokes the composable (and only the parts that actually need updating) to produce the new UI. We make this concrete in Session 5 — for today, hold onto: <em>UI is a function of state; change the state and Compose redraws.</em></p>
+
+<p>Now let's read the file Android Studio generated for you, <strong>line by line</strong>. Here is the whole thing first:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · MainActivity.kt</span><pre><code>package edu.keiser.cop4667.hello
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import edu.keiser.cop4667.hello.ui.theme.HelloTheme
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {                         // &lt;-- hand the screen to Compose
+            HelloTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Greeting(name = "Android")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Text(
+        text = "Hello, $name!",
+        modifier = modifier.padding(24.dp)
+    )
+}
+
+@Preview(showBackground = true)              // &lt;-- renders in the IDE, no emulator needed
+@Composable
+fun GreetingPreview() {
+    HelloTheme {
+        Greeting(name = "Android")
+    }
+}</code></pre></div>
+<h4 id="mainactivity-walkthrough">MainActivity.kt — every line, explained</h4>
+<p>It looks like a lot, but it is really just two ideas: <strong>(A)</strong> an Activity that hands the screen to Compose, and <strong>(B)</strong> two composable functions you can read. Here is every line.</p>
+
+<p><strong>The <code>package</code> and <code>import</code> lines</strong> — a "table of contents" for the file:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · package + imports</span><pre><code>package edu.keiser.cop4667.hello                       // this file's address inside your app
+
+import android.os.Bundle                               // the "saved state" type onCreate receives
+import androidx.activity.ComponentActivity             // the Activity base class that supports Compose
+import androidx.activity.compose.setContent            // the bridge function: Activity -> Compose
+import androidx.compose.foundation.layout.fillMaxSize  // a Modifier: "fill the whole screen"
+import androidx.compose.foundation.layout.padding      // a Modifier: "add space around me"
+import androidx.compose.material3.MaterialTheme        // access to the theme's colors + fonts
+import androidx.compose.material3.Surface              // a themed background container
+import androidx.compose.material3.Text                 // the composable that draws text
+import androidx.compose.runtime.Composable             // the @Composable annotation
+import androidx.compose.ui.Modifier                    // the Modifier type (size / padding / …)
+import androidx.compose.ui.tooling.preview.Preview     // the @Preview annotation
+import androidx.compose.ui.unit.dp                     // the 'dp' unit, used as 24.dp
+import edu.keiser.cop4667.hello.ui.theme.HelloTheme    // YOUR app's generated theme wrapper</code></pre></div>
+<p>You won't type these by hand: the moment you use a name like <code>Text</code>, Android Studio offers to add its <code>import</code> (put the cursor on the red name and press <kbd>⌥</kbd>+<kbd>Enter</kbd>). Each line just tells the compiler <em>where</em> that name lives.</p>
+
+<p><strong>(A) The Activity</strong> — the screen Android actually launches (it is the destination of the <em>manifest → Activity → <code>onCreate</code></em> chain from idea 4):</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · the Activity</span><pre><code>class MainActivity : ComponentActivity() {                    // 1
+    override fun onCreate(savedInstanceState: Bundle?) {      // 2
+        super.onCreate(savedInstanceState)                    // 3
+        setContent {                                          // 4
+            HelloTheme {                                      // 5
+                Surface(                                      // 6
+                    modifier = Modifier.fillMaxSize(),        // 7
+                    color = MaterialTheme.colorScheme.background  // 8
+                ) {
+                    Greeting(name = "Android")                // 9
+                }
+            }
+        }
+    }
+}</code></pre></div>
+<ul>
+<li><strong>1 · <code>class MainActivity : ComponentActivity()</code></strong> — declares your screen. An <em>Activity</em> is one screen Android can launch; the <code>: ComponentActivity</code> part means "MainActivity <em>is a</em> ComponentActivity," the modern base class that knows how to host Compose. (The old View world subclassed <code>AppCompatActivity</code> instead.)</li>
+<li><strong>2 · <code>override fun onCreate(savedInstanceState: Bundle?)</code></strong> — the first lifecycle callback Android runs when the screen is created. The <code>Bundle?</code> holds any state saved before the screen was last destroyed (e.g. on rotation); the <code>?</code> means it can be <code>null</code> the first time.</li>
+<li><strong>3 · <code>super.onCreate(savedInstanceState)</code></strong> — always let the parent class do its setup first. Skipping this throws at runtime.</li>
+<li><strong>4 · <code>setContent { … }</code></strong> — <em>the</em> bridge from the Activity (View world) into Compose. Everything inside these braces is your UI, written as composables. This lambda is "composable land" — the one place you're allowed to start calling <code>@Composable</code> functions (rule 2 above).</li>
+<li><strong>5 · <code>HelloTheme { … }</code></strong> — your app's Material theme (generated under <code>ui/theme/</code>). Wrapping your UI in it makes the theme's colors, type, and shapes available to everything inside via <code>MaterialTheme.*</code>.</li>
+<li><strong>6 · <code>Surface(…) { … }</code></strong> — a Material container that paints a background behind its content (and can add elevation/shape later).</li>
+<li><strong>7 · <code>modifier = Modifier.fillMaxSize()</code></strong> — a <em>Modifier</em> telling the Surface to fill the entire screen. Modifiers are how you size, space, and decorate any composable; you'll use them constantly.</li>
+<li><strong>8 · <code>color = MaterialTheme.colorScheme.background</code></strong> — paint that surface with the theme's <em>background</em> color, so it automatically looks correct in both light and dark mode.</li>
+<li><strong>9 · <code>Greeting(name = "Android")</code></strong> — at last, we call <em>our</em> composable and pass the text <code>"Android"</code> for its <code>name</code>. This is the only app-specific line; everything above is reusable scaffolding.</li>
+</ul>
+
+<p><strong>(B) Your composable</strong> — the part you actually write and change:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · the Greeting composable</span><pre><code>@Composable                                              // 1
+fun Greeting(name: String, modifier: Modifier = Modifier) {  // 2
+    Text(                                                // 3
+        text = "Hello, $name!",                          // 4
+        modifier = modifier.padding(24.dp)               // 5
+    )
+}</code></pre></div>
+<ul>
+<li><strong>1 · <code>@Composable</code></strong> — marks <code>Greeting</code> as a UI-emitting function (rule 1). Remove it and the <code>Text()</code> call below becomes a compiler error.</li>
+<li><strong>2 · <code>fun Greeting(name: String, modifier: Modifier = Modifier)</code></strong> — an ordinary Kotlin function with two parameters. <code>name: String</code> is the data this UI needs. <code>modifier: Modifier = Modifier</code> is the standard Compose convention: accept an optional <code>Modifier</code> (defaulting to the empty <code>Modifier</code>) so a caller can size or space this composable from the outside without you having to anticipate it.</li>
+<li><strong>3 · <code>Text(…)</code></strong> — the Material composable that draws text on the screen.</li>
+<li><strong>4 · <code>text = "Hello, $name!"</code></strong> — a Kotlin <em>string template</em>: <code>$name</code> is replaced by the value passed in, so <code>Greeting("Android")</code> shows <strong>Hello, Android!</strong>. The <code>!</code> is literal text.</li>
+<li><strong>5 · <code>modifier = modifier.padding(24.dp)</code></strong> — take the incoming modifier and add 24 <em>density-independent pixels</em> of breathing room around the text. <code>dp</code> keeps spacing looking consistent across low- and high-resolution screens (unlike raw pixels).</li>
+</ul>
+
+<h4 id="preview-explained">Then: what <code>@Preview</code> is — and why it isn't the same as running the app</h4>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · the preview</span><pre><code>@Preview(showBackground = true)   // 1
+@Composable                       // 2
+fun GreetingPreview() {           // 3
+    HelloTheme {                  // 4
+        Greeting(name = "Android") // 5
+    }
+}</code></pre></div>
+<ul>
+<li><strong>1 · <code>@Preview(showBackground = true)</code></strong> — tells Android Studio's tooling to <em>render this composable right inside the editor</em> (the Design / Split pane). <code>showBackground = true</code> paints a solid backdrop so you can see it clearly. No emulator, no install, no app launch — it draws in a second or two.</li>
+<li><strong>2 · <code>@Composable</code></strong> — a preview is itself a composable (the tooling calls it for you), so it needs the annotation too.</li>
+<li><strong>3 · <code>fun GreetingPreview()</code></strong> — note it takes <strong>no parameters</strong>. That is the rule: the tooling must be able to call a preview with no arguments, so a <code>@Preview</code> function either takes nothing or only values supplied by a <code>@PreviewParameter</code> provider (advanced — not needed today).</li>
+<li><strong>4 · <code>HelloTheme { … }</code></strong> — we re-wrap in the theme because a preview runs <em>in isolation</em>, outside the Activity. Without it, <code>MaterialTheme.*</code> values wouldn't resolve and the colors/fonts would render wrong.</li>
+<li><strong>5 · <code>Greeting(name = "Android")</code></strong> — call the real composable with <em>sample</em> data so you see exactly what a user would.</li>
+</ul>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🔍</span>
+<div class="callout__body">
+<span class="callout__label">Preview = fast feedback, but it is NOT the running app</span>
+<p>A <code>@Preview</code> renders your composable <em>in isolation</em> with the sample inputs you hand it — no live data, no <code>ViewModel</code>, no navigation, no permissions. It verifies <strong>layout and appearance</strong>, fast. <strong>Running on an emulator/device verifies behavior</strong> — the real thing. The pro loop: iterate in Preview for seconds-fast visual feedback, then press <strong>▶ Run</strong> to confirm it actually works.</p>
+</div>
+</div>
+<p><strong>Bonus — stack several previews on one function.</strong> A composable can carry multiple <code>@Preview</code> annotations, each with a different configuration, so you see (say) light <em>and</em> dark at once without changing any code:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · see light + dark side by side</span><pre><code>@Preview(name = "Light", showBackground = true)
+@Preview(name = "Dark",  showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+@Composable
+fun GreetingPreview() {
+    HelloTheme { Greeting(name = "Android") }
+}</code></pre></div>
+<p class="muted">Other handy preview options: <code>widthDp</code> / <code>heightDp</code> (size the canvas), <code>fontScale</code> (test large-font accessibility), <code>locale</code> (test a translation), and <code>device</code> (preview on a specific phone, tablet, or foldable).</p>
+
+<p>Contrast the declarative Compose style with the old imperative XML + View approach to see why Compose is the modern default:</p>
+<div aria-label="Compose vs legacy Views" class="tabs" role="tablist">
+<button class="tab" data-tab="compose-way" role="tab">Compose (modern)</button>
+<button class="tab" data-tab="views-way" role="tab">XML + Views (legacy)</button>
+</div>
+<div class="tabpanel" data-tabpanel="compose-way" role="tabpanel">
+<div class="codeblock"><span class="codeblock__lang">Kotlin · Compose</span><pre><code>// One place. The function IS the UI. Change name -&gt; UI redraws.
+@Composable
+fun Greeting(name: String) {
+    Text(text = "Hello, $name!")
+}</code></pre></div>
+<p class="muted">No XML file, no <code>findViewById</code>, no manual <code>setText</code>. The UI is a function of its inputs.</p>
+</div>
+<div class="tabpanel" data-tabpanel="views-way" hidden="" role="tabpanel">
+<div class="codeblock"><span class="codeblock__lang">XML · layout</span><pre><code>&lt;!-- res/layout/activity_main.xml --&gt;
+&lt;TextView
+    android:id="@+id/greeting"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" /&gt;</code></pre></div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · Activity (legacy)</span><pre><code>// Two places kept in sync by hand, plus runtime lookups.
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        val tv = findViewById&lt;TextView&gt;(R.id.greeting)
+        tv.text = "Hello, Android!"          // imperative: you mutate the widget
+    }
+}</code></pre></div>
+<p class="muted">Two files, runtime <code>findViewById</code>, and you mutate widgets imperatively. This is what Compose replaces.</p>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Recap — the five things to nail today</span>
+<p><strong>1.</strong> A <code>@Composable</code> <em>emits</em> UI; it returns <code>Unit</code>, not a value. <strong>2.</strong> A composable can only be called from another composable — <code>setContent { }</code> is the doorway in. <strong>3.</strong> Composables <em>nest</em> to form a UI tree, and their names are <code>PascalCase</code> nouns. <strong>4.</strong> <code>@Preview</code> renders a parameter-less composable in the IDE — fast visual feedback, but <strong>Run</strong> on a device is the real test. <strong>5.</strong> <em>UI is a function of state</em>: change the inputs and Compose re-runs (recomposes) to redraw.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ====================== GUIDED LIVE-CODING ====================== -->
+<section aria-labelledby="h-livecoding" class="slide section-anchor">
+<h2 id="h-livecoding">Guided Live-Coding</h2>
+<p class="lead">Each step is typed live; follow along on your own machine.</p>
+<ol class="stepper">
+<li class="step">
+<h4>Create a new project</h4>
+<p><em>Welcome screen → New Project → Phone and Tablet → <strong>Empty Activity</strong></em> (the one labeled for Compose / "Material 3"). Click Next.</p>
+<p><strong>What you'll see:</strong> the New Project template gallery.</p>
+</li>
+<li class="step">
+<h4>Name it and set the package</h4>
+<p>Name: <code>Hello Android</code>. Package name: <code>edu.keiser.cop4667.hello</code>. Language is <strong>Kotlin</strong> (fixed for Compose). Minimum SDK: <strong>API 24</strong>. Build configuration language: <strong>Kotlin DSL</strong>. Click Finish.</p>
+</li>
+<li class="step">
+<h4>Pick a device and Run</h4>
+<p>In the device dropdown (top toolbar) choose your running AVD (e.g., Pixel 9 · API 36). Press <strong>▶ Run</strong>. Watch the Build output and Logcat.</p>
+<p><strong>What you'll see:</strong> the emulator shows a screen reading <em>"Hello, Android!"</em>. That's a real app running — yours.</p>
+</li>
+<li class="step">
+<h4>Open the preview pane</h4>
+<p>In <code>MainActivity.kt</code>, click <strong>Split</strong> (top-right of the editor). The <code>@Preview</code> function renders on the right with no emulator. This is your fast iteration loop — lean on it.</p>
+</li>
+<li class="step">
+<h4>Edit the greeting and add a second Text</h4>
+<p>Wrap two <code>Text</code>s in a <code>Column</code> so they stack. Type this live:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(text = "Hello, $name!", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        Text(text = "Welcome to COP4667 — your first Compose app.")
+    }
+}</code></pre></div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">⌨️</span>
+<div class="callout__body">
+<span class="callout__label">Teach the import quick-fix</span>
+<p>When <code>Column</code>/<code>sp</code>/<code>FontWeight</code> show red, hit <kbd>⌥</kbd>+<kbd>Enter</kbd> (Alt+Enter) to auto-import. Students new to IDEs miss this constantly.</p>
+</div>
+</div>
+</li>
+<li class="step">
+<h4>Iterate with @Preview, then re-run</h4>
+<p>Click the preview refresh / build-and-refresh icon — the change appears in seconds, no emulator rebuild. Then press <strong>▶ Run</strong> once to confirm it also looks right on the device. Show that <em>Preview = fast inner loop, Run = the real thing</em>.</p>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Live-coding failure modes</span>
+<p>If the preview says "render problem", it usually means a composable threw or an import is missing — check the build panel. If Run installs but the screen is blank, you likely deleted <code>setContent { }</code> wiring. Keep your finished backup project open in a second window so you can diff fast.</p>
+</div>
+</div>
+</section>
+<!-- ====================== HANDS-ON LAB ====================== -->
+<section aria-labelledby="h-lab" class="slide section-anchor">
+<h2 id="h-lab">Hands-On Lab — Environment Bring-Up</h2>
+<p class="lead"><strong>Goal:</strong> Get a working toolchain in your own hands and confirm it by running an edited Compose app — your own greeting plus a color you changed. The full, numbered lab steps are inline below.</p>
+<div class="grid grid-2">
+<div class="card card--accent">
+<p class="card__title">Track your progress</p>
+<p class="muted">Tick these off as you go — they save in your browser, so you can close the page and pick up where you left off.</p>
+<ul class="checklist" id="s01-bringup">
+<li><label><input data-key="s01-install" type="checkbox"/><span>Android Studio install verified — SDK and one AVD present in Device Manager.</span></label></li>
+<li><label><input data-key="s01-runs" type="checkbox"/><span>New project created — builds and runs the stock "Hello, Android!" on the emulator.</span></label></li>
+<li><label><input data-key="s01-greeting" type="checkbox"/><span>Greeting changed to my own words and re-run on the device (not just the preview).</span></label></li>
+<li><label><input data-key="s01-color" type="checkbox"/><span>A color changed — on the <code>Text</code> or in <code>ui/theme/Color.kt</code> — and visible on screen.</span></label></li>
+<li><label><input data-key="s01-loop" type="checkbox"/><span>Ran the edit → run → see loop once more to confirm it's effortless.</span></label></li>
+</ul>
+</div>
+<div class="card">
+<p class="card__title">✅ Done when</p>
+<p>This is your own checkpoint — no grade attached. You've finished the bring-up when, on your own machine, you can show:</p>
+<ul>
+<li><strong>Your custom greeting</strong> — the app runs on the emulator and the screen reads <em>your own words</em>, not "Hello, Android!".</li>
+<li><strong>A color you changed</strong> — proof you edited the UI, rebuilt, and the change actually took on screen.</li>
+</ul>
+<p class="muted">Bonus signal you're truly solid: tear it down and do it again from scratch in under five minutes. Snap a screenshot for your own project notes if you like — the point is the working loop in your hands.</p>
+</div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Verify / finish your install</h4>
+<p>Open Android Studio. If the setup wizard never finished, let it download the SDK now. If you're stuck, pair with a neighbor while it installs.</p>
+</li>
+<li class="step">
+<h4>Create &amp; run the project</h4>
+<p>Repeat the live-coding steps: New Project → Empty Activity → name <code>My First App</code> → Finish → Run on your AVD. Confirm you see "Hello, Android!".</p>
+<p class="muted"><strong>Hint:</strong> if the device dropdown is empty, open Device Manager and start your AVD first.</p>
+</li>
+<li class="step">
+<h4>Change the greeting text</h4>
+<p>Edit the <code>Greeting</code> composable to show your own message, e.g.:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Text(
+        text = "Hi, I'm Jordan — building Android in COP4667!",
+        modifier = modifier.padding(24.dp)
+    )
+}</code></pre></div>
+</li>
+<li class="step">
+<h4>Change a color</h4>
+<p>Add a <code>color =</code> to your <code>Text</code> (quick win), or change the theme's primary color in <code>ui/theme/Color.kt</code>. The fast version:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>import androidx.compose.ui.graphics.Color
+
+Text(
+    text = "Hi, I'm Jordan — building Android in COP4667!",
+    color = Color(0xFF20B265),     // Android-green-ish
+    modifier = modifier.padding(24.dp)
+)</code></pre></div>
+<p class="muted"><strong>Hint:</strong> colors are <code>0xAARRGGBB</code> — the first two hex digits are alpha (opacity). <code>0xFF</code> = fully opaque.</p>
+</li>
+<li class="step">
+<h4>Run again &amp; confirm your change</h4>
+<p>Run on the emulator. You should now see your own greeting text in the color you chose — both changes live on the device, not just in the preview. That's the "Done when" checkpoint met.</p>
+<p class="muted"><strong>Optional:</strong> grab a screenshot (emulator side-panel camera button, or your OS screenshot key) for your own project notes — useful when you start brainstorming the term project.</p>
+</li>
+<li class="step">
+<h4>Prove the loop to yourself</h4>
+<p>Change the text or color one more time and re-run. The faster that edit-run-see loop feels, the more solid your setup is. When it's effortless, you're ready for Session 2.</p>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">🛠️</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting cheatsheet</span>
+<ul>
+<li><strong>Emulator won't boot / "HAXM/Hypervisor" error:</strong> on Windows enable virtualization (VT-x/AMD-V) in BIOS and the Windows Hypervisor Platform; on Apple Silicon use an arm64 system image.</li>
+<li><strong>Gradle sync fails / "SDK location not found":</strong> open SDK Manager, install the matching platform (API 36) + build-tools, then File → Sync Project with Gradle Files.</li>
+<li><strong>Device dropdown empty:</strong> start the AVD from Device Manager first; cold boots take a couple of minutes.</li>
+<li><strong>Red imports everywhere:</strong> place the cursor on the symbol and press <kbd>⌥</kbd>+<kbd>Enter</kbd> to import.</li>
+<li><strong>Preview won't render:</strong> Build → Make Project, then click the preview refresh; check the build panel for the actual error.</li>
+<li><strong>Out of disk:</strong> the SDK + one AVD + caches need ~8–10 GB. Clear space, then retry.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Push further</span>
+<p>Once the basics work, keep going: change the <strong>app name</strong> (in <code>strings.xml</code>), swap the launcher screen's <strong>background color</strong> via the <code>Surface</code> color, and add an emoji <code>Text</code> using a <code>Column</code> so two lines stack. Bonus: add a second <code>@Preview</code> with <code>@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)</code> and observe the dark theme.</p>
+</div>
+</div>
+</section>
+<!-- ====================== ASSESSMENTS TODAY ====================== -->
+<section aria-labelledby="h-assessments" class="slide section-anchor">
+<h2 id="h-assessments">Assessments Today</h2>
+<div class="grid grid-2">
+<div class="card card--teal">
+<p class="card__title">📊 Pre-Test (diagnostic)</p>
+<p>A short, <strong>no-stakes</strong> baseline taken in Session 1. It measures starting knowledge so we can show growth against the post-test in Session 12.</p>
+<p><a class="btn btn--sm" href="../assessments/pre-test.html">Open the Pre-Test →</a></p>
+</div>
+<div class="card card--accent">
+<p class="card__title">🚀 Project kickoff (brainstorm)</p>
+<p>It seeds the term project. Students draft 1–2 app ideas and sanity-check them against the required-feature checklist.</p>
+</div>
+</div>
+<h3 id="h-checkquiz">Quick check-for-understanding (low stakes)</h3>
+<p class="muted">Optional in-class quiz to confirm the ecosystem + Compose basics landed. Not for the gradebook — use it as a closing comprehension check or self-study.</p>
+<div data-quiz="s1-quiz" data-topic="kotlin"></div>
+<script id="s1-quiz" type="application/json">
+          {
+            "title": "Session 1 — Check for Understanding",
+            "intro": "5 quick questions on the ecosystem, the toolchain, and your first Composable. No stakes — answers reveal after you submit.",
+            "passingScore": 0.7,
+            "shuffle": false,
+            "questions": [
+              {
+                "id": "q1",
+                "type": "single",
+                "prompt": "Which language is Google's preferred / industry-current language for new Android apps in this course?",
+                "options": [
+                  { "id": "a", "text": "Java" },
+                  { "id": "b", "text": "Kotlin" },
+                  { "id": "c", "text": "Swift" },
+                  { "id": "d", "text": "Dart" }
+                ],
+                "correct": ["b"],
+                "explanation": "Kotlin is Google's preferred language for Android, and the one this course (CLO3) targets. Jetpack Compose is written for Kotlin."
+              },
+              {
+                "id": "q2",
+                "type": "truefalse",
+                "prompt": "An Android app starts by calling a top-level main() function, just like a console program.",
+                "correct": false,
+                "explanation": "No — Android launches your Activity (declared in the manifest with the LAUNCHER intent-filter). MainActivity.onCreate() runs first and sets your Compose UI."
+              },
+              {
+                "id": "q3",
+                "type": "single",
+                "prompt": "What does the @Preview annotation let you do?",
+                "options": [
+                  { "id": "a", "text": "Publish the app to the Play Store" },
+                  { "id": "b", "text": "Render a composable inside Android Studio without launching the emulator" },
+                  { "id": "c", "text": "Encrypt the app bundle" },
+                  { "id": "d", "text": "Automatically write unit tests" }
+                ],
+                "correct": ["b"],
+                "explanation": "@Preview renders a parameterless composable in the IDE's design/split pane — your fast iteration loop, no emulator rebuild required."
+              },
+              {
+                "id": "q4",
+                "type": "multi",
+                "prompt": "Which of these are required features your term project must include? (Select all that apply.)",
+                "options": [
+                  { "id": "a", "text": "Two or more screens with navigation" },
+                  { "id": "b", "text": "Local persistence (DataStore or Room/SQLite)" },
+                  { "id": "c", "text": "Be published to the Google Play Store" },
+                  { "id": "d", "text": "Data from a web API over the network" }
+                ],
+                "correct": ["a", "b", "d"],
+                "explanation": "Required: 2+ screens w/ navigation, Compose UI driven by state, local persistence, network/API data, and clean architecture (ViewModel + repository). Publishing to Play is NOT required."
+              },
+              {
+                "id": "q5",
+                "type": "short",
+                "prompt": "What annotation marks a Kotlin function as one that emits Jetpack Compose UI? (Include the @ symbol.)",
+                "correct": ["@Composable", "Composable"],
+                "explanation": "@Composable marks a function as composable UI. It can only be called from another @Composable function."
+              }
+            ]
+          }
+          </script>
+</section>
+<!-- ====================== DISCUSSION BOARD ====================== -->
+<section aria-labelledby="h-discussion" class="slide section-anchor">
+<h2 id="h-discussion">Discussion Board Prompt</h2>
+<div class="card card--teal">
+<p class="card__title">Week 1 Discussion — "Why this app, and can it hit the checklist?"</p>
+<blockquote>
+<p><strong>Prompt:</strong> Introduce yourself in one line (name + prior programming experience). Then describe <strong>one app idea</strong> you'd like to build for your term project. For each of the five required features — (a) 2+ screens with navigation, (b) Compose UI driven by state, (c) local persistence, (d) data from a web API, (e) ViewModel + repository — write a single sentence saying <em>how your app would satisfy it</em> (or where you're unsure). Name one public web API you might use.</p>
+</blockquote>
+
+<ul>
+<li><strong>Initial post</strong> by the end of Week 1 (≈150–200 words), addressing all five features.</li>
+<li><strong>Reply to at least two classmates</strong> — suggest an API, flag a feature that looks hard to satisfy, or propose a simpler scope.</li>
+<li>Be specific and constructive; "great idea!" replies don't count toward participation.</li>
+</ul>
+</div>
+</section>
+<!-- ====================== HOMEWORK / NEXT CLASS ====================== -->
+<section aria-labelledby="h-homework" class="slide section-anchor">
+<h2 id="h-homework">Homework / Next Class</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<p class="card__title">📚 Readings (official docs)</p>
+<ul>
+<li><a href="https://developer.android.com/studio">Install Android Studio</a> — finish your install and create an emulator if you haven't yet.</li>
+<li><a href="https://developer.android.com/studio/intro">Get Started with Android Studio</a> — read the IDE tour.</li>
+</ul>
+</div>
+<div class="card card--accent">
+<p class="card__title">🧪 Async activity</p>
+<ul>
+<li>Begin <strong>Unit 1 / Assignment 1</strong> of <a href="https://developer.android.com/courses/android-basics-compose/course">Android Basics with Compose</a> (the "Get started" pathway).</li>
+<li>Skim the <a href="../labs/kotlin-cheatsheet.html">Kotlin cheatsheet</a> before Session 2 (Kotlin fundamentals).</li>
+</ul>
+</div>
+<div class="card card--teal">
+<p class="card__title">🚀 Project task</p>
+<ul>
+<li>Draft <strong>1–2 app ideas</strong> for the term project and post your Week 1 Discussion entry.</li>
+<li>Note one candidate public web API per idea.</li>
+</ul>
+</div>
+<div class="card card--teal">
+<p class="card__title">➡️ Next class — Session 2</p>
+<p><strong>Kotlin fundamentals.</strong> We go deep on Kotlin (vals/vars, functions, null safety, classes, lambdas) — the language under everything we'll write. The <a href="../sessions/session-02.html">Session 2 plan</a> previews the <em>lifecycle-explorer</em> tool too.</p>
+</div>
+</div>
+</section>
+</div><!-- /.session-main -->
+</div><!-- /.session-layout -->
+<!-- ====================== MASTER IT ====================== -->
+<section aria-labelledby="h-master" class="card slide section-anchor" id="master-it">
+<p class="eyebrow">Master it · deliberate practice</p>
+<h2 id="h-master">Master It — from "it ran" to "I understand why"</h2>
+<p class="lead">Running "Hello, Android!" is the easy 20%. The 80% that makes you the strongest engineer in the room is understanding the <strong>entry-point chain</strong> (manifest → Activity → <code>setContent</code> → <code>@Composable</code>) and the <strong>declarative model</strong> (UI is a function of its inputs). This section drills exactly that, then fades the scaffolding so you produce it yourself.</p>
+<!-- ---------- 1. WORKED EXAMPLE → FADED ---------- -->
+<h3 id="master-we">1 · Worked example — the hardest idea: "where does my app actually start?"</h3>
+<div class="card card--accent">
+<p>The single most confusing thing on day one is the launch sequence. There is no <code>main()</code> you write. Let's trace it <strong>step by step</strong>, the way you'd reason about it in a code review.</p>
+<div class="stepper">
+<ol class="stepper">
+<li class="step">
+<h4>The OS reads the manifest, not your code</h4>
+<p>When the user taps your icon, Android does not look for <code>main()</code>. It scans <code>AndroidManifest.xml</code> for the <em>one</em> <code>&lt;activity&gt;</code> whose <code>&lt;intent-filter&gt;</code> declares <code>action.MAIN</code> + <code>category.LAUNCHER</code>. That activity is the front door.</p>
+</li>
+<li class="step">
+<h4>The OS instantiates that Activity and calls <code>onCreate()</code></h4>
+<p>Android constructs <code>MainActivity</code> and calls its lifecycle hook <code>onCreate(savedInstanceState)</code>. <em>This</em> is the closest thing to "your <code>main()</code>" — but it's a callback the framework invokes, not a function you call.</p>
+</li>
+<li class="step">
+<h4><code>setContent { }</code> hands the screen to Compose</h4>
+<p>Inside <code>onCreate</code>, <code>setContent { … }</code> is the bridge from the View-based Activity world into the Compose world. Everything inside that lambda is a composition.</p>
+</li>
+<li class="step">
+<h4>A <code>@Composable</code> <em>describes</em> the UI; Compose draws it</h4>
+<p>Your <code>Greeting(name = "Android")</code> doesn't draw anything itself — it <em>emits</em> a description ("a Text saying Hello, Android"). Compose turns that description into pixels and will re-run the function (recompose) when an input changes.</p>
+</li>
+</ol>
+</div>
+<p>So the call chain you must be able to recite is:</p>
+<div aria-label="App launch chain" class="figure-frame" role="img">tap icon
+  → OS finds the <span class="dir">LAUNCHER</span> activity in <span class="dir">AndroidManifest.xml</span>
+  → OS calls <span class="dir">MainActivity.onCreate()</span>
+  → <span class="dir">setContent { }</span> opens a Compose composition
+  → your <span class="dir">@Composable</span> emits UI
+  → Compose renders + recomposes on state change</div>
+</div>
+<p>Now turn that understanding into code. Here is a <strong>pure-Kotlin model</strong> of the chain — no Android device required — that proves you understand the rule "a composable is just a function whose output depends only on its inputs." Predict the printed output, then press <strong>Run</strong> to confirm.</p>
+<div class="codeblock" data-challenge="s01-greeting" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable — predict, then Run</div>
+<pre><code>// A pure-Kotlin stand-in for what a @Composable Greeting "emits".
+// In real Compose you'd write: Text(text = "Hello, $name!")
+// Here we just return the text so we can auto-check the logic.
+
+// ----- YOUR CODE -----
+fun greet(name: String): String {
+    // Return the greeting EXACTLY as the Composable would render it:
+    //   "Hello, &lt;name&gt;!"   e.g. greet("Android") == "Hello, Android!"
+    return "TODO"   // &lt;-- replace this line
+}
+// ---------------------
+
+fun main() {
+    val cases = listOf(
+        "Android" to "Hello, Android!",
+        "COP4667" to "Hello, COP4667!",
+        "Ada"     to "Hello, Ada!"
+    )
+    var allPass = true
+    for ((input, expected) in cases) {
+        val got = greet(input)
+        if (got == expected) {
+            println("✓ passed: greet(\"$input\") -&gt; \"$got\"")
+        } else {
+            allPass = false
+            println("✗ FAILED: greet(\"$input\") expected \"$expected\", got \"$got\"")
+        }
+    }
+    println(if (allPass) "ALL TESTS PASSED 🎉" else "Keep going — fix the failing case above.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Hint</button>
+<div class="accordion__body"><p>Kotlin string templates let you splice a variable into a string with <code>$name</code>. So <code>"Hello, $name!"</code> becomes <code>"Hello, Android!"</code> when <code>name == "Android"</code>. The <code>!</code> is literal text, not part of the template. Replace the whole <code>return "TODO"</code> line.</p></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun greet(name: String): String {
+    return "Hello, $name!"
+}</code></pre>
+<p class="muted">That one line is the logical core of the <code>Text(text = "Hello, $name!")</code> you wrote in the lab. Same idea: <strong>output is a pure function of the input</strong>. That is the whole mental model of Compose.</p>
+</div>
+</div>
+</div>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Faded next rep</span>
+<p>When you can write <code>greet</code> with zero hints, do the same exercise <em>in Compose shape</em>: in your lab app, change <code>Greeting</code> so the <code>Text</code> reads <code>"Welcome, $name — you're on day 1."</code> and add a second parameter <code>day: Int</code> so it reads <code>"day $day"</code>. You've now hoisted two inputs into a single declarative function — the pattern every screen in this course is built from.</p>
+</div>
+</div>
+<!-- ---------- 2. MISCONCEPTIONS & PITFALLS ---------- -->
+<h3 id="master-misconceptions">2 · Common misconceptions &amp; pitfalls</h3>
+<p class="muted">These are the exact wrong mental models that trip up first-week Android developers. Read the symptom column — that's how you'll recognize the bug in the wild before you've even read the stack trace.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">“My app starts at <code>main()</code>, like a console program.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> there's a top-level <code>fun main()</code> somewhere that Android calls.</p>
+<p><strong>Why it's wrong:</strong> Android is a component framework. It launches the <code>&lt;activity&gt;</code> tagged with the <code>MAIN</code>/<code>LAUNCHER</code> intent-filter and invokes its <code>onCreate()</code> lifecycle callback. You never write or call <code>main()</code>; the OS owns the entry point.</p>
+<p><strong>Correct model:</strong> <em>manifest → Activity → <code>onCreate()</code> → <code>setContent</code> → <code>@Composable</code></em>. The framework calls you; you don't call it (the "Hollywood principle").</p>
+<p><strong>Symptom you'd see:</strong> you delete or rename <code>MainActivity</code> (or remove its intent-filter) and the app installs but immediately shows <em>“&lt;app&gt; keeps stopping”</em> / "no launchable activity" — because the OS can't find a front door.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“A <code>@Composable</code> runs once, top to bottom, like a normal function call.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> calling <code>Greeting("Android")</code> executes once and is done, just like a regular function.</p>
+<p><strong>Why it's wrong:</strong> Compose <em>re-runs</em> composables (recomposition) whenever an input/state they read changes — possibly many times, in any order, and skipping ones whose inputs didn't change. Treat the body as a pure description, not a one-shot script.</p>
+<p><strong>Correct model:</strong> a composable is a <em>function of its inputs</em> that may be invoked repeatedly. Don't do side effects (logging counters, network calls, mutating shared vars) directly in the body — that's why <code>remember</code> and effect APIs exist (Session 5).</p>
+<p><strong>Symptom you'd see:</strong> a counter you increment inside the composable body jumps by 2 or 3 per tap, or a "log once" line prints repeatedly — because the function ran more times than you expected.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“Compose replaces <code>strings.xml</code> — I'll just hard-code my text in the <code>Text()</code>.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> since UI lives in Kotlin now, user-facing strings belong inline in the composable.</p>
+<p><strong>Why it's wrong:</strong> hard-coded strings can't be localized, can't be reviewed in one place, and duplicate easily. Android still uses <code>res/values/strings.xml</code> as the single source of user-facing copy; in Compose you read it with <code>stringResource(R.string.greeting)</code>.</p>
+<p><strong>Correct model:</strong> logic/structure in Kotlin, <em>copy</em> in <code>strings.xml</code>. Inline literals are fine for a day-1 demo, but the production habit is resource strings.</p>
+<p><strong>Symptom you'd see:</strong> translating the app means hunting hard-coded literals across dozens of files; Studio also flags inline UI strings with a “Hardcoded string” lint warning.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“<code>minSdk</code>, <code>targetSdk</code>, and <code>compileSdk</code> are basically the same number.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> set them all to the latest API and forget it.</p>
+<p><strong>Why it's wrong:</strong> they answer three different questions. <code>minSdk</code> = the <em>oldest</em> OS you'll install on (lower = more devices, more old-version edge cases). <code>targetSdk</code> = the OS version you've tested against and opt into the behaviors of. <code>compileSdk</code> = which SDK's APIs the <em>compiler</em> can see.</p>
+<p><strong>Correct model:</strong> <code>compileSdk ≥ targetSdk ≥ minSdk</code>. Raise <code>compileSdk</code>/<code>targetSdk</code> to use new APIs and pass Play requirements; keep <code>minSdk</code> as low as your features allow to reach more users.</p>
+<p><strong>Symptom you'd see:</strong> an app that crashes only on older phones (you called an API newer than <code>minSdk</code>), or a build error “requires API level X” when you call something above <code>compileSdk</code>.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“The <code>@Preview</code> looking right means the app works.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> if the IDE preview renders, the feature is done.</p>
+<p><strong>Why it's wrong:</strong> <code>@Preview</code> renders your composable in isolation with whatever sample inputs you pass — it has no real ViewModel, no navigation, no live data, no runtime permissions. It verifies <em>layout</em>, not behavior.</p>
+<p><strong>Correct model:</strong> <em>Preview = fast inner loop for visuals</em>; <em>Run on a device/emulator = the truth</em>. Use both: iterate in Preview, confirm on Run.</p>
+<p><strong>Symptom you'd see:</strong> a screen that's gorgeous in Preview but blank or crashing on the device, because the real data was null/empty or an Activity-only API was involved.</p>
+</div>
+</div>
+</div>
+<!-- ---------- 3. IN PRODUCTION ---------- -->
+<h3 id="master-production">3 · In production — how a senior engineer actually does this</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">The idiomatic, current pattern</span>
+<p>A senior dev's first composable is almost never the one wired into <code>setContent</code>. They write a <strong>small, stateless composable that takes its data as parameters</strong> (no <code>ViewModel</code>, no <code>Context</code>, no I/O inside it) and feed it real data from the outside. That makes it trivially previewable, reusable, and testable. The generated <code>Greeting(name: String, modifier: Modifier = Modifier)</code> already models this: data in via <code>name</code>, and a <code>modifier</code> parameter with a <code>Modifier</code> default so callers can size/position it.</p>
+<p class="mt"><strong>Two production habits to copy from day one:</strong></p>
+<ul>
+<li><strong>Always accept a <code>modifier: Modifier = Modifier</code> parameter</strong> as the first optional arg, and apply it to your <em>outermost</em> element. This is the official API guideline — it lets callers add padding/size/click behavior without you anticipating it.</li>
+<li><strong>Keep composables “dumb.”</strong> They render inputs; they don't fetch or own data. The data comes from a <code>ViewModel</code> (Session 8) and a repository (Session 11). Establishing this seam now is what keeps a 30-screen app maintainable.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">🪤</span>
+<div class="callout__body">
+<span class="callout__label">One tasteful gotcha</span>
+<p>If you forward the <code>modifier</code> to an inner child instead of the root — e.g. you apply it to the second <code>Text</code> inside a <code>Column</code> — then a caller's <code>Modifier.fillMaxSize()</code> or <code>.padding()</code> lands on the wrong element and the layout silently misbehaves. <strong>Rule:</strong> the incoming <code>modifier</code> goes on the top-level node of your composable; build any internal modifiers with a fresh <code>Modifier</code>.</p>
+</div>
+</div>
+<!-- ---------- 4. RETRIEVAL CHECK ---------- -->
+<h3 id="master-retrieval">4 · Retrieval check — test yourself (self-check, not a grade)</h3>
+<p class="muted">Don't re-read — <em>retrieve</em>. Answer from memory; the explanations are where the real learning happens. These test whether you can <strong>apply</strong> the model, not recite it.</p>
+<div data-quiz="rc-1" data-topic="kotlin"></div>
+<script id="rc-1" type="application/json">
+{
+  "title": "Session 1 — Retrieval Check",
+  "intro": "Application-level self-check on the launch chain, the declarative model, and project anatomy. Answers and full explanations reveal after you submit. This is your own practice — never a grade.",
+  "passingScore": 0.7,
+  "shuffle": false,
+  "questions": [
+    {
+      "id": "rc1q1",
+      "type": "single",
+      "prompt": "You rename MainActivity to HomeActivity but forget to update the manifest's intent-filter. You build and install successfully. What happens when you tap the app icon?",
+      "options": [
+        { "id": "a", "text": "It launches normally — the class name doesn't matter at runtime." },
+        { "id": "b", "text": "It won't launch: the OS can't find a MAIN/LAUNCHER activity to use as the entry point." },
+        { "id": "c", "text": "It launches but the @Preview stops rendering." },
+        { "id": "d", "text": "Gradle automatically rewrites the manifest, so nothing breaks." }
+      ],
+      "correct": ["b"],
+      "explanation": "The OS finds the entry point by reading the manifest's intent-filter (action.MAIN + category.LAUNCHER), not by looking for main(). If the activity it points to no longer exists, there is no launchable front door, so tapping the icon fails. The lesson: the manifest, not your code, declares where the app starts."
+    },
+    {
+      "id": "rc1q2",
+      "type": "single",
+      "prompt": "Where does a brand-new Compose project hand control from the Android (View) world over to the Compose world?",
+      "options": [
+        { "id": "a", "text": "In a top-level main() function" },
+        { "id": "b", "text": "In AndroidManifest.xml via the <compose> tag" },
+        { "id": "c", "text": "Inside onCreate(), at the setContent { } call" },
+        { "id": "d", "text": "Automatically, the first time any @Composable is defined" }
+      ],
+      "correct": ["c"],
+      "explanation": "setContent { } inside Activity.onCreate() is the bridge: everything inside that lambda is Compose. Before it, you're in the View-based Activity world; inside it, you're describing UI declaratively."
+    },
+    {
+      "id": "rc1q3",
+      "type": "truefalse",
+      "prompt": "Because a @Composable is 'just a function', calling Greeting(\"Ada\") runs its body exactly once for the life of the screen.",
+      "correct": false,
+      "explanation": "False. Compose re-invokes composables on recomposition whenever the state/inputs they read change, possibly many times and in any order (and it may skip ones whose inputs are unchanged). Treat the body as a pure description, and keep side effects out of it."
+    },
+    {
+      "id": "rc1q4",
+      "type": "single",
+      "prompt": "Your app uses a Kotlin API that only exists on Android 13 (API 33). To reach as many users as safely possible while still calling that API, which is the most defensible config?",
+      "options": [
+        { "id": "a", "text": "minSdk = 33, targetSdk = 33, compileSdk = 33" },
+        { "id": "b", "text": "minSdk = 24, targetSdk = 36, compileSdk = 36 — and guard the API-33 call with a version check" },
+        { "id": "c", "text": "minSdk = 34, compileSdk = 24" },
+        { "id": "d", "text": "Set all three to 24 so the most phones are supported." }
+      ],
+      "correct": ["b"],
+      "explanation": "compileSdk/targetSdk should be current so you can see and opt into new APIs; minSdk stays low to reach more devices. Calling an API above minSdk is fine as long as you guard it with a runtime version check (Build.VERSION.SDK_INT). Option (c) is invalid (compileSdk must be ≥ the APIs you call); (a) needlessly excludes older phones; (d) won't compile the API-33 call."
+    },
+    {
+      "id": "rc1q5",
+      "type": "single",
+      "prompt": "You're writing a reusable composable. Following the official guidelines, where should the incoming `modifier: Modifier = Modifier` parameter be applied?",
+      "options": [
+        { "id": "a", "text": "On the innermost child element" },
+        { "id": "b", "text": "On the outermost (top-level) element the composable emits" },
+        { "id": "c", "text": "It doesn't matter as long as it's applied somewhere" },
+        { "id": "d", "text": "Nowhere — modifiers are only for layout containers" }
+      ],
+      "correct": ["b"],
+      "explanation": "Apply the caller's modifier to your outermost node so external sizing/padding/click behavior affects the whole component as the caller expects. Applying it to an inner child causes a caller's fillMaxSize()/padding() to land on the wrong element and silently break layouts."
+    },
+    {
+      "id": "rc1q6",
+      "type": "multi",
+      "prompt": "Your screen looks perfect in @Preview but is blank when you Run it on the emulator. Which are plausible causes? (Select all that apply.)",
+      "options": [
+        { "id": "a", "text": "The real data passed at runtime is empty/null, while the Preview used hard-coded sample data." },
+        { "id": "b", "text": "You removed or broke the setContent { } wiring in onCreate()." },
+        { "id": "c", "text": "@Preview always proves the app works, so the device must have a hardware fault." },
+        { "id": "d", "text": "The composable depends on something only available at runtime (e.g. a ViewModel or Context) that the Preview faked or skipped." }
+      ],
+      "correct": ["a", "b", "d"],
+      "explanation": "Preview renders in isolation with sample inputs and no real Activity/ViewModel/navigation, so it verifies layout, not behavior. Empty runtime data (a), broken setContent wiring (b), or a runtime-only dependency (d) all show fine in Preview but blank on device. (c) is the misconception itself — Preview is not proof the app works."
+    }
+  ]
+}
+</script>
+<!-- ---------- 5. DELIBERATE PRACTICE ---------- -->
+<h3 id="master-practice">5 · Deliberate practice — your next reps</h3>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🏋️</span>
+<div class="callout__body">
+<span class="callout__label">Do these now, in this order</span>
+<p>Spaced, effortful retrieval beats re-reading every time. Here's the exact ladder for Session 1's skills:</p>
+<ol>
+<li><strong>Solidify the core →</strong> <a href="../practice/challenges.html">Challenges</a> — do the <em>Kotlin track</em> "greeting / string-template" rungs and the first faded reps. Master the pure-Kotlin logic before fighting the IDE.</li>
+<li><strong>Train your eye for bugs →</strong> <a href="../practice/debug-drills.html">Debug drills</a> — find "where does this app start?" and the manifest/launcher and <code>minSdk</code>-vs-<code>targetSdk</code> drills. Spot the bug <em>before</em> revealing the fix.</li>
+<li><strong>Lock it into long-term memory →</strong> <a href="../practice/spaced-repetition.html">Spaced repetition</a> — review the Unit 1 deck (ecosystem terms, the launch chain, <code>@Composable</code>/<code>@Preview</code>). Two minutes a day keeps it.</li>
+<li><strong>See where you are →</strong> <a href="../path.html">Skill map</a> — Session 1 unlocks the <em>Kotlin</em> and <em>Compose-UI</em> nodes. Watch them turn from locked to in-progress as you solve challenges.</li>
+</ol>
+<p class="mt muted">Marking the challenge above as solved and passing the retrieval check feeds your personal mastery on the skill map — that's the green you're chasing, and it's yours, not a grade.</p>
+</div>
+</div>
+<!-- ---------- spaced-repetition mini-deck (auto-mounts) ---------- -->
+<h3 id="master-recall">Quick recall deck — review before Session 2</h3>
+<p class="muted">A tiny spaced-repetition deck for today's must-know facts. Reveal the answer in your head first, then grade your recall honestly — that's what schedules the next review.</p>
+<div data-srs="s01-deck"></div>
+<script id="s01-deck" type="application/json">
+{
+  "id": "s01-deck",
+  "cards": [
+    {
+      "id": "s01-c1",
+      "topic": "kotlin",
+      "front": "What is the entry-point chain when a user taps your app icon? (4 hops)",
+      "back": "manifest's LAUNCHER &lt;activity&gt; → MainActivity.onCreate() → setContent { } → your @Composable. There is no main() you write."
+    },
+    {
+      "id": "s01-c2",
+      "topic": "kotlin",
+      "front": "Why can a @Composable's body run more than once?",
+      "back": "Recomposition: Compose re-invokes a composable when the state/inputs it reads change. Treat the body as a pure description and keep side effects out of it."
+    },
+    {
+      "id": "s01-c3",
+      "topic": "compose-ui",
+      "front": "What does @Preview give you that Run does not, and what does it NOT verify?",
+      "back": "Gives a fast in-IDE render with sample inputs — no emulator. Does NOT verify runtime behavior (no real ViewModel/Context/nav/data). Preview checks layout; Run checks the truth."
+    },
+    {
+      "id": "s01-c4",
+      "topic": "compose-ui",
+      "front": "Per the official guidelines, what parameter should a reusable composable accept, and where is it applied?",
+      "back": "modifier: Modifier = Modifier — the first optional parameter — applied to the OUTERMOST element it emits, so callers can size/position/decorate the whole component."
+    },
+    {
+      "id": "s01-c5",
+      "topic": "kotlin",
+      "front": "minSdk vs targetSdk vs compileSdk — one line each.",
+      "back": "minSdk = oldest OS you install on (lower = more devices). targetSdk = OS version you tested/opted-into. compileSdk = SDK whose APIs the compiler can see. Constraint: compileSdk ≥ targetSdk ≥ minSdk."
+    },
+    {
+      "id": "s01-c6",
+      "topic": "kotlin",
+      "front": "Where do user-facing strings belong in an Android app, and how do you read one in Compose?",
+      "back": "res/values/strings.xml (single source, localizable). In Compose read it with stringResource(R.string.greeting). Inline literals trigger a lint warning."
+    }
+  ]
+}
+</script>
+<!-- ---------- personal mastery strip (auto-renders) ---------- -->
+<div class="callout callout--clo mt">
+<span aria-hidden="true" class="callout__icon">📈</span>
+<div class="callout__body">
+<span class="callout__label">Your progress (yours alone — not a grade)</span>
+<div class="mt" data-mastery-stats=""></div>
+</div>
+</div>
+</div></section>
+</main>
+<!-- ====================== FOOTER ====================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Session 1 of 12 ·
+        <span class="muted">Week 1: Foundations — Android Essentials &amp; Ecosystem</span>
+</div>
+<div class="muted">
+        Keiser University · B.S. Software Engineering · 3.0 credit hours ·
+        <a href="../index.html">Course Hub</a> · <a href="session-02.html">Next: Session 2 →</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

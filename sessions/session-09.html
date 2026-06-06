@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Session 9: Local Data with DataStore/SharedPreferences and Room/SQLite CRUD. Learn to persist settings and build a durable, Room-backed CRUD list." name="description"/>
+<title>Session 9 · Local Data: DataStore &amp; Room/SQLite CRUD · COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* Page-specific tweaks (chrome still uses contract classes) */
+    .obj-list { list-style: none; padding-left: 0; display: grid; gap: 8px; }
+    .obj-list > li { display: flex; gap: 10px; align-items: flex-start; }
+    .obj-list .clo-tag { flex: 0 0 auto; margin-top: 2px; }
+    .lead { font-size: var(--fs-lg); color: var(--muted); max-width: 70ch; }
+    .two-col { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 880px) { .two-col { grid-template-columns: 1.5fr 1fr; } }
+    .mini-note { font-size: var(--fs-sm); color: var(--muted); }
+    .legend-row { display: flex; flex-wrap: wrap; gap: 10px; margin: var(--space-3) 0; }
+    .spectrum { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: var(--space-4); margin: var(--space-4) 0; }
+    .spectrum .card { border-top: 3px solid var(--teal-2); }
+    .timeblock__body ul { margin: .4em 0 .6em; }
+    .seg-timer { margin-top: var(--space-3); }
+    .pill-list { display:flex; flex-wrap:wrap; gap:8px; margin: var(--space-3) 0; }
+    table.cmp { width:100%; border-collapse: collapse; margin: var(--space-4) 0; font-size: var(--fs-sm); }
+    table.cmp th, table.cmp td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align: top; }
+    table.cmp th { background: var(--surface-2); font-weight:700; }
+    .anchor-h { scroll-margin-top: 80px; }
+  </style>
+</head>
+<body>
+<!-- ============================ TOP NAV ============================ -->
+<header>
+<div class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">A</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-08.html">‹ Prev (S8)</a>
+<a aria-current="page" class="active" href="session-09.html">S9</a>
+<a href="session-10.html">Next (S10) ›</a>
+<a href="../labs/sqlite-crud-sim.html">CRUD Sim</a>
+<a href="#discussion">DB Wk3</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ============================ HERO ============================ -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:12px;">
+<span class="pill pill--green">Session 9 of 12</span>
+<span class="pill">Week 3</span>
+<span class="pill">Navigation, Architecture &amp; Local Data</span>
+</div>
+<h1 class="hero-title" id="hero-title">Local Data: DataStore / SharedPreferences &amp; Room / SQLite (CRUD)</h1>
+<p class="hero-sub">
+        Today your app stops forgetting. We persist a user setting with Preferences DataStore,
+        then build a Room-backed list with full Create / Read / Update / Delete that survives an app restart —
+        and wire it into the project's data layer.
+      </p>
+<div class="hero-meta">
+<span class="pill pill--accent">🎯 CLO 4</span>
+<span class="pill">🧱 Unit 6 — Data persistence</span>
+<span class="pill">Kotlin · Jetpack Compose · Material 3</span>
+</div>
+</section>
+<div class="two-col">
+<div>
+<!-- ===================== LEARNING OBJECTIVES ===================== -->
+<section aria-labelledby="obj-h" class="card card--accent slide">
+<h2 class="card__title anchor-h" id="obj-h">🎓 Learning Objectives</h2>
+<p class="muted">By the end of Session 9, every student can:</p>
+<ul class="obj-list">
+<li><span class="clo-tag">CLO 4</span><span><strong>Explain why apps need persistence</strong> and choose the right tool on the storage spectrum (key-value vs. structured DB vs. files).</span></li>
+<li><span class="clo-tag">CLO 4</span><span><strong>Save and restore a simple setting</strong> (e.g., dark-mode flag, username) using <strong>Preferences DataStore</strong>, and explain why it replaces <code>SharedPreferences</code>.</span></li>
+<li><span class="clo-tag">CLO 4</span><span><strong>Define a Room database</strong>: an <code>@Entity</code>, a <code>@Dao</code>, and an <code>@Database</code> — and describe how Room sits on top of SQLite.</span></li>
+<li><span class="clo-tag">CLO 4</span><span><strong>Perform CRUD</strong> (insert / query / update / delete) with <code>suspend</code> DAO functions and <strong>observe</strong> the table reactively with <code>Flow</code>.</span></li>
+<li><span class="clo-tag">CLO 4</span><span><strong>Verify durability</strong>: confirm saved data survives an app kill + relaunch, and connect this layer to their ViewModel + repository project architecture.</span></li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧭</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p>This session is the heart of <strong>CLO 4 — "Explore techniques for application data storage using local storage and/or a database."</strong> It feeds directly into the <strong>Final project</strong> required feature (c): local persistence with DataStore or Room/SQLite. (Milestone 1 in Week 2 only needs a working UI prototype — persistence may be stubbed there.)</p>
+</div>
+</div>
+</section>
+</div>
+<div>
+<!-- ===================== ON THIS PAGE (TOC) ===================== -->
+<section aria-labelledby="toc-h" class="card slide">
+<h2 class="card__title anchor-h" id="toc-h">📑 On this page</h2>
+<nav aria-label="Section index" data-toc="main"></nav>
+<p class="mini-note mt">Tip: press <kbd>▶ Present</kbd> in the nav to teach straight from this page. Use <kbd>←</kbd>/<kbd>→</kbd> to move between sections, <kbd>Esc</kbd> to exit.</p>
+</section>
+</div>
+</div>
+<!-- ===================== MATERIALS & SETUP ===================== -->
+<!-- ===================== CONCEPT NOTES ===================== -->
+<section aria-labelledby="concepts" class="slide mt">
+<h2 class="anchor-h" id="concepts">📚 Lecture / Concept Notes</h2>
+<p class="lead">Everything you need to learn this from scratch. Each big idea is expanded with explanations, analogies, and copyable code.</p>
+<!-- Big idea 1 -->
+<h3 class="anchor-h" id="c-why">1 · Why persist — and the storage spectrum</h3>
+<p>A running app holds state in memory (your ViewModel, Compose state). The moment Android reclaims the process — the user swipes the app away, the OS kills it for memory, or the device reboots — <strong>memory is wiped</strong>. <em>Persistence</em> means writing data somewhere durable on the device so it's still there next launch.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🧠</span>
+<div class="callout__body">
+<span class="callout__label">Analogy</span>
+<p>Memory (RAM) is your desk — fast, but everything gets swept off when you go home. Persistence is the filing cabinet — slower to open, but your papers are there tomorrow. DataStore is a sticky note on the cabinet ("theme = dark"); Room/SQLite is the organized drawers of labeled folders you can search.</p>
+</div>
+</div>
+<p>Android gives several options. Pick by the <em>shape</em> of the data:</p>
+<div class="spectrum">
+<div class="card">
+<h4>Key-value</h4>
+<p class="mini-note">A handful of small, simple values: flags, prefs, last-opened id.</p>
+<p><span class="badge badge--green">Preferences DataStore</span> <span class="badge">SharedPreferences (legacy)</span></p>
+</div>
+<div class="card">
+<h4>Structured / relational</h4>
+<p class="mini-note">Many records you query, sort, filter, relate. The bulk of app data.</p>
+<p><span class="badge badge--teal">Room (over SQLite)</span></p>
+</div>
+<div class="card">
+<h4>Files</h4>
+<p class="mini-note">Blobs: images, audio, exported documents, downloaded JSON caches.</p>
+<p><span class="badge">Internal/external storage</span></p>
+</div>
+<div class="card">
+<h4>Typed objects</h4>
+<p class="mini-note">A whole structured config object, schema-validated.</p>
+<p><span class="badge">Proto DataStore</span></p>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">✅</span>
+<div class="callout__body">
+<span class="callout__label">Decision rule</span>
+<p><strong>"A few simple settings → DataStore. A collection of records you query → Room. Big binary blobs → files."</strong> Say it out loud until it's automatic — this is the single most testable idea today.</p>
+</div>
+</div>
+<!-- Big idea 2 -->
+<h3 class="anchor-h" id="c-keyvalue">2 · Key-value: SharedPreferences → Preferences DataStore</h3>
+<p><code>SharedPreferences</code> is the original key-value store. It works, but it has real problems: its <code>apply()</code>/<code>commit()</code> API can block the UI thread, it has no built-in error signaling, and reads are synchronous. <strong>DataStore</strong> is the modern replacement: it's asynchronous, uses Kotlin coroutines + <code>Flow</code>, and is transactional and safe.</p>
+<div aria-label="Key-value comparison" class="tabs" role="tablist">
+<button class="tab" data-tab="ds">DataStore (modern ✅)</button>
+<button class="tab" data-tab="sp">SharedPreferences (legacy)</button>
+<button class="tab" data-tab="gradle-ds">Gradle setup</button>
+</div>
+<div class="tabpanel" data-tabpanel="ds">
+<p>Declare a single top-level DataStore, define typed keys, then expose a read <code>Flow</code> and a <code>suspend</code> write. Reads emit automatically whenever the value changes.</p>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p><code>by preferencesDataStore(name = "settings")</code> is a <strong>delegated extension property on <code>Context</code></strong> that hands the whole app one shared DataStore — a coroutine-based key-value store you <strong>read as a <code>Flow</code></strong> (an auto-updating stream) and <strong>write with a <code>suspend</code> function</strong>.</p>
+</div>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// SettingsRepository.kt
+import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.Preferences
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import java.io.IOException
+
+// One DataStore per file name, declared at the top level (one instance per process).
+private val Context.dataStore by preferencesDataStore(name = "settings")
+
+class SettingsRepository(private val context: Context) {
+
+    private object Keys {
+        val DARK_MODE = booleanPreferencesKey("dark_mode")
+    }
+
+    // READ: a Flow that emits the current value and every future change.
+    val darkMode: Flow&lt;Boolean&gt; = context.dataStore.data
+        .catch { e -&gt;
+            // DataStore surfaces read errors as IOException — emit a safe default.
+            if (e is IOException) emit(emptyPreferences()) else throw e
+        }
+        .map { prefs -&gt; prefs[Keys.DARK_MODE] ?: false }
+
+    // WRITE: suspend function, runs off the main thread, transactional.
+    suspend fun setDarkMode(enabled: Boolean) {
+        context.dataStore.edit { prefs -&gt;
+            prefs[Keys.DARK_MODE] = enabled
+        }
+    }
+}</code></pre>
+</div>
+<p class="mini-note">Notice that <code>darkMode</code> is a <em>stream</em>. The UI doesn't "ask once" — it <em>observes</em>, so flipping the switch updates everywhere instantly.</p>
+<h4 class="anchor-h" id="ds-walkthrough">Reading the DataStore code — chunk by chunk</h4>
+<ul>
+<li><strong><code>private val Context.dataStore by preferencesDataStore(name = "settings")</code></strong> — a top-level <em>delegated extension property</em>. <code>by preferencesDataStore(...)</code> is the delegate that lazily creates <strong>exactly one</strong> DataStore instance (backed by the file <code>settings.preferences_pb</code>) for the entire process. Because it extends <code>Context</code>, you reach it as <code>context.dataStore</code> from anywhere — but it's still the <em>same</em> instance every time.</li>
+<li><strong><code>val DARK_MODE = booleanPreferencesKey("dark_mode")</code></strong> — a <em>typed</em> key. The <code>boolean…</code> prefix locks this key to <code>Boolean</code>; reading or writing it with the wrong type won't compile. The string <code>"dark_mode"</code> is the actual name stored on disk.</li>
+<li><strong><code>context.dataStore.data</code></strong> — this is a <code>Flow&lt;Preferences&gt;</code>: a stream that emits the whole current preferences snapshot now, and <em>re-emits</em> a fresh snapshot every time any value is written.</li>
+<li><strong><code>.catch { e -&gt; if (e is IOException) emit(emptyPreferences()) else throw e }</code></strong> — DataStore surfaces a read/disk failure as an <code>IOException</code> inside the Flow. This operator <em>recovers</em> from that one case by emitting an empty snapshot (so the UI falls back to defaults instead of crashing); any other error is rethrown.</li>
+<li><strong><code>.map { prefs -&gt; prefs[Keys.DARK_MODE] ?: false }</code></strong> — transforms each <code>Preferences</code> snapshot into the one value you care about. <code>prefs[KEY]</code> returns <code>null</code> if nothing was ever stored, and the elvis <code>?: false</code> supplies the default. Result: <code>darkMode</code> is a clean <code>Flow&lt;Boolean&gt;</code>.</li>
+<li><strong><code>suspend fun setDarkMode(...)</code> + <code>dataStore.edit { settings -&gt; settings[KEY] = value }</code></strong> — writing is a <code>suspend</code> function (it must be called from a coroutine, off the main thread). <code>edit { }</code> runs your mutation as one <em>atomic transaction</em>; the moment it commits, the read Flow above re-emits the new value.</li>
+</ul>
+<p>Strip away the repository and the new idea — a <code>Context</code> extension property whose value comes from a delegate — is tiny on its own:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · the delegated extension property in isolation</span>
+<pre><code>// Declared once, at the top level of a file — NOT inside a class.
+val Context.dataStore by preferencesDataStore(name = "settings")
+
+// Anywhere you have a Context, you read the SAME instance:
+val a = applicationContext.dataStore   // ┐ both names point at
+val b = someActivity.dataStore         // ┘ the one process-wide store
+
+// Reading is a stream; writing is a coroutine call:
+val flow: Flow&lt;Preferences&gt; = context.dataStore.data        // observe
+suspend fun save() { context.dataStore.edit { it[KEY] = 1 } } // mutate</code></pre>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p>This is <strong>not</strong> <code>SharedPreferences</code>. There is no blocking <code>getString("dark_mode", …)</code> you call on the main thread — a read is a <code>Flow</code> you <em>collect</em>, and a write is a <code>suspend</code> <code>edit { }</code> you call from a coroutine. Also, declare <code>by preferencesDataStore(...)</code> <strong>once at the top level</strong>: creating a second DataStore over the same file name throws at runtime, which is exactly why it's a single delegated property and not a <code>new</code>-ed object.</p>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="sp">
+<p>This is here only for contrast. It's what you may have seen online; the point is to understand why you don't reach for it in new code.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · legacy</span>
+<pre><code>// Legacy — for contrast only. Synchronous reads, can block UI.
+val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+
+// write
+prefs.edit().putBoolean("dark_mode", true).apply()
+
+// read (synchronous — happens on whatever thread you call it)
+val dark = prefs.getBoolean("dark_mode", false)</code></pre>
+</div>
+<table class="cmp">
+<tr><th>Concern</th><th>SharedPreferences</th><th>Preferences DataStore</th></tr>
+<tr><td>Threading</td><td>Synchronous reads; <code>commit()</code> blocks</td><td>Async via coroutines, off main thread</td></tr>
+<tr><td>Reactive updates</td><td>Manual listeners</td><td>Built-in <code>Flow</code></td></tr>
+<tr><td>Error handling</td><td>Silent</td><td>Errors surfaced (catchable)</td></tr>
+<tr><td>Recommended for new code?</td><td>No</td><td>Yes ✅</td></tr>
+</table>
+</div>
+<div class="tabpanel" data-tabpanel="gradle-ds">
+<div class="codeblock">
+<span class="codeblock__lang">Gradle (Kotlin DSL)</span>
+<pre><code>// app/build.gradle.kts — dependencies { }
+dependencies {
+    // Preferences DataStore (key-value)
+    implementation("androidx.datastore:datastore-preferences:1.2.1")
+
+    // (Compose + lifecycle already present from earlier sessions)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
+}</code></pre>
+</div>
+<p class="mini-note">Versions drift — let Android Studio suggest the latest stable version. The API shown is stable across 1.0.x–1.2.x.</p>
+</div>
+<!-- Big idea 3 -->
+<h3 class="anchor-h" id="c-room">3 · Structured data: SQLite under the hood, Room on top</h3>
+<p>Every Android device ships with <strong>SQLite</strong> — a tiny, self-contained relational database stored as a single file in your app's private storage. You <em>can</em> talk to it with raw SQL and the <code>SQLiteOpenHelper</code> API, but that means hand-writing string SQL, manually mapping cursor columns to objects, and zero compile-time checking.</p>
+<p><strong>Room</strong> is Google's recommended abstraction layer over SQLite. You describe your data with annotations; Room generates the SQL and the boilerplate, <em>and validates your queries at compile time</em>. A typo in a column name fails the build, not the app at runtime.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏗️</span>
+<div class="callout__body">
+<span class="callout__label">Three pieces of Room</span>
+<p><strong>@Entity</strong> = a table (one class = one table, fields = columns). <strong>@Dao</strong> = the queries (an interface of read/write methods). <strong>@Database</strong> = the connection that ties entities + DAOs together and hands you the database instance.</p>
+</div>
+</div>
+<div class="accordion">
+<div class="accordion__item is-open">
+<button class="accordion__head" type="button">@Entity — define a table</button>
+<div class="accordion__body"><div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "notes")
+data class NoteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val title: String,
+    val body: String,
+    val createdAt: Long = System.currentTimeMillis()
+)</code></pre>
+</div>
+<p class="mini-note">Each property becomes a column. <code>autoGenerate = true</code> lets SQLite assign the id. A <code>data class</code> is ideal — it's just the row.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">@Dao — define the queries (CRUD)</button>
+<div class="accordion__body"><div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>import androidx.room.*
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface NoteDao {
+
+    // READ — returns a Flow: emits the whole list, re-emits on any change.
+    @Query("SELECT * FROM notes ORDER BY createdAt DESC")
+    fun observeAll(): Flow&lt;List&lt;NoteEntity&gt;&gt;
+
+    // READ one (suspend = one-shot, no live updates)
+    @Query("SELECT * FROM notes WHERE id = :id")
+    suspend fun getById(id: Int): NoteEntity?
+
+    // CREATE
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(note: NoteEntity): Long
+
+    // UPDATE (matches on @PrimaryKey)
+    @Update
+    suspend fun update(note: NoteEntity)
+
+    // DELETE
+    @Delete
+    suspend fun delete(note: NoteEntity)
+
+    @Query("DELETE FROM notes")
+    suspend fun clearAll()
+}</code></pre>
+</div>
+<p class="mini-note"><strong>Key point:</strong> write methods are <code>suspend</code> (one-shot, off-main-thread); the live read returns <code>Flow</code> (a stream that keeps emitting). Room enforces this — a non-suspend write that hits the DB on the main thread will crash.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">@Database — tie it together &amp; get a singleton</button>
+<div class="accordion__body"><div>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p>This companion-object block is the <strong>thread-safe "build it once" singleton</strong> (the <em>double-checked locking</em> idiom): the first caller builds the expensive database, every later caller gets that <em>same shared</em> instance back, and two threads racing at startup can never build it twice.</p>
+</div>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+
+@Database(entities = [NoteEntity::class], version = 1, exportSchema = false)
+abstract class AppDatabase : RoomDatabase() {
+
+    abstract fun noteDao(): NoteDao
+
+    companion object {
+        @Volatile private var INSTANCE: AppDatabase? = null
+
+        fun get(context: Context): AppDatabase =
+            INSTANCE ?: synchronized(this) {
+                INSTANCE ?: Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "app.db"
+                ).build().also { INSTANCE = it }
+            }
+    }
+}</code></pre>
+</div>
+<p class="mini-note">The double-checked <code>@Volatile</code> singleton ensures one database instance per process — opening multiple is wasteful and can corrupt. <code>applicationContext</code> avoids leaking an Activity.</p>
+<h4 class="anchor-h" id="db-walkthrough">The singleton, line by line</h4>
+<ul>
+<li><strong><code>@Volatile private var INSTANCE: AppDatabase? = null</code></strong> — the one cached database (or <code>null</code> before it's built). <code>@Volatile</code> guarantees that when one thread writes <code>INSTANCE</code>, every other thread <em>immediately</em> sees the new value instead of a stale cached copy — essential for the check that follows.</li>
+<li><strong><code>INSTANCE ?: synchronized(this) { … }</code></strong> — the <em>outer</em> elvis check. If <code>INSTANCE</code> is already built, return it instantly with no locking (the fast, common path). Only when it's still <code>null</code> do we pay the cost of entering the synchronized block.</li>
+<li><strong><code>synchronized(this) { … }</code></strong> — a lock that lets <strong>only one thread at a time</strong> run the block. Threads that arrive while one is building wait here rather than building their own copy.</li>
+<li><strong><code>INSTANCE ?: Room.databaseBuilder(...)</code></strong> — the <em>inner</em> elvis check, re-tested <em>after</em> acquiring the lock. A thread that was waiting may find another thread already built the DB; this re-check hands back that instance instead of building a second one. The outer + inner pair is the <strong>double-checked locking</strong> idiom.</li>
+<li><strong><code>.build().also { INSTANCE = it }</code></strong> — actually construct the database, then <code>.also { }</code> caches it into <code>INSTANCE</code> (for all future callers) <em>and</em> returns that same instance as the value of the expression.</li>
+</ul>
+<p>The idiom isn't Room-specific — here it is on a plain expensive object, with the four moving parts isolated:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · double-checked locking, on any expensive object</span>
+<pre><code>@Volatile private var INSTANCE: Engine? = null      // 1. visible across threads
+
+fun get(): Engine =
+    INSTANCE ?: synchronized(this) {                // 2. fast path, else lock
+        INSTANCE ?: Engine()                        // 3. re-check inside the lock
+            .also { INSTANCE = it }                 // 4. cache + return it
+    }</code></pre>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p>You <strong>never</strong> call <code>AppDatabase()</code> yourself — it's <code>abstract</code>, and Room builds it via <code>databaseBuilder(...).build()</code>. Building a database is <em>expensive</em>, so it must be a single shared instance for the whole process, not one per screen. And in a real app you would almost never hand-write this boilerplate: a dependency-injection framework like <strong>Hilt</strong> creates the database once and provides it for you. We write it by hand here only so the mechanism — and <em>why</em> it has to be thread-safe — is no longer a mystery.</p>
+</div>
+</div>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Gradle setup for Room (KSP)</button>
+<div class="accordion__body"><div>
+<div class="codeblock">
+<span class="codeblock__lang">Gradle (Kotlin DSL)</span>
+<pre><code>// Project-level build.gradle.kts — plugins { } (alias/version catalog style)
+plugins {
+    id("com.google.devtools.ksp") version "2.2.20-2.0.2" apply false
+}
+
+// app/build.gradle.kts
+plugins {
+    id("com.google.devtools.ksp")
+}
+
+dependencies {
+    val room = "2.8.4"
+    implementation("androidx.room:room-runtime:$room")
+    implementation("androidx.room:room-ktx:$room")   // Flow + coroutines support
+    ksp("androidx.room:room-compiler:$room")          // generates the code
+}</code></pre>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Version pitfall</span>
+<p>The KSP version's prefix <strong>must match your Kotlin plugin version</strong> (e.g. Kotlin <code>2.2.20</code> → KSP <code>2.2.20-2.0.2</code>). A mismatch is the most common build failure today. Use <code>room-ktx</code> (not just <code>room-runtime</code>) so <code>Flow</code> works.</p>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<!-- Big idea 4 -->
+<h3 class="anchor-h" id="c-crud">4 · CRUD &amp; observing with Flow through the architecture</h3>
+<p>The UI must never touch Room directly. The clean chain is: <strong>Compose UI → ViewModel → Repository → DAO → SQLite</strong>. The repository hides "where the data comes from," the ViewModel exposes UI-friendly state, and Compose just renders it.</p>
+<div aria-label="CRUD architecture layers" class="tabs" role="tablist">
+<button class="tab" data-tab="repo">Repository</button>
+<button class="tab" data-tab="vm">ViewModel</button>
+<button class="tab" data-tab="ui">Compose UI</button>
+</div>
+<div class="tabpanel" data-tabpanel="repo">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>class NoteRepository(private val dao: NoteDao) {
+    val notes: Flow&lt;List&lt;NoteEntity&gt;&gt; = dao.observeAll()
+    suspend fun add(title: String, body: String) =
+        dao.insert(NoteEntity(title = title, body = body))
+    suspend fun remove(note: NoteEntity) = dao.delete(note)
+    suspend fun edit(note: NoteEntity) = dao.update(note)
+}</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="vm">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+class NotesViewModel(private val repo: NoteRepository) : ViewModel() {
+
+    // Convert the cold Flow into UI state the UI can collect with lifecycle awareness.
+    val notes = repo.notes.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList()
+    )
+
+    fun addNote(title: String, body: String) = viewModelScope.launch {
+        if (title.isNotBlank()) repo.add(title, body)
+    }
+    fun deleteNote(note: NoteEntity) = viewModelScope.launch { repo.remove(note) }
+}</code></pre>
+</div>
+<p class="mini-note">Writes launch in <code>viewModelScope</code> so the <code>suspend</code> DAO calls run off the main thread automatically. The read is a single source of truth — after an insert, the Flow re-emits and the list updates with no manual refresh.</p>
+</div>
+<div class="tabpanel" data-tabpanel="ui">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+
+@Composable
+fun NotesScreen(viewModel: NotesViewModel) {
+    val notes by viewModel.notes.collectAsStateWithLifecycle()
+    var title by remember { mutableStateOf("") }
+
+    Column {
+        OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") })
+        Button(onClick = { viewModel.addNote(title, ""); title = "" }) { Text("Add") }
+
+        LazyColumn {
+            items(notes, key = { it.id }) { note -&gt;
+                ListItem(
+                    headlineContent = { Text(note.title) },
+                    trailingContent = {
+                        IconButton(onClick = { viewModel.deleteNote(note) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        }
+                    }
+                )
+            }
+        }
+    }
+}</code></pre>
+</div>
+<p class="mini-note"><code>collectAsStateWithLifecycle()</code> stops collecting when the screen isn't visible — battery- and lifecycle-safe. The <code>key = { it.id }</code> helps Compose animate list changes correctly.</p>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🔁</span>
+<div class="callout__body">
+<span class="callout__label">The "single source of truth" payoff</span>
+<p>Because the UI observes a <code>Flow</code> straight from the database, <em>you never manually update the list after a write.</em> Insert → table changes → Room re-emits → list redraws. Delete the same way. This is the aha moment: the database is the single source of truth, and the UI just follows it.</p>
+</div>
+</div>
+<h3 class="anchor-h" id="c-review">Concept review flashcards</h3>
+<p class="muted">Use these to warm up before the <em>next</em> session, or whenever you want a quick retrieval rep. Click to flip.</p>
+<div data-flashcards="fc-data"></div>
+<script id="fc-data" type="application/json">
+      [
+        { "front": "Why isn't ViewModel state enough to 'remember' data?", "back": "ViewModel survives configuration changes (rotation) but is destroyed on process death / app kill. Persistence writes to disk so data survives relaunch.", "tag": "Why persist" },
+        { "front": "DataStore vs. Room — when do you pick each?", "back": "A few simple key-value settings → Preferences DataStore. A collection of records you query/sort/filter → Room (over SQLite).", "tag": "Spectrum" },
+        { "front": "What is the relationship between SQLite and Room?", "back": "SQLite is the actual on-device relational database. Room is a typed library that generates the boilerplate and validates SQL at compile time.", "tag": "Room" },
+        { "front": "Name Room's three core annotations and what each defines.", "back": "@Entity = a table, @Dao = the query methods, @Database = the connection that ties entities + DAOs together.", "tag": "Room" },
+        { "front": "Why are Room write methods marked 'suspend'?", "back": "DB writes are slow and must run off the main thread. 'suspend' forces them into a coroutine; Room crashes a non-suspend write on the main thread.", "tag": "Coroutines" },
+        { "front": "Why does the read method return a Flow instead of a List?", "back": "A Flow is a stream that re-emits whenever the table changes, so the UI updates automatically after any insert/update/delete — single source of truth.", "tag": "Flow" },
+        { "front": "What is the clean data-layer chain in this course's architecture?", "back": "Compose UI → ViewModel → Repository → DAO → SQLite. The UI never touches Room directly.", "tag": "Architecture" }
+      ]
+      </script>
+</section>
+<!-- ===================== GUIDED LIVE-CODING ===================== -->
+<section aria-labelledby="guided" class="slide mt">
+<h2 class="anchor-h" id="guided">⌨️ Guided Live-Coding</h2>
+<p class="lead">Type these yourself, step by step. Each step lists exactly what to type and what you should see. Demo A is DataStore; Demo B is Room CRUD.</p>
+<h3 class="anchor-h" id="g-demoA">Demo A — Save &amp; restore a setting with DataStore (~20 min)</h3>
+<ol class="stepper">
+<li class="step">
+<h4>Add the dependency &amp; sync</h4>
+<p>Add <code>androidx.datastore:datastore-preferences</code> (see Gradle tab above). Sync.</p>
+<p class="mini-note"><strong>See:</strong> "Gradle sync successful" with no red.</p>
+</li>
+<li class="step">
+<h4>Create <code>SettingsRepository</code></h4>
+<p>Type the repository from the DataStore tab: the top-level <code>preferencesDataStore</code>, a <code>booleanPreferencesKey("dark_mode")</code>, a <code>darkMode: Flow&lt;Boolean&gt;</code> read, and a <code>suspend setDarkMode()</code> write. As you type, say to yourself what the <code>.map</code> and the <code>.catch</code> each do.</p>
+</li>
+<li class="step">
+<h4>Expose it through the ViewModel</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>class SettingsViewModel(private val repo: SettingsRepository) : ViewModel() {
+    val darkMode = repo.darkMode.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5_000), false
+    )
+    fun toggleDark(enabled: Boolean) = viewModelScope.launch { repo.setDarkMode(enabled) }
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Bind a Switch in Compose</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>val dark by viewModel.darkMode.collectAsStateWithLifecycle()
+Row(verticalAlignment = Alignment.CenterVertically) {
+    Text("Dark mode")
+    Spacer(Modifier.weight(1f))
+    Switch(checked = dark, onCheckedChange = { viewModel.toggleDark(it) })
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Prove durability</h4>
+<p>Run. Flip the switch ON. Kill the app from recents. Relaunch. <strong>The switch is still ON.</strong> This is the payoff — your app finally remembers.</p>
+<p class="mini-note"><strong>See:</strong> the toggle's state survives an app kill. The earlier "it forgot" demo is now fixed.</p>
+</li>
+</ol>
+<h3 class="anchor-h" id="g-demoB">Demo B — Room CRUD: insert, observe, delete (~40 min)</h3>
+<ol class="stepper">
+<li class="step">
+<h4>Add Room + KSP &amp; sync</h4>
+<p>Add the KSP plugin and the three Room deps (Room Gradle accordion above). Sync. <strong>Watch the KSP/Kotlin version match.</strong></p>
+</li>
+<li class="step">
+<h4>Type <code>NoteEntity</code></h4>
+<p>Type the <code>@Entity(tableName = "notes")</code> data class with an <code>@PrimaryKey(autoGenerate = true)</code> id. Quick self-check: how many columns will this table have? (Four — one per property.)</p>
+</li>
+<li class="step">
+<h4>Type <code>NoteDao</code> — and make a deliberate mistake</h4>
+<p>Try typing <code>@Insert fun insert(note: NoteEntity)</code> <strong>without</strong> <code>suspend</code>, then Build → watch the Room compiler complain about running on the main thread. Add <code>suspend</code> and Build passes. Then add <code>observeAll(): Flow&lt;List&lt;NoteEntity&gt;&gt;</code> and <code>delete()</code>.</p>
+</li>
+<li class="step">
+<h4>Type <code>AppDatabase</code> with the singleton</h4>
+<p>Type the <code>@Database</code> abstract class and the <code>@Volatile</code> companion singleton. Remind yourself why you never want to open the database twice — one instance per process avoids waste and corruption.</p>
+</li>
+<li class="step">
+<h4>Wire repository → ViewModel → screen</h4>
+<p>Build the <code>NoteRepository</code>, <code>NotesViewModel</code>, and <code>NotesScreen</code> from the architecture tabs. Get the DAO via <code>AppDatabase.get(context).noteDao()</code>.</p>
+</li>
+<li class="step">
+<h4>Insert &amp; watch it appear</h4>
+<p>Run. Type a title, tap Add. The row appears in the list <em>with no manual refresh</em> (the Flow re-emitted). Open <strong>App Inspection ▸ Database Inspector</strong> and show the actual row in <code>notes</code>.</p>
+<p class="mini-note"><strong>See:</strong> a new row in the list AND in the Database Inspector table.</p>
+</li>
+<li class="step">
+<h4>Delete &amp; prove restart-survival</h4>
+<p>Tap the delete icon → row vanishes from list and table. Add two notes, kill the app, relaunch → <strong>they're still there.</strong> CRUD complete and durable.</p>
+</li>
+</ol>
+</section>
+<!-- ===================== HANDS-ON LAB ===================== -->
+<section aria-labelledby="lab" class="slide mt">
+<h2 class="anchor-h" id="lab">🧪 Hands-On Lab — Persistence Lab</h2>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Goal · CLO 4</span>
+<p>In <strong>your own project</strong>, add (a) a saved setting via DataStore and (b) a Room-backed list with <strong>add + delete</strong> (CRUD) that survives an app restart — wired through your repository + ViewModel.</p>
+</div>
+</div>
+<div class="grid grid-2">
+<div class="card">
+<h4 class="card__title">Lab progress</h4>
+<p class="muted mini-note">Check off as you go. Saved in your browser.</p>
+<ul class="checklist" id="s09-lab">
+<li><label><input data-key="s09-datastore" type="checkbox"/><span><strong>Part A:</strong> a meaningful setting persists via Preferences DataStore (read as a <code>Flow</code>, written with a <code>suspend</code> <code>edit { }</code>) and is bound to a control.</span></label></li>
+<li><label><input data-key="s09-room-sync" type="checkbox"/><span><strong>Part B:</strong> KSP plugin + Room deps added and Gradle sync is green (KSP prefix matches the Kotlin version).</span></label></li>
+<li><label><input data-key="s09-entity" type="checkbox"/><span>An <code>@Entity</code> models <em>my</em> project's domain with an <code>@PrimaryKey(autoGenerate = true)</code> id and 2–4 fields.</span></label></li>
+<li><label><input data-key="s09-dao" type="checkbox"/><span><code>@Dao</code> + singleton <code>@Database</code> + repository in place: <code>observeAll(): Flow&lt;List&lt;…&gt;&gt;</code>, a <code>suspend insert</code>, and a <code>suspend delete</code>.</span></label></li>
+<li><label><input data-key="s09-screen" type="checkbox"/><span>Screen wired through the ViewModel: list exposed via <code>stateIn</code>, collected with <code>collectAsStateWithLifecycle()</code>, rendered in a <code>LazyColumn</code> with add + per-row delete.</span></label></li>
+<li><label><input data-key="s09-durable" type="checkbox"/><span><strong>Durability proven:</strong> added 2 items, full-killed the app from recents, relaunched — both rows still listed, and confirmed in the Database Inspector.</span></label></li>
+</ul>
+</div>
+<div class="card">
+<h4 class="card__title">Completion</h4>
+<p class="mini-note">Bar fills as you check items. A full bar = a lab-ready, working build you can be proud of.</p>
+<div class="progressbar" data-progress-for="s09-lab"><div class="progressbar__fill"></div></div>
+<p class="mini-note mt"><strong>Done = all six checked:</strong> a saved setting <em>and</em> a Room-backed CRUD list that both survive an app kill, wired cleanly through repository → ViewModel → Compose. That satisfies Final-project required feature (c).</p>
+</div>
+</div>
+<h3>Step-by-step</h3>
+<ol class="stepper">
+<li class="step">
+<h4>Part A — Persist a setting (DataStore)</h4>
+<p>Add the DataStore dependency. Create a <code>SettingsRepository</code> with one key that fits your app (theme flag, "first launch done," last-selected filter, etc.). Bind it to a Switch or similar control.</p>
+<p class="mini-note"><strong>Hint:</strong> reuse Demo A almost verbatim — just rename the key to something meaningful for your app.</p>
+</li>
+<li class="step">
+<h4>Part B — Add Room to your project</h4>
+<p>Add the KSP plugin + Room deps. Sync. Don't continue until the sync is green.</p>
+</li>
+<li class="step">
+<h4>Define YOUR entity</h4>
+<p>Make the entity match <em>your</em> project's domain (a task, a recipe, a workout, a saved city…). At minimum: an auto-generated <code>id</code> + the fields you'll show in a list.</p>
+<p class="mini-note"><strong>Hint:</strong> keep it to 2–4 fields today. You can add columns later (that needs a migration — preview, not required now).</p>
+</li>
+<li class="step">
+<h4>DAO + Database + Repository</h4>
+<p>Write <code>observeAll(): Flow&lt;List&lt;...&gt;&gt;</code>, a <code>suspend insert</code>, and a <code>suspend delete</code>. Build the singleton <code>@Database</code>. Put the DAO behind a repository.</p>
+</li>
+<li class="step">
+<h4>Wire the screen</h4>
+<p>Expose the list from your ViewModel via <code>stateIn</code>; collect with <code>collectAsStateWithLifecycle()</code>; render with <code>LazyColumn</code>. Add an input + Add button, and a delete affordance per row.</p>
+</li>
+<li class="step">
+<h4>Verify durability</h4>
+<p>Add 2 items. <strong>Swipe the app away from recents</strong> (full kill, not just background). Relaunch. Confirm both items are still listed. Open the Database Inspector to confirm the rows.</p>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting — the usual suspects</span>
+<ul>
+<li><strong>Build fails after adding Room:</strong> KSP version prefix ≠ Kotlin version. Align them. Confirm <code>ksp(...)</code> (not <code>implementation(...)</code>) is used for <code>room-compiler</code>.</li>
+<li><strong>"Cannot access database on the main thread":</strong> a write method is missing <code>suspend</code>, or you're calling it outside a coroutine. Wrap in <code>viewModelScope.launch { }</code>.</li>
+<li><strong>List never updates after Add:</strong> your read returns <code>List</code>, not <code>Flow</code>, or you forgot <code>collectAsStateWithLifecycle()</code>. The read must be a Flow you collect.</li>
+<li><strong>Data gone after restart:</strong> you're probably reading an in-memory list, not the DB. Make sure the UI is collecting the DAO's Flow, and that you used <code>databaseBuilder</code> (persistent), not <code>inMemoryDatabaseBuilder</code>.</li>
+<li><strong>Crash on second launch / "no such column":</strong> you changed the entity without bumping <code>version</code> or providing a migration. For class, bump the version and uninstall/reinstall to wipe the DB.</li>
+<li><strong>DataStore switch always false:</strong> you read <code>.first()</code> once instead of collecting the Flow, or your default in <code>.map</code> overrides the saved value.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Go further — add Update/Edit</span>
+<p>Add an <strong>edit</strong> path: tap a row to open an editor pre-filled with its values, change a field, and call <code>@Update</code>. Confirm the change persists. Bonus: add a "clear all" using the <code>@Query("DELETE FROM ...")</code> DAO method, and animate list changes with <code>animateItemPlacement()</code>.</p>
+</div>
+</div>
+</section>
+<!-- ===================== ASSESSMENTS TODAY ===================== -->
+<section aria-labelledby="assess" class="slide mt">
+<h2 class="anchor-h" id="assess">📊 Assessments Today</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<h4 class="card__title">Persistence Lab</h4>
+<p>The lab above is a hands-on exercise.</p>
+<p class="mini-note">No formal exam or milestone is due today — Quiz 1 and Project Milestone 1 were Session 6; the final demo + Post-test are Session 12.</p>
+</div>
+<div class="card card--teal">
+<h4 class="card__title">Week 3 Discussion Board</h4>
+<p>The <a href="#discussion">Week 3 prompt</a> opens today and is due before Week 4 begins. The full prompt and what counts as a strong contribution are in the <a href="#discussion">Discussion Board section below</a>.</p>
+</div>
+</div>
+<h3>Optional 5-question self-check</h3>
+<p class="muted">Run it whenever you want to test yourself. This is your own check, not a grade — you get instant feedback and explanations.</p>
+<div data-quiz="quiz-s9" data-topic="data"></div>
+<script id="quiz-s9" type="application/json">
+      {
+        "title": "Session 9 self-check — Local Data",
+        "intro": "5 questions on DataStore and Room. 70% to pass. Answers reveal only after you submit.",
+        "passingScore": 0.7,
+        "shuffle": false,
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "prompt": "You need to store the user's preferred theme (a single boolean). Which tool fits best?",
+            "options": [
+              { "id": "a", "text": "Room database" },
+              { "id": "b", "text": "Preferences DataStore" },
+              { "id": "c", "text": "A file in external storage" },
+              { "id": "d", "text": "A global var in the ViewModel" }
+            ],
+            "correct": ["b"],
+            "explanation": "A single simple key-value flag is the textbook case for Preferences DataStore. Room is for collections of queryable records; a ViewModel var is lost on process death."
+          },
+          {
+            "id": "q2",
+            "type": "truefalse",
+            "prompt": "Room is itself a database engine that replaces SQLite.",
+            "correct": false,
+            "explanation": "False. SQLite is the underlying database engine; Room is a typed abstraction library that generates boilerplate and validates SQL at compile time."
+          },
+          {
+            "id": "q3",
+            "type": "multi",
+            "prompt": "Which are the three core Room annotations? (Select all that apply.)",
+            "options": [
+              { "id": "a", "text": "@Entity" },
+              { "id": "b", "text": "@Composable" },
+              { "id": "c", "text": "@Dao" },
+              { "id": "d", "text": "@Database" }
+            ],
+            "correct": ["a", "c", "d"],
+            "explanation": "@Entity (table), @Dao (queries), and @Database (the connection) are Room's core trio. @Composable is a Compose UI annotation, unrelated to Room."
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "prompt": "Why does a Room DAO read method return Flow<List<...>> instead of List<...> when backing a live list UI?",
+            "options": [
+              { "id": "a", "text": "Flow is faster than List" },
+              { "id": "b", "text": "Room cannot return a plain List" },
+              { "id": "c", "text": "A Flow re-emits whenever the table changes, so the UI updates automatically" },
+              { "id": "d", "text": "It avoids using suspend functions" }
+            ],
+            "correct": ["c"],
+            "explanation": "A Flow is a stream that emits a fresh list on every table change, giving you a single source of truth — no manual refresh after insert/delete."
+          },
+          {
+            "id": "q5",
+            "type": "short",
+            "prompt": "What Kotlin keyword must a Room insert/update/delete method have so it runs off the main thread? (one word)",
+            "correct": ["suspend"],
+            "explanation": "Write operations must be 'suspend' so they run in a coroutine off the main thread. Room will reject a non-suspend write that would block the UI thread."
+          }
+        ]
+      }
+      </script>
+</section>
+<!-- ===================== DISCUSSION BOARD ===================== -->
+<section aria-labelledby="discussion" class="slide mt">
+<h2 class="anchor-h" id="discussion">💬 Discussion Board Prompt — Week 3</h2>
+<div class="card card--teal">
+<h4 class="card__title">Prompt</h4>
+<blockquote style="margin:0;border-left:4px solid var(--green);padding-left:16px;">
+<p><strong>Which persistence approach fits your project's data — and why?</strong></p>
+<p>Describe the data your project app needs to remember. For each kind of data, state whether you'd use <strong>Preferences DataStore</strong>, <strong>Room/SQLite</strong>, or <strong>files</strong>, and justify the choice using the storage spectrum we discussed. Then explain where this layer sits in your architecture (which class talks to the DAO, and how the UI gets the data). Post one entity or DataStore key you actually implemented today, and what it stores.</p>
+</blockquote>
+</div>
+<div class="grid grid-2 mt">
+<div class="card">
+<h4 class="card__title">What a strong reply looks like</h4>
+<p class="mini-note">"You chose Room for your settings — but those look like 3 standalone flags with no querying. DataStore would be simpler and avoid a migration when you add a fourth. Room earns its weight once you have a <em>list</em> like your saved workouts."</p>
+</div>
+</div>
+</section>
+<!-- ===================== HOMEWORK / NEXT CLASS ===================== -->
+<section aria-labelledby="homework" class="slide mt">
+<h2 class="anchor-h" id="homework">📦 Homework / Next Class</h2>
+<div class="grid grid-3">
+<div class="card card--accent">
+<h4 class="card__title">📖 Read</h4>
+<ul>
+<li><a href="https://developer.android.com/training/data-storage/shared-preferences" rel="noopener" target="_blank">Saving Key-Value Data</a> (developer.android.com)</li>
+<li><a href="https://developer.android.com/training/data-storage/sqlite" rel="noopener" target="_blank">Using SQLite / Save data in a local database</a></li>
+<li><a href="https://developer.android.com/training/data-storage/room" rel="noopener" target="_blank">Room reference</a> (skim CRUD + DAO sections)</li>
+</ul>
+</div>
+<div class="card card--teal">
+<h4 class="card__title">🛠 Project task</h4>
+<ul>
+<li><strong>Wire real persistence into YOUR project</strong> — finish the lab against your actual domain, not the demo "notes."</li>
+<li>Confirm the Final project's required feature (c) is now satisfied: local persistence present and durable.</li>
+<li>Commit and push; note the persistence commit in your project log.</li>
+</ul>
+</div>
+<div class="card card--amber">
+<h4 class="card__title">🔭 Preview (S10)</h4>
+<ul>
+<li>Skim <a href="https://developer.android.com/courses/android-basics-compose/unit-5" rel="noopener" target="_blank">Unit 5 — Connect to the internet</a>.</li>
+<li>Next session: fetching data from a web API over the network (Milestone 1 requirement (d)).</li>
+<li>Think about which API your project will call.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🔗</span>
+<div class="callout__body">
+<span class="callout__label">Why this order</span>
+<p>Today you built the place data <em>lives</em> (local DB). Next session you'll fetch data from the <em>network</em>, then later cache that network data into this very Room database — the standard offline-first pattern. Today is the foundation for both.</p>
+</div>
+</div>
+</section>
+<!-- ===================== MASTER IT (enrichment) ===================== -->
+<section aria-labelledby="master-it" class="card slide mt">
+<h2 class="card__title anchor-h" id="master-it">🧠 Master it — local data that actually sticks</h2>
+<p class="lead">Today's deepest idea isn't "Room saves rows." It's that a Room read is a <strong>live <code>Flow</code></strong> — the database becomes the <em>single source of truth</em>, and a <code>suspend</code> write that mutates the table makes the read re-emit on its own. No manual refresh. Below you reason through that mechanism on a tiny pure-Kotlin model of a DAO, then drive it to "all tests green" yourself.</p>
+<!-- ---------- WORKED EXAMPLE ---------- -->
+<h3 class="anchor-h" id="mi-worked">Worked example — why an insert "appears by itself"</h3>
+<p>On a real Room DAO, <code>observeAll(): Flow&lt;List&lt;NoteEntity&gt;&gt;</code> and <code>suspend fun insert(...)</code> look unrelated — two methods on an interface. Walk the reasoning that links them:</p>
+<ol>
+<li><strong>The read is a stream, not a snapshot.</strong> <code>observeAll()</code> returns a <code>Flow</code>. The UI <em>collects</em> it and keeps the latest list. It never "asks again."</li>
+<li><strong>Room watches the table.</strong> Room registers an invalidation tracker on every table your query touches (here, <code>notes</code>).</li>
+<li><strong>A write mutates that table.</strong> <code>suspend fun insert(...)</code> runs the SQL <code>INSERT</code>. Room's tracker fires "table <code>notes</code> changed."</li>
+<li><strong>The Flow re-queries and re-emits.</strong> Room re-runs <code>SELECT * FROM notes …</code> and pushes the <em>new</em> list down the same Flow. Your <code>collectAsStateWithLifecycle()</code> swaps state → Compose recomposes the <code>LazyColumn</code>.</li>
+</ol>
+<p>So the "magic" is just: <em>one observable read + writes that touch the same table</em>. Model that with an in-memory store and a hand-rolled observer, and the whole reactive loop fits in 30 lines:</p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable — predict the output, then Run to confirm</div>
+<pre><code>// A tiny model of a reactive DAO: an in-memory table + an "observable" read.
+data class Note(val id: Int, val title: String)
+
+class FakeNoteDao {
+    private val rows = mutableListOf&lt;Note&gt;()
+    private var nextId = 1
+    private val observers = mutableListOf&lt;(List&lt;Note&gt;) -&gt; Unit&gt;()
+
+    // READ as a stream: register a listener, immediately emit the current list,
+    // and re-emit on every future change. (Room does this for you via Flow.)
+    fun observeAll(onChange: (List&lt;Note&gt;) -&gt; Unit) {
+        observers += onChange
+        onChange(rows.toList())          // initial emission
+    }
+    private fun emit() { val snap = rows.toList(); observers.forEach { it(snap) } }
+
+    // WRITE (suspend in real Room): mutate the table, then notify observers.
+    fun insert(title: String): Int {
+        val note = Note(nextId++, title); rows += note; emit(); return note.id
+    }
+    fun delete(id: Int) { rows.removeAll { it.id == id }; emit() }
+}
+
+fun main() {
+    val dao = FakeNoteDao()
+    val seen = mutableListOf&lt;List&lt;Note&gt;&gt;()
+    dao.observeAll { list -&gt; seen += list }   // UI starts collecting
+
+    dao.insert("Buy milk")                    // table changes -&gt; re-emit
+    dao.insert("Walk dog")                    // table changes -&gt; re-emit
+
+    // The UI never re-asked. It only saw what the stream pushed:
+    println("emissions: " + seen.size)        // 1 initial + 2 inserts = 3
+    println("latest:    " + seen.last().map { it.title })
+}</code></pre>
+</div>
+<p class="mini-note">The collector recorded <strong>3</strong> emissions — the empty start plus one per insert — and never called a "refresh." That is exactly the contract <code>Flow&lt;List&lt;…&gt;&gt;</code> gives you for free in Room.</p>
+<!-- ---------- FADED CHALLENGE ---------- -->
+<h3 class="anchor-h" id="mi-challenge">Now you — complete the DAO (faded)</h3>
+<p>Same idea, more responsibility. The harness below tests a full CRUD surface plus the reactive guarantee: after you <code>insert</code>, the observed list must <em>already</em> contain the new row (no manual refetch). Fill in the <code>// YOUR CODE</code> region so every case prints <code>✓ passed</code>. You've got it when you see <code>ALL TESTS PASSED 🎉</code>.</p>
+<div class="codeblock" data-challenge="s09-inmem-dao" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge — make every case green</div>
+<pre><code>data class Task(val id: Int, val text: String, val done: Boolean = false)
+
+/**
+ * An in-memory model of a Room DAO. Implement the four methods so that:
+ *  - insert assigns an auto-increment id (starting at 1) and returns it
+ *  - the observed list re-emits after EVERY mutation (insert/update/delete)
+ *  - update replaces the row with the same id (matches on @PrimaryKey)
+ *  - delete removes the row with that id
+ *  - queryById returns the row or null
+ */
+class TaskDao {
+    private val rows = mutableListOf&lt;Task&gt;()
+    private var nextId = 1
+    private val observers = mutableListOf&lt;(List&lt;Task&gt;) -&gt; Unit&gt;()
+
+    fun observeAll(onChange: (List&lt;Task&gt;) -&gt; Unit) {
+        observers += onChange
+        onChange(rows.toList())
+    }
+    private fun emit() { val snap = rows.toList(); observers.forEach { it(snap) } }
+
+    // ---------- YOUR CODE ----------
+    fun insert(text: String): Int {
+        // TODO: create a Task with the next id, store it, notify observers, return the id
+        TODO("implement insert")
+    }
+
+    fun update(task: Task) {
+        // TODO: replace the row whose id == task.id, then notify observers
+        TODO("implement update")
+    }
+
+    fun delete(id: Int) {
+        // TODO: remove the row with this id, then notify observers
+        TODO("implement delete")
+    }
+
+    fun queryById(id: Int): Task? {
+        // TODO: return the row with this id, or null
+        TODO("implement queryById")
+    }
+    // ---------- END YOUR CODE ----------
+}
+
+fun main() {
+    var fails = 0
+    fun check(name: String, cond: Boolean, expected: Any?, got: Any?) {
+        if (cond) println("✓ passed: $name")
+        else { println("✗ FAILED: $name — expected $expected, got $got"); fails++ }
+    }
+
+    val dao = TaskDao()
+    val latest = arrayOf&lt;List&lt;Task&gt;&gt;(emptyList())
+    var emissions = 0
+    dao.observeAll { list -&gt; latest[0] = list; emissions++ }
+
+    // CREATE — ids auto-increment, and the new row is ALREADY observed (no refetch)
+    val id1 = dao.insert("write tests")
+    val id2 = dao.insert("ship it")
+    check("insert returns id 1 then 2", id1 == 1 &amp;&amp; id2 == 2, "1,2", "$id1,$id2")
+    check("insert is reactive (row visible without refetch)",
+        latest[0].any { it.id == id1 &amp;&amp; it.text == "write tests" }, true,
+        latest[0].map { it.text })
+
+    // READ one
+    check("queryById finds the row", dao.queryById(id2)?.text == "ship it", "ship it", dao.queryById(id2)?.text)
+    check("queryById(missing) is null", dao.queryById(999) == null, null, dao.queryById(999))
+
+    // UPDATE — same id, new value, re-emitted
+    dao.update(Task(id1, "write tests", done = true))
+    check("update flips done and re-emits", latest[0].first { it.id == id1 }.done, true,
+        latest[0].first { it.id == id1 }.done)
+
+    // DELETE — gone from the observed list
+    dao.delete(id2)
+    check("delete removes the row", latest[0].none { it.id == id2 }, true, latest[0].map { it.id })
+
+    // Reactive guarantee: 1 initial + 2 inserts + 1 update + 1 delete = 5 emissions
+    check("every mutation re-emits exactly once", emissions == 5, 5, emissions)
+
+    if (fails == 0) println("\nALL TESTS PASSED 🎉")
+    else println("\n$fails case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div>
+<ul>
+<li><code>insert</code>: <code>val t = Task(nextId++, text); rows += t; emit(); return t.id</code> — increment <em>after</em> using the id.</li>
+<li><code>update</code>: find the index with <code>rows.indexOfFirst { it.id == task.id }</code>; if <code>&gt;= 0</code>, <code>rows[i] = task</code>; then <code>emit()</code>.</li>
+<li><code>delete</code>: <code>rows.removeAll { it.id == id }; emit()</code>.</li>
+<li><code>queryById</code>: <code>rows.firstOrNull { it.id == id }</code>.</li>
+<li>Every mutating method must call <code>emit()</code> — that single line is what makes the "emissions == 5" case pass. Forgetting it on <code>update</code> or <code>delete</code> is the classic miss.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>fun insert(text: String): Int {
+    val t = Task(nextId++, text)
+    rows += t
+    emit()
+    return t.id
+}
+
+fun update(task: Task) {
+    val i = rows.indexOfFirst { it.id == task.id }
+    if (i &gt;= 0) rows[i] = task
+    emit()
+}
+
+fun delete(id: Int) {
+    rows.removeAll { it.id == id }
+    emit()
+}
+
+fun queryById(id: Int): Task? = rows.firstOrNull { it.id == id }</code></pre>
+</div>
+<p class="mini-note">Map this back to real Room: <code>rows</code> is the SQLite table, <code>emit()</code> is Room's invalidation tracker, and the <code>onChange</code> callback is what <code>Flow</code> + <code>collectAsStateWithLifecycle()</code> do for you. The mental model transfers 1:1.</p>
+</div></div>
+</div>
+</div>
+<!-- ---------- MISCONCEPTIONS ---------- -->
+<h3 class="anchor-h" id="mi-misconceptions">Common misconceptions &amp; pitfalls</h3>
+<p class="muted">Each is a wrong mental model people actually hold, why it bites, the correct model, and the symptom you'd see in a running app.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">“My DAO returns <code>List</code>, so the screen will update after I insert.”</button>
+<div class="accordion__body"><div>
+<p><strong>Why it's wrong:</strong> a <code>suspend fun getAll(): List&lt;Note&gt;</code> is a <em>one-shot snapshot</em>. It runs the query once, hands you a frozen list, and forgets you. Nothing re-runs it when the table changes.</p>
+<p><strong>Correct model:</strong> for a <em>live</em> list, the read must return <code>Flow&lt;List&lt;Note&gt;&gt;</code>. The Flow is wired to Room's invalidation tracker, so any write to that table re-emits a fresh list. Use one-shot <code>suspend</code> reads only for "fetch once" cases (e.g. <code>getById</code> to pre-fill an edit screen).</p>
+<p><strong>Symptom:</strong> you add an item, the database genuinely has the new row (you can see it in the Database Inspector), but the on-screen list doesn't change until you navigate away and back. The two-line fix is <code>List</code> → <code>Flow</code> on the read and collect it.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“I'll just call the DAO from my composable / a plain function — it's fine.”</button>
+<div class="accordion__body"><div>
+<p><strong>Why it's wrong:</strong> a non-<code>suspend</code> DAO write executed on the main thread crashes with <code>IllegalStateException: Cannot access database on the main thread…</code>, and even a <code>suspend</code> call from a composable body runs on every recomposition and outside any safe scope.</p>
+<p><strong>Correct model:</strong> writes are <code>suspend</code> and launched from a coroutine scope you own — almost always <code>viewModelScope.launch { repo.add(...) }</code>. Room dispatches the actual SQL onto a background executor for you. The composable only <em>renders</em> state and calls <code>viewModel.addNote(...)</code> in an <code>onClick</code>.</p>
+<p><strong>Symptom:</strong> instant crash on the first insert (main-thread access), or — subtler — a write fired repeatedly because you called it from the composable's body instead of a callback.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“DataStore reads are instant — I'll read <code>.first()</code> and use the value.”</button>
+<div class="accordion__body"><div>
+<p><strong>Why it's wrong:</strong> DataStore is asynchronous and reactive. <code>.first()</code> grabs a single value <em>once</em> and stops collecting. If the setting changes later (the user flips the switch), your UI never hears about it — and calling <code>.first()</code> from the wrong thread/scope can block or throw.</p>
+<p><strong>Correct model:</strong> expose the read as a <code>Flow</code> (<code>val darkMode: Flow&lt;Boolean&gt;</code>), turn it into UI state with <code>stateIn(...)</code>, and collect with <code>collectAsStateWithLifecycle()</code>. Now the switch and any other screen stay in sync automatically. Reserve <code>.first()</code> for a true one-time read (e.g. a "has the user seen onboarding?" check at startup).</p>
+<p><strong>Symptom:</strong> the toggle works the first time but a second screen showing the same setting is stale, or the switch snaps back to its default because your <code>.map { prefs[KEY] ?: false }</code> default overran a value that hadn't loaded yet.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“The repository can keep a mutable <code>List</code> as a cache and the UI reads that.”</button>
+<div class="accordion__body"><div>
+<p><strong>Why it's wrong:</strong> a mutable list held in the data layer is a <em>second</em> source of truth that drifts from the database. Mutating it in place (<code>cache.add(...)</code>) doesn't notify Compose (no new reference, no state change), and it doesn't survive process death because it's just memory.</p>
+<p><strong>Correct model:</strong> the database (its <code>Flow</code>) is the single source of truth. The repository exposes <code>dao.observeAll()</code> directly (or maps it), and writes go <em>through the DAO</em>, so the same Flow re-emits. No hand-maintained cache list.</p>
+<p><strong>Symptom:</strong> the list looks right while the app is open but is empty or wrong after a restart, and edits sometimes don't show because you mutated the list contents without producing a new list instance.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“I added a column to my <code>@Entity</code>; it'll just work.”</button>
+<div class="accordion__body"><div>
+<p><strong>Why it's wrong:</strong> the on-device SQLite file still has the <em>old</em> schema. Room compares the compiled schema to the file's schema at open time; a mismatch with no migration throws <code>IllegalStateException: … you must either provide a Migration … or call fallbackToDestructiveMigration()</code>.</p>
+<p><strong>Correct model:</strong> any schema change requires bumping <code>version</code> <em>and</em> supplying a <code>Migration</code> (production) — or, while prototyping in this course, <code>fallbackToDestructiveMigration()</code> / uninstalling the app to wipe the DB. Migrations are real production work; for now, understand <em>why</em> the crash happens.</p>
+<p><strong>Symptom:</strong> the app crashes on launch the run <em>after</em> you changed the entity — never the run you changed it on — with a "Room cannot verify the data integrity" / "no such column" style message.</p>
+</div></div>
+</div>
+</div>
+<!-- ---------- IN PRODUCTION ---------- -->
+<h3 class="anchor-h" id="mi-production">In production — how a senior engineer wires this</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">The idiomatic, current pattern</span>
+<p>A senior Android engineer treats the <strong>database as the single source of truth</strong> and lets the UI <em>observe</em> it, never poll it. Concretely:</p>
+<ul>
+<li><strong>One DAO read Flow → <code>stateIn</code> → <code>collectAsStateWithLifecycle()</code>.</strong> The read is <code>Flow&lt;List&lt;Entity&gt;&gt;</code>; the ViewModel converts it once with <code>stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())</code>. <code>WhileSubscribed(5_000)</code> keeps the query alive through a rotation but stops it 5s after the screen goes away — no wasted DB work in the background.</li>
+<li><strong>Writes are <code>suspend</code>, launched in <code>viewModelScope</code>.</strong> The UI calls a plain function (<code>vm.addNote(...)</code>); the ViewModel does <code>viewModelScope.launch { repo.add(...) }</code>. Room moves the SQL off the main thread automatically — you don't hand-pick <code>Dispatchers.IO</code> for Room calls.</li>
+<li><strong>Map entities to domain/UI models at the repository seam.</strong> The composable should receive a clean UI model, not a raw <code>@Entity</code>. This is the same seam you'll reuse in Session 11 to merge network + DB.</li>
+<li><strong>A <code>@Volatile</code> double-checked singleton for the <code>@Database</code></strong> built with <code>applicationContext</code> — one instance per process, no Activity leak.</li>
+</ul>
+<p><strong>One tasteful gotcha:</strong> don't expose a <code>MutableStateFlow</code> or the DAO's raw Flow straight to Compose and then <em>also</em> keep a local list — that's the "two sources of truth" trap. Expose <em>one</em> read-only <code>StateFlow</code>/observed list and route every change through a write. If the list ever looks stale after an insert, your instinct should be "I have a second source of truth somewhere," not "I need a manual refresh."</p>
+</div>
+</div>
+<!-- ---------- RETRIEVAL CHECK ---------- -->
+<h3 class="anchor-h" id="mi-retrieval">Retrieval check — apply it, don't recall it</h3>
+<p class="muted">Decide what you'd actually <em>do</em> in each scenario. This is your own self-check — answers and full explanations reveal after you submit. Not a grade.</p>
+<div data-quiz="rc-9" data-topic="data"></div>
+<script id="rc-9" type="application/json">
+{
+  "title": "Session 9 retrieval check — local data in practice",
+  "intro": "6 application scenarios. Pick the engineering decision a strong Android dev would make.",
+  "passingScore": 0.7,
+  "shuffle": false,
+  "questions": [
+    {
+      "id": "rc9q1",
+      "type": "single",
+      "prompt": "You insert a row and the Database Inspector confirms it's saved, but your LazyColumn doesn't change until you leave and re-enter the screen. The most likely cause is:",
+      "options": [
+        { "id": "a", "text": "The insert didn't run on a background thread" },
+        { "id": "b", "text": "Your DAO read returns suspend List<…> (a one-shot snapshot) instead of Flow<List<…>>" },
+        { "id": "c", "text": "You forgot to bump the database version" },
+        { "id": "d", "text": "DataStore is caching the old value" }
+      ],
+      "correct": ["b"],
+      "explanation": "The data is in the table, so the write worked. The screen not updating is the classic 'read is a one-shot List, not a live Flow' symptom. Switch the read to Flow<List<…>> and collect it with collectAsStateWithLifecycle() — then every write re-emits automatically."
+    },
+    {
+      "id": "rc9q2",
+      "type": "single",
+      "prompt": "Your app needs to remember ONE boolean: whether the user finished onboarding. Which choice is idiomatic?",
+      "options": [
+        { "id": "a", "text": "A single-row Room table with one boolean column" },
+        { "id": "b", "text": "A var in a singleton object" },
+        { "id": "c", "text": "A booleanPreferencesKey in Preferences DataStore" },
+        { "id": "d", "text": "A JSON file in internal storage" }
+      ],
+      "correct": ["c"],
+      "explanation": "A single simple flag is the textbook DataStore case — async, reactive, no schema. A Room table is overkill for one key-value, a singleton var dies on process death, and a file means hand-rolling serialization. Decision rule: few simple settings → DataStore; collections you query → Room."
+    },
+    {
+      "id": "rc9q3",
+      "type": "single",
+      "prompt": "Where should the call that actually launches a Room insert live?",
+      "options": [
+        { "id": "a", "text": "Directly in the composable body so it runs on each recomposition" },
+        { "id": "b", "text": "In viewModelScope.launch { } inside a ViewModel function, called from an onClick" },
+        { "id": "c", "text": "In a top-level fun called straight from the composable, no coroutine" },
+        { "id": "d", "text": "In the @Database companion object" }
+      ],
+      "correct": ["b"],
+      "explanation": "Writes are suspend and must run in a coroutine you control. viewModelScope.launch { repo.add(...) } is the idiom; the composable only calls vm.addNote(...) from a callback. Calling it in the composable body fires it on every recomposition; calling a non-suspend DAO write on the main thread crashes."
+    },
+    {
+      "id": "rc9q4",
+      "type": "multi",
+      "prompt": "You want a settings screen where flipping a Switch is reflected everywhere instantly AND survives an app kill. Which pieces do you need? (Select all that apply.)",
+      "options": [
+        { "id": "a", "text": "A suspend write (dataStore.edit { }) for the toggle" },
+        { "id": "b", "text": "Reading the value once with .first() in the composable" },
+        { "id": "c", "text": "Exposing the read as a Flow and collecting it (collectAsStateWithLifecycle)" },
+        { "id": "d", "text": "Persisting via Preferences DataStore (not just ViewModel state)" }
+      ],
+      "correct": ["a", "c", "d"],
+      "explanation": "Persist with DataStore (survives process death), write with a suspend edit, and READ as a Flow you collect so every screen stays in sync. .first() reads once and goes deaf to future changes — exactly what you don't want for a live setting."
+    },
+    {
+      "id": "rc9q5",
+      "type": "truefalse",
+      "prompt": "Because Room moves the SQL off the main thread, you should also wrap every DAO call in withContext(Dispatchers.IO) yourself.",
+      "correct": false,
+      "explanation": "False — and a common over-engineering tell. Room already dispatches suspend DAO calls onto its own background executor. Adding withContext(Dispatchers.IO) around them is redundant. You'd reach for Dispatchers.IO for your OWN blocking I/O (e.g. raw file/network work), not for Room's suspend functions."
+    },
+    {
+      "id": "rc9q6",
+      "type": "single",
+      "prompt": "Your repository keeps a private mutableListOf<Note>() that it adds to on each insert, and the UI reads that list. What's the design flaw?",
+      "options": [
+        { "id": "a", "text": "Nothing — caching in the repository is best practice" },
+        { "id": "b", "text": "It creates a second source of truth that drifts from the DB and is lost on restart" },
+        { "id": "c", "text": "mutableListOf is slower than ArrayList" },
+        { "id": "d", "text": "Repositories aren't allowed to hold any state" }
+      ],
+      "correct": ["b"],
+      "explanation": "The DB (its Flow) is the single source of truth. A hand-maintained list in the repository drifts from the table, doesn't notify Compose when mutated in place, and vanishes on process death. Expose the DAO's Flow and route writes through the DAO instead."
+    }
+  ]
+}
+</script>
+<!-- ---------- DELIBERATE PRACTICE ---------- -->
+<div class="callout callout--clo mt">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Deliberate practice — do these next, in order</span>
+<p>You learn this by reps, not re-reading. After the challenge above goes green:</p>
+<ul>
+<li><strong><a href="../practice/challenges.html">Challenge ladder →</a></strong> the <em>data</em> track: in-memory DAO CRUD, the <strong>List-vs-Flow observable model</strong>, DataStore read-with-default, Room query predicate, upsert merge, and the <code>@Volatile</code> double-checked singleton. Faded worked examples that hand you more and more.</li>
+<li><strong><a href="../practice/debug-drills.html">Debug drills →</a></strong> the persistence bugs you'll cause for real: a DAO returning <code>List</code> instead of <code>Flow</code>, a Room call on the main thread, a missing <code>@PrimaryKey</code>, and a repository mutating a list in place. Find the broken line before you read the fix.</li>
+<li><strong><a href="../practice/spaced-repetition.html">Spaced repetition →</a></strong> the Room/DataStore deck — <code>suspend</code>-vs-<code>Flow</code>, the three Room annotations, why the DB is the single source of truth. Short daily reps lock it in.</li>
+<li><strong><a href="../path.html">Skill map →</a></strong> see how Room/Flow unlocks Networking (S10) and the offline-first project (S11), and track your mastery across the whole path.</li>
+</ul>
+<p class="mini-note">Also try it for real: open <strong>App Inspection ▸ Database Inspector</strong> on your own project and watch a row appear the instant you insert — the live proof of everything above.</p>
+</div>
+</div>
+</section>
+<!-- print-only summary header -->
+</main>
+<!-- ============================ FOOTER ============================ -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 · Android Development</span><br/>
+<span class="muted">Session 9 of 12 — Local Data: DataStore &amp; Room/SQLite CRUD · CLO 4</span>
+</div>
+<div class="muted">
+        Keiser University · B.S. Software Engineering · Face-to-Face<br/>
+        Built with Kotlin + Jetpack Compose + Material 3. Official docs: <a href="https://developer.android.com/courses/android-basics-compose/unit-6" rel="noopener" target="_blank">Android Basics Unit 6</a>.
+      </div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

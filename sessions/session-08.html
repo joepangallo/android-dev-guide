@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Session 8 · Navigation &amp; App Architecture — COP4667 Android Development</title>
+<meta content="COP4667 Android Development, Session 8 of 12: Compose Navigation (NavController, NavHost, routes &amp; arguments), single-Activity architecture, Fragments context, ViewModel as state holder, and unidirectional data flow. Lesson overview." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .objective-list { list-style: none; padding-left: 0; display: grid; gap: 10px; margin: 0; }
+    .objective-list > li {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 14px; border: 1px solid var(--line);
+      border-radius: var(--radius-sm); background: var(--surface);
+    }
+    .objective-list > li .clo-tag { margin-left: auto; flex: 0 0 auto; }
+    .arch-diagram {
+      display: grid; gap: 10px; margin: var(--space-4) 0;
+      font-family: var(--font-mono); font-size: var(--fs-sm);
+    }
+    .arch-layer {
+      border: 1px solid var(--line); border-radius: var(--radius-sm);
+      padding: 12px 14px; background: var(--surface-2);
+    }
+    .arch-layer b { display: block; color: var(--teal-2); margin-bottom: 4px; letter-spacing: .02em; }
+    [data-theme="dark"] .arch-layer b { color: var(--green); }
+    .arch-arrow { text-align: center; color: var(--muted); font-weight: 800; line-height: 1; }
+    .udf-flow {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      font-family: var(--font-mono); font-size: var(--fs-sm); margin: var(--space-3) 0;
+    }
+    .udf-flow .udf-node {
+      border: 1px solid var(--green-dark); border-radius: 999px;
+      padding: 5px 12px; background: color-mix(in srgb, var(--green) 12%, var(--surface));
+      font-weight: 700; color: var(--teal); /* WCAG AA: teal on the green tint ≈ 12.9:1; --green-dark kept only on the border */
+    }
+    [data-theme="dark"] .udf-flow .udf-node {
+      /* on the dark surface tint, --green (#3DDC84) reads ≈ 8:1 — keep the bright green for dark mode */
+      color: var(--green);
+    }
+    .udf-flow .udf-sep { color: var(--muted); font-weight: 800; }
+    .layout-toc { position: sticky; top: 76px; }
+    @media (max-width: 980px) { .layout-toc { position: static; } }
+    .twoup { display: grid; grid-template-columns: 260px 1fr; gap: var(--space-5); align-items: start; }
+    @media (max-width: 980px) { .twoup { grid-template-columns: 1fr; } }
+    .mini-legend { display: flex; flex-wrap: wrap; gap: 10px; margin: var(--space-3) 0; }
+    .mini-legend .tag { font-size: var(--fs-xs); }
+    .runsheet-dur { font-weight: 700; }
+  </style>
+</head>
+<body>
+<!-- ===================================================================== -->
+<!-- TOP NAVIGATION                                                        -->
+<!-- ===================================================================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▲</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-07.html">‹ Prev · S7</a>
+<a aria-current="page" href="session-08.html">S8</a>
+<a href="session-09.html">Next · S9 ›</a>
+<a href="../labs/intents-navigator.html">Lab: Intents vs Nav</a>
+<a href="../assessments/quiz-1.html">Quiz 1</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- =================================================================== -->
+<!-- HERO                                                                -->
+<!-- =================================================================== -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta" style="margin-bottom:14px;">
+<span class="pill pill--green">Session 8 of 12</span>
+<span class="pill">Week 3</span>
+<span class="pill pill--accent">Navigation, Architecture &amp; Local Data</span>
+<span class="pill">Unit 4</span>
+</div>
+<h1 class="hero-title" id="hero-title">Navigation &amp; App Architecture</h1>
+<p class="hero-sub">
+        NavController + NavHost, typed composable routes with arguments, the single-Activity model,
+        and the ViewModel as a lifecycle-aware state holder driving unidirectional data flow.
+      </p>
+<p class="hero-sub" style="font-style:italic;color:#EAFBF2;">
+        Today in a nutshell: we turn a pile of screens into a real app — wiring multi-destination
+        navigation and putting a ViewModel in charge of the state, so the UI just reflects what the
+        ViewModel says.
+      </p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 1</span>
+<span class="clo-tag">CLO 2</span>
+<span class="pill">🧪 Lab: Multi-Destination Nav App</span>
+<span class="pill">📝 Async Activity 2 assigned</span>
+</div>
+</section>
+<!-- two-up: sticky TOC + content -->
+<div class="twoup">
+<aside aria-label="On this page" class="layout-toc no-print">
+<div class="card">
+<h2 class="card__title" style="margin-top:0;">On this page</h2>
+<nav aria-label="Table of contents" data-toc="main"></nav>
+</div>
+</aside>
+<div>
+<!-- =============================================================== -->
+<!-- LEARNING OBJECTIVES                                             -->
+<!-- =============================================================== -->
+<section aria-labelledby="obj-h" class="slide">
+<h2 id="obj-h">Learning Objectives</h2>
+<div class="card card--accent">
+<p class="muted" style="margin-top:0;">By the end of this session, you will be able to:</p>
+<ul class="objective-list">
+<li>
+<span aria-hidden="true">🧭</span>
+<span>Explain the role of <strong>NavController</strong> and <strong>NavHost</strong> and set up a Compose app with 2–3 named destinations (routes).</span>
+<span class="clo-tag">CLO 2</span>
+</li>
+<li>
+<span aria-hidden="true">➡️</span>
+<span>Navigate between destinations and <strong>pass arguments</strong> (e.g. an item <code>id</code>) safely between screens.</span>
+<span class="clo-tag">CLO 2</span>
+</li>
+<li>
+<span aria-hidden="true">🏛️</span>
+<span>Describe the <strong>single-Activity architecture</strong> and contrast modern Compose navigation with the legacy Fragment + Navigation Component approach they will meet in older codebases.</span>
+<span class="clo-tag">CLO 1</span>
+</li>
+<li>
+<span aria-hidden="true">📦</span>
+<span>Separate the <strong>UI layer from the data layer</strong> and explain why a ViewModel is a better home for screen state than a composable.</span>
+<span class="clo-tag">CLO 1</span>
+</li>
+<li>
+<span aria-hidden="true">🔁</span>
+<span>Implement <strong>unidirectional data flow (UDF)</strong>: state flows down, events flow up, and the UI survives configuration changes correctly.</span>
+<span class="clo-tag">CLO 2</span>
+</li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p>This session advances <strong>CLO1 (understand the Android ecosystem)</strong> and <strong>CLO2 (design UIs and connect them to code)</strong>. It is the architecture backbone for the <strong>required project features (a) ≥2 screens with navigation</strong> and <strong>(e) clean architecture: ViewModel + repository</strong>. Project Milestone 1 (working UI prototype) is the checkpoint at the end of Week 2; the navigation and ViewModel work started today is what carries the project into Week 4's full demo.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- =============================================================== -->
+<!-- =============================================================== -->
+<!-- =============================================================== -->
+<!-- =============================================================== -->
+<!-- =============================================================== -->
+<!-- LECTURE / CONCEPT NOTES                                        -->
+<!-- =============================================================== -->
+<section aria-labelledby="lecture-h" class="slide">
+<h2 id="lecture-h">Lecture / Concept Notes</h2>
+<p class="muted">Substantial teaching content. Each big idea below maps to a beat in Concept Block A.</p>
+<!-- Idea 1 -->
+<h3 id="idea-nav">1 · Navigation in Compose: NavController, NavHost, routes &amp; arguments</h3>
+<div class="card">
+<p>In Jetpack Compose, navigation is built from three pieces:</p>
+<ul>
+<li><strong>NavController</strong> — the brain. It owns the <em>back stack</em> (the history of where you've been) and exposes <code>navigate(...)</code> / <code>popBackStack()</code>. You create one with <code>rememberNavController()</code>.</li>
+<li><strong>NavHost</strong> — the window. It's a composable bound to a NavController that swaps in whichever destination's content matches the current route.</li>
+<li><strong>Destinations / routes</strong> — the places. Each is a <code>composable("route") { ... }</code> entry. A <em>route</em> is just a string key (e.g. <code>"home"</code>, <code>"detail/{itemId}"</code>).</li>
+</ul>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🧠</span>
+<div class="callout__body">
+<span class="callout__label">Analogy — a stack of cards</span>
+<p>The back stack is a literal stack of index cards. Navigating <em>pushes</em> a new card on top; pressing Back <em>pops</em> the top card off and you see the one beneath. The NavHost only ever shows the top card. This is why "Back" from Detail returns you to the list: the list card was underneath the whole time.</p>
+</div>
+</div>
+<p>A minimal three-destination graph:</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun AppNavHost(navController: NavHostController = rememberNavController()) {
+    NavHost(navController = navController, startDestination = "home") {
+
+        composable("home") {
+            HomeScreen(
+                onItemClick = { id -&gt; navController.navigate("detail/$id") },
+                onAboutClick = { navController.navigate("about") }
+            )
+        }
+
+        // Route with a typed argument: detail/{itemId}
+        composable(
+            route = "detail/{itemId}",
+            arguments = listOf(navArgument("itemId") { type = NavType.IntType })
+        ) { backStackEntry -&gt;
+            val itemId = backStackEntry.arguments?.getInt("itemId") ?: 0
+            DetailScreen(
+                itemId = itemId,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("about") {
+            AboutScreen(onBack = { navController.popBackStack() })
+        }
+    }
+}</code></pre>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Pass IDs, not objects</span>
+<p>Navigation arguments are encoded into the route <em>string</em>, so they must be primitives (Int, String, Boolean…). Pass an <strong>id</strong> and let the destination look the data up from the ViewModel/repository. Never try to shove a whole <code>data class</code> into a route — it doesn't fit the model and breaks deep links and process death.</p>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🛡️</span>
+<div class="callout__body">
+<span class="callout__label">Avoid duplicate destinations</span>
+<p>Tapping a button twice quickly can push the same destination twice. Use <code>launchSingleTop = true</code> for tabs, and for "go home" actions use <code>popUpTo(...)</code> to trim the stack. We demo this in the live-coding bottom-nav extension.</p>
+</div>
+</div>
+</div>
+<!-- Idea 2 -->
+<h3 id="idea-single-activity">2 · Single-Activity architecture &amp; the Fragment context</h3>
+<div class="card">
+<p>Modern Compose apps are usually <strong>single-Activity</strong>: one <code>MainActivity</code> hosts one <code>NavHost</code>, and "screens" are just composables swapped in and out. Contrast that with how Android apps were built before Compose:</p>
+<div aria-label="Compose vs legacy navigation" class="tabs" role="tablist">
+<button class="tab" data-tab="compose" role="tab">Modern: Compose (what we use)</button>
+<button class="tab" data-tab="fragments" role="tab">Legacy: Fragments + XML</button>
+</div>
+<div class="tabpanel" data-tabpanel="compose">
+<p>One Activity, one NavHost, destinations are <code>@Composable</code> functions. State lives in ViewModels. This is what the course, the project, and Unit 4 use.</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MyAppTheme {
+                AppNavHost()   // the single NavHost for the whole app
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="fragments">
+<p>Pre-Compose, a screen was usually a <strong>Fragment</strong> (a reusable UI chunk hosted by an Activity), with its UI defined in an XML layout and screen-to-screen movement handled by the <strong>Navigation Component</strong> + a <code>nav_graph.xml</code>. You will meet this in older codebases and it's in the syllabus reading.</p>
+<div class="codeblock" data-lang="Kotlin (legacy Fragment)">
+<span class="codeblock__lang">Kotlin · legacy Fragment</span>
+<pre><code>class HomeFragment : Fragment(R.layout.fragment_home) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        view.findViewById&lt;Button&gt;(R.id.detailButton).setOnClickListener {
+            // Navigation Component, defined in res/navigation/nav_graph.xml
+            findNavController().navigate(R.id.action_home_to_detail)
+        }
+    }
+}</code></pre>
+</div>
+<p class="muted"><small>Note the parallels: <em>Fragment ≈ a Compose screen composable</em>, <em>nav_graph.xml ≈ your NavHost block</em>, <em>findNavController() ≈ your NavController</em>. The concepts transfer; only the syntax and the toolkit changed.</small></p>
+</div>
+</div>
+<!-- Idea 3 -->
+<h3 id="idea-arch">3 · App architecture: UI layer vs data layer</h3>
+<div class="card">
+<p>Android's recommended architecture splits the app into layers so each has one job:</p>
+<div aria-label="Architecture layers diagram" class="arch-diagram">
+<div class="arch-layer"><b>UI layer</b>Composables (draw pixels, emit events) + ViewModel (holds &amp; exposes screen state)</div>
+<div aria-hidden="true" class="arch-arrow">▲ state down ▼ events up</div>
+<div class="arch-layer"><b>Data layer</b>Repository (the single source of truth API) → data sources: Room / DataStore (local) &amp; network (web API)</div>
+</div>
+<p>Rules of thumb we'll repeat all term:</p>
+<ul>
+<li><strong>Composables are dumb and stateless</strong> where possible — they render state and fire events. No business logic, no database calls.</li>
+<li><strong>ViewModel is the state holder</strong> for one screen. It prepares UI state and handles events.</li>
+<li><strong>Repository</strong> is the source of truth for data. The ViewModel asks the repository; it never talks to a database or the network directly. (We build the repository in the data-persistence + networking sessions; today the ViewModel can hold an in-memory list.)</li>
+</ul>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🍽️</span>
+<div class="callout__body">
+<span class="callout__label">Analogy — a restaurant</span>
+<p>The <strong>composable is the dining room</strong> (what the customer sees). The <strong>ViewModel is the waiter</strong> (takes orders/events, brings out plated state). The <strong>repository is the kitchen</strong> (the source of the food/data). The dining room never walks into the kitchen — it asks the waiter. This separation is exactly project feature (e): <em>clean architecture, ViewModel + repository</em>.</p>
+</div>
+</div>
+</div>
+<!-- Idea 4 -->
+<h3 id="idea-vm">4 · ViewModel as state holder &amp; lifecycle awareness</h3>
+<div class="card">
+<p>A <code>ViewModel</code> is a class scoped to a screen (a navigation destination or the Activity) that <strong>survives configuration changes</strong> like rotation. That's the killer feature: when the screen is recreated, the same ViewModel instance is handed back, with its state intact.</p>
+<p>Compare the two ways to "hold state" and when each dies:</p>
+<div aria-label="remember vs ViewModel" class="tabs" role="tablist">
+<button class="tab" data-tab="rem" role="tab">remember / rememberSaveable</button>
+<button class="tab" data-tab="vm" role="tab">ViewModel (preferred for screen state)</button>
+</div>
+<div class="tabpanel" data-tabpanel="rem">
+<ul>
+<li><code>remember { mutableStateOf(...) }</code> survives <em>recomposition</em> but is <strong>lost on rotation</strong> (configuration change recreates the composition).</li>
+<li><code>rememberSaveable</code> survives rotation <em>and</em> process death for small, simple values — but it serializes through a Bundle, so it's only for lightweight UI state (a toggle, a text field).</li>
+</ul>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>// Fine for trivial, local UI: an expanded/collapsed toggle.
+var expanded by rememberSaveable { mutableStateOf(false) }
+
+// NOT where your screen's real data should live.
+// Rotate the phone and a plain remember{} resets to its initial value.</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="vm">
+<p>Screen data (lists, selections, loading flags) belongs in a ViewModel exposed as an immutable <code>StateFlow&lt;UiState&gt;</code>. Before the code, pin down the one new tool it uses:</p>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p>A <code>StateFlow</code> is an observable value-holder that <strong>always has one current value</strong> and pushes the latest value to anyone collecting it — so the ViewModel keeps the screen's state in it, and the UI reads that state and redraws whenever it changes.</p>
+</div>
+</div>
+<p>The idiomatic shape is a <strong>backing-property pair</strong>: a <em>private, writable</em> <code>MutableStateFlow</code> the ViewModel mutates, and a <em>public, read-only</em> <code>StateFlow</code> the UI collects. Watch for that pair (<code>_uiState</code> and <code>uiState</code>) in the code below:</p>
+<div class="codeblock" data-lang="Kotlin (ViewModel)">
+<span class="codeblock__lang">Kotlin · ViewModel</span>
+<pre><code>// A single immutable class describing everything the screen needs to draw.
+data class HomeUiState(
+    val items: List&lt;Item&gt; = emptyList(),
+    val selectedId: Int? = null,
+    val isLoading: Boolean = false
+)
+
+class HomeViewModel : ViewModel() {
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow&lt;HomeUiState&gt; = _uiState.asStateFlow()  // read-only outside
+
+    init { load() }
+
+    private fun load() {
+        // In-memory for today; later this comes from a repository.
+        _uiState.update { it.copy(items = sampleItems(), isLoading = false) }
+    }
+
+    fun onItemSelected(id: Int) {
+        _uiState.update { it.copy(selectedId = id) }
+    }
+}</code></pre>
+</div>
+<h4 id="stateflow-walkthrough">The StateFlow pattern — every line, explained</h4>
+<ul>
+<li><strong><code>private val _uiState = MutableStateFlow(HomeUiState())</code></strong> — the <em>private</em>, writable holder. <code>MutableStateFlow</code> is created with an initial value (<code>HomeUiState()</code>), so it is never empty — it always has a current state to hand out. The leading underscore is just a naming convention for "this is the internal, mutable backing field; don't touch it from outside."</li>
+<li><strong><code>val uiState: StateFlow&lt;HomeUiState&gt; = _uiState.asStateFlow()</code></strong> — the <em>public, read-only</em> view of the same holder. <code>.asStateFlow()</code> wraps <code>_uiState</code> in a plain <code>StateFlow</code> that <em>can be read but not written</em>. The UI gets this one; only the ViewModel can reach <code>_uiState</code> to change it. (This is the encapsulation that makes unidirectional data flow enforceable, not just a suggestion.)</li>
+<li><strong><code>_uiState.update { it.copy(items = sampleItems(), isLoading = false) }</code></strong> — the only way state changes. <code>update { current -&gt; ... }</code> takes the <em>current</em> state (here named <code>it</code>) and <strong>atomically replaces it with a new value</strong>. Inside, <code>it.copy(...)</code> uses the data class's generated <code>copy()</code> to make a fresh <code>HomeUiState</code> that is identical <em>except</em> for the named fields — <code>items</code> and <code>isLoading</code> change; <code>selectedId</code> is carried over untouched. You never mutate the old state object; you swap in a new immutable one.</li>
+<li><strong><code>fun onItemSelected(id: Int) { _uiState.update { it.copy(selectedId = id) } }</code></strong> — a named <em>event handler</em>. The UI calls this; the ViewModel does the actual write. Same <code>update { it.copy(...) }</code> move, this time changing only <code>selectedId</code>.</li>
+</ul>
+<p>Strip away Compose and the pattern is tiny — a private writable flow, a public read-only one over the top, and <code>update { it.copy(...) }</code> to advance it:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · the backing-property pair, isolated</span><pre><code>private val _count = MutableStateFlow(0)        // writable — ViewModel only
+val count: StateFlow&lt;Int&gt; = _count.asStateFlow() // read-only — what the UI sees
+
+fun increment() {
+    _count.update { current -&gt; current + 1 }     // atomically replace with a new value
+}
+// _count.value is always readable: it starts at 0 and is never "empty".
+// Outside code can read count.value, but it CANNOT write to count — only increment() can.</code></pre></div>
+<p>And the composable <em>collects</em> that state in a lifecycle-aware way:</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun HomeScreen(
+    onItemClick: (Int) -&gt; Unit,
+    viewModel: HomeViewModel = viewModel()   // scoped + survives rotation
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    ItemList(
+        items = uiState.items,
+        onItemClick = { id -&gt;
+            viewModel.onItemSelected(id)
+            onItemClick(id)
+        }
+    )
+}</code></pre>
+</div>
+<ul>
+<li><strong><code>val uiState by viewModel.uiState.collectAsStateWithLifecycle()</code></strong> — the UI reads the <em>public, read-only</em> <code>uiState</code> (never <code>_uiState</code>). <code>collectAsStateWithLifecycle()</code> subscribes to the flow and turns its current value into Compose state, so the screen recomposes every time the ViewModel pushes a new state — and it pauses collecting while the screen is backgrounded, which is the "lifecycle-aware" part.</li>
+<li><strong><code>onItemClick = { id -&gt; viewModel.onItemSelected(id); ... }</code></strong> — the UI does not change state itself; it sends an <em>event up</em> by calling the ViewModel's named function. State flows down (via <code>uiState</code>), events flow up (via <code>onItemSelected</code>). One direction each.</li>
+</ul>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p>The public type is <code>StateFlow</code>, not <code>MutableStateFlow</code>, <strong>on purpose</strong>: the UI <em>never</em> assigns to <code>uiState</code>. There is no <code>viewModel.uiState.value = ...</code> from a composable — that line won't even compile, because <code>.asStateFlow()</code> hands out a read-only view. Only the ViewModel mutates the private <code>_uiState</code>. If you exposed the <code>MutableStateFlow</code> directly, two places could write state, the screen could force the ViewModel into an "impossible" state, and unidirectional data flow would quietly fall apart.</p>
+</div>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common misconception</span>
+<p>"I'll just keep the data in a <code>var</code> inside the composable." It works until you rotate the phone — then it's gone, because the composition is rebuilt. The ViewModel is the fix: it lives <em>outside</em> the composition's lifecycle. We prove this live by rotating the emulator.</p>
+</div>
+</div>
+</div>
+<!-- Idea 5 -->
+<h3 id="idea-udf">5 · State holders + unidirectional data flow (UDF)</h3>
+<div class="card">
+<p><strong>Unidirectional data flow</strong> is a one-way loop: state flows <em>down</em> from the ViewModel into composables; events flow <em>up</em> from composables back to the ViewModel; the ViewModel updates state; the new state flows down again.</p>
+<div aria-label="Unidirectional data flow loop" class="udf-flow">
+<span class="udf-node">ViewModel state</span>
+<span class="udf-sep">— state down →</span>
+<span class="udf-node">Composable UI</span>
+<span class="udf-sep">— event up →</span>
+<span class="udf-node">ViewModel updates</span>
+<span class="udf-sep">↺ loop</span>
+</div>
+<p>Practically, this means:</p>
+<ul>
+<li><strong>Hoist state out</strong> of low-level composables. Pass <em>values down</em> and <em>callbacks up</em> (<code>onItemClick: (Int) -&gt; Unit</code>), so leaf composables are reusable and previewable.</li>
+<li>The <strong>UI state class</strong> (e.g. <code>HomeUiState</code>) is a single immutable snapshot of everything the screen needs — easy to reason about and test.</li>
+<li>A composable never mutates ViewModel internals directly; it calls a named function (<code>onItemSelected</code>). One direction in, one direction out.</li>
+</ul>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Stateless leaf, stateful parent</span>
+<p>A <code>StatelessCounter(count, onIncrement)</code> can be dropped anywhere and tested with fake values. Its parent (or the ViewModel) owns the real <code>count</code>. This "state hoisting" pattern is the heart of UDF — and it's the same idea whether the state lives in a parent composable or a ViewModel.</p>
+</div>
+</div>
+</div>
+<h3 id="flash-h">Quick concept review — flashcards</h3>
+<p class="muted">Flip through before the lab. Use Prev/Next, Shuffle, and "Got it" to thin the deck.</p>
+<div data-flashcards="cards-s8"></div>
+<script id="cards-s8" type="application/json">
+          [
+            { "front": "What does NavController own?", "back": "The back stack (navigation history) and the navigate()/popBackStack() API. Create it with rememberNavController().", "tag": "Navigation" },
+            { "front": "What is a NavHost?", "back": "A composable bound to a NavController that displays whichever destination matches the current route — the 'window' showing the top of the back stack.", "tag": "Navigation" },
+            { "front": "What is a route?", "back": "A string key for a destination, e.g. \"home\" or \"detail/{itemId}\". Arguments are encoded in the string, so they must be primitives.", "tag": "Navigation" },
+            { "front": "Pass the whole object or just the id between screens?", "back": "Just the id. Let the destination look the data up from the ViewModel/repository. Route args must be primitives.", "tag": "Navigation" },
+            { "front": "What is single-Activity architecture?", "back": "One Activity hosts one NavHost; each 'screen' is a composable destination. State lives in ViewModels.", "tag": "Architecture" },
+            { "front": "Fragment ≈ ? in Compose terms", "back": "A Fragment is roughly a screen-level composable destination. The legacy nav_graph.xml ≈ your NavHost block; findNavController() ≈ your NavController.", "tag": "Architecture" },
+            { "front": "Name the two architecture layers from today.", "back": "UI layer (composables + ViewModel) and data layer (repository → local DB/DataStore + network). Repository is the source of truth.", "tag": "Architecture" },
+            { "front": "Why a ViewModel over remember{} for screen data?", "back": "A ViewModel survives configuration changes (e.g. rotation); a plain remember{} is rebuilt and lost on rotation.", "tag": "ViewModel" },
+            { "front": "How does a composable read ViewModel state safely?", "back": "Expose a StateFlow<UiState> from the ViewModel and read it with collectAsStateWithLifecycle().", "tag": "ViewModel" },
+            { "front": "Describe unidirectional data flow (UDF).", "back": "State flows DOWN (ViewModel → composables); events flow UP (composables → ViewModel); ViewModel updates state; repeat. Pass values down, callbacks up.", "tag": "UDF" }
+          ]
+          </script>
+<h3 id="srs-h">Spaced recall — returns over days</h3>
+<p class="muted">A small Leitner deck of today's nav/architecture facts. Review what's due, rate your recall honestly, and the scheduler spaces the cards out. Coming back tomorrow is the point — that's when memory actually consolidates. This deck feeds your per-topic mastery (<em>architecture</em>).</p>
+<div data-srs="srs-s8"></div>
+<script id="srs-s8" type="application/json">
+          {
+            "id": "srs-s8",
+            "cards": [
+              { "topic": "architecture", "front": "Which object owns the back stack, and how do you create it?", "back": "<strong>NavController</strong> owns the back stack and exposes <code>navigate()</code>/<code>popBackStack()</code>. Create it with <code>rememberNavController()</code>." },
+              { "topic": "architecture", "front": "What is a <code>NavHost</code>, in one sentence?", "back": "A composable bound to a NavController that swaps in whichever destination matches the current route — it only ever shows the top of the back stack." },
+              { "topic": "architecture", "front": "Cloze: a route is a ____, so its arguments must be ____.", "back": "A route is a <strong>string</strong> (e.g. <code>\"detail/{itemId}\"</code>), so arguments are encoded into it and must be <strong>primitives</strong> (Int, String, Boolean…)." },
+              { "topic": "architecture", "front": "You need to show a detail screen for a tapped planet. What do you put in the route — the object or the id?", "back": "The <strong>id</strong>. Pass <code>detail/$id</code> and let the destination look the object up from the ViewModel/repository. Objects can't survive deep links or process death." },
+              { "topic": "architecture", "front": "What is single-Activity architecture?", "back": "One <code>MainActivity</code> hosts one <code>NavHost</code>; every 'screen' is a composable destination. Screen state lives in ViewModels — no Fragment-per-screen, no nav_graph.xml." },
+              { "topic": "architecture", "front": "Map the legacy pieces to Compose: Fragment, nav_graph.xml, findNavController().", "back": "Fragment ≈ a screen-level composable destination; <code>nav_graph.xml</code> ≈ your <code>NavHost { }</code> block; <code>findNavController()</code> ≈ your <code>NavController</code>." },
+              { "topic": "architecture", "front": "Name the two architecture layers and the single source of truth for data.", "back": "<strong>UI layer</strong> (composables + ViewModel) and <strong>data layer</strong> (repository → Room/DataStore + network). The <strong>repository</strong> is the single source of truth; the ViewModel never touches the DB/network directly." },
+              { "topic": "architecture", "front": "Why prefer a ViewModel over a plain <code>remember{}</code> for screen data?", "back": "A ViewModel <strong>survives configuration changes</strong> (rotation, dark-mode, font/locale change). A plain <code>remember{}</code> is rebuilt and lost on rotation. Use <code>rememberSaveable</code> only for tiny throwaway UI bits." },
+              { "topic": "architecture", "front": "How should a composable expose & read ViewModel state safely?", "back": "Keep a <code>private val _uiState = MutableStateFlow(...)</code>, expose <code>val uiState = _uiState.asStateFlow()</code> (read-only), and read it with <code>collectAsStateWithLifecycle()</code> so collection pauses when the screen is backgrounded." },
+              { "topic": "architecture", "front": "Your ViewModel needs <code>FeedViewModel(repo)</code> but <code>viewModel()</code> crashes. Why, and the in-scope fix?", "back": "The default <code>viewModel()</code> can only build a <strong>no-arg</strong> ViewModel. Supply <code>viewModelFactory { initializer { FeedViewModel(repo) } }</code> and call <code>viewModel(factory = …)</code>. (Hilt/DI is out of scope; the factory is sufficient.)" }
+            ]
+          }
+          </script>
+</section>
+<!-- =============================================================== -->
+<!-- GUIDED LIVE-CODING                                             -->
+<!-- =============================================================== -->
+<section aria-labelledby="live-h" class="slide">
+<h2 id="live-h">Guided Live-Coding</h2>
+<p class="muted">Grow the Session-7 single-screen list project into a navigable, ViewModel-backed app.</p>
+<h3 id="live-arc1">Arc 1 · NavHost with 3 destinations + an argument (~30 min)</h3>
+<ol class="stepper">
+<li class="step">
+<h4>Add the navigation dependency &amp; sync</h4>
+<p>In <code>app/build.gradle.kts</code>, add <code>navigation-compose</code> (and the lifecycle libs if missing), then <strong>Sync Now</strong>. You should see "BUILD SUCCESSFUL." <em>Expected:</em> no red imports yet — you add the code next.</p>
+<div class="codeblock" data-lang="Kotlin (Gradle)">
+<span class="codeblock__lang">Kotlin · Gradle</span>
+<pre><code>implementation("androidx.navigation:navigation-compose:2.8.0")
+implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Define routes as constants (avoid magic strings)</h4>
+<p>Create a tiny <code>Routes</code> object. Talk through <em>why</em>: one place to change a route name, fewer typos. <em>Expected:</em> compiles, nothing visible yet.</p>
+<div class="codeblock" data-lang="Kotlin">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>object Routes {
+    const val HOME = "home"
+    const val ABOUT = "about"
+    const val DETAIL = "detail/{itemId}"            // pattern
+    fun detail(itemId: Int) = "detail/$itemId"      // builder for navigation
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Build the NavHost</h4>
+<p>Add <code>AppNavHost()</code> and call it from <code>setContent</code>. Type one route name <em>wrong</em> on purpose, run, and read the crash, then fix it. <em>Expected after fix:</em> app launches on Home.</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun AppNavHost(navController: NavHostController = rememberNavController()) {
+    NavHost(navController = navController, startDestination = Routes.HOME) {
+        composable(Routes.HOME) {
+            HomeScreen(
+                onItemClick = { id -&gt; navController.navigate(Routes.detail(id)) },
+                onAboutClick = { navController.navigate(Routes.ABOUT) }
+            )
+        }
+        composable(
+            route = Routes.DETAIL,
+            arguments = listOf(navArgument("itemId") { type = NavType.IntType })
+        ) { entry -&gt;
+            val itemId = entry.arguments?.getInt("itemId") ?: 0
+            DetailScreen(itemId = itemId, onBack = { navController.popBackStack() })
+        }
+        composable(Routes.ABOUT) {
+            AboutScreen(onBack = { navController.popBackStack() })
+        }
+    }
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Wire navigation from a list item</h4>
+<p>Make each list row call <code>onItemClick(item.id)</code>. Tap a row in the emulator. <em>Expected:</em> Detail screen opens showing the id you tapped; pressing the system Back returns to the list. Pause and let students predict the Back behavior first.</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun DetailScreen(itemId: Int, onBack: () -&gt; Unit) {
+    Column(Modifier.padding(24.dp)) {
+        Text("Detail for item #$itemId", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onBack) { Text("Back") }
+    }
+}</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🔍</span>
+<div class="callout__body">
+<span class="callout__label">Show the back stack</span>
+<p>Open Logcat and filter on your nav tag, or just talk it through: each <code>navigate</code> pushed a card; <code>popBackStack()</code> and the system Back both pop one. Navigate Home → Detail → About, then press Back twice and predict each screen before it appears.</p>
+</div>
+</div>
+</li>
+</ol>
+<h3 id="live-arc2">Arc 2 · A ViewModel that survives rotation (~30 min)</h3>
+<ol class="stepper">
+<li class="step">
+<h4>Create the UI state class + ViewModel</h4>
+<p>Add <code>HomeUiState</code> and <code>HomeViewModel</code> (the code from Concept Note 4). Emphasize: state is one immutable <code>data class</code>; the ViewModel exposes a read-only <code>StateFlow</code>.</p>
+</li>
+<li class="step">
+<h4>Collect state in the composable</h4>
+<p>Swap HomeScreen to obtain a <code>viewModel()</code> and read <code>collectAsStateWithLifecycle()</code>. <em>Expected:</em> the list renders from <code>uiState.items</code> exactly as before — no visible change yet, which is the point.</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun HomeScreen(
+    onItemClick: (Int) -&gt; Unit,
+    onAboutClick: () -&gt; Unit,
+    viewModel: HomeViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    Scaffold(topBar = { /* TopAppBar(title = { Text("Items") }) */ }) { padding -&gt;
+        ItemList(
+            items = uiState.items,
+            modifier = Modifier.padding(padding),
+            onItemClick = { id -&gt;
+                viewModel.onItemSelected(id)
+                onItemClick(id)
+            }
+        )
+    }
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>The rotation reveal</h4>
+<p>Add a temporary counter to <code>HomeViewModel</code>, increment it on a button tap, then <strong>rotate the emulator</strong> (Ctrl/Cmd + Left/Right arrow). <em>Expected:</em> the count is preserved. Then move that same counter into a plain <code>remember{}</code> and rotate again — it resets to 0. This side-by-side is the lesson.</p>
+<div class="codeblock" data-lang="Kotlin (ViewModel)">
+<span class="codeblock__lang">Kotlin · ViewModel</span>
+<pre><code>fun increment() = _uiState.update { it.copy(tapCount = it.tapCount + 1) }
+// In HomeUiState: val tapCount: Int = 0
+// Button(onClick = viewModel::increment) { Text("Taps: ${uiState.tapCount}") }</code></pre>
+</div>
+</li>
+</ol>
+</section>
+<!-- =============================================================== -->
+<!-- HANDS-ON LAB                                                   -->
+<!-- =============================================================== -->
+<section aria-labelledby="lab-h" class="slide">
+<h2 id="lab-h">Hands-On Lab — Multi-Destination Nav App</h2>
+<div class="card card--accent">
+<h3 class="card__title" style="margin-top:0;">🎯 Goal</h3>
+<p>Build an app with a <strong>list screen → detail screen</strong> (passing an <code>id</code> argument) → <strong>back</strong>, where a <strong>ViewModel owns the list and the current selection</strong>. Once that works, push further by adding a 3-tab bottom navigation.</p>
+<div class="mini-legend">
+<span class="tag">⏱ 70 minutes</span>
+<span class="tag">👥 Individual (pair if an emulator is down)</span>
+</div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Model your data and put it in a ViewModel</h4>
+<p>Create a small <code>data class</code> and a ViewModel that exposes the list and a selected id via <code>StateFlow</code>. Use any theme you like (recipes, songs, planets…).</p>
+<div class="codeblock" data-lang="Kotlin (ViewModel)">
+<span class="codeblock__lang">Kotlin · ViewModel</span>
+<pre><code>data class Planet(val id: Int, val name: String, val summary: String)
+
+data class CatalogUiState(
+    val planets: List&lt;Planet&gt; = emptyList(),
+    val selectedId: Int? = null
+)
+
+class CatalogViewModel : ViewModel() {
+    private val _uiState = MutableStateFlow(
+        CatalogUiState(planets = seed())
+    )
+    val uiState: StateFlow&lt;CatalogUiState&gt; = _uiState.asStateFlow()
+
+    fun select(id: Int) = _uiState.update { it.copy(selectedId = id) }
+    fun planet(id: Int): Planet? = _uiState.value.planets.find { it.id == id }
+
+    private fun seed() = listOf(
+        Planet(1, "Mercury", "Smallest planet, closest to the Sun."),
+        Planet(2, "Venus", "Hottest planet; thick CO2 atmosphere."),
+        Planet(3, "Earth", "The only known planet with life."),
+        Planet(4, "Mars", "The red planet; target of rovers.")
+    )
+}</code></pre>
+</div>
+<p class="muted"><small>Starter hint: <code>import androidx.lifecycle.ViewModel</code>, <code>kotlinx.coroutines.flow.*</code>.</small></p>
+</li>
+<li class="step">
+<h4>Build the list screen (stateless leaf + stateful host)</h4>
+<p>Hoist state: the list <em>row</em> takes a planet and an <code>onClick</code> callback; the screen reads the ViewModel. <em>Expected:</em> a scrollable list of names.</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun CatalogScreen(onPlanetClick: (Int) -&gt; Unit, vm: CatalogViewModel = viewModel()) {
+    val state by vm.uiState.collectAsStateWithLifecycle()
+    LazyColumn {
+        items(state.planets, key = { it.id }) { planet -&gt;
+            ListItem(
+                headlineContent = { Text(planet.name) },
+                modifier = Modifier.clickable {
+                    vm.select(planet.id)
+                    onPlanetClick(planet.id)
+                }
+            )
+            HorizontalDivider()
+        }
+    }
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Add the NavHost with a detail argument</h4>
+<p>Two destinations: <code>"catalog"</code> and <code>"detail/{planetId}"</code>. Navigate with the tapped id; <code>popBackStack()</code> for Back. <em>Expected:</em> tapping a row opens the detail route.</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>// navController is created once, at the top of your single-Activity app
+// (e.g. inside setContent { … }), exactly like AppNavHost() in section 1.
+val navController = rememberNavController()
+
+NavHost(navController, startDestination = "catalog") {
+    composable("catalog") {
+        CatalogScreen(onPlanetClick = { id -&gt; navController.navigate("detail/$id") })
+    }
+    composable(
+        "detail/{planetId}",
+        arguments = listOf(navArgument("planetId") { type = NavType.IntType })
+    ) { entry -&gt;
+        val id = entry.arguments?.getInt("planetId") ?: return@composable
+        PlanetDetail(planetId = id, onBack = { navController.popBackStack() })
+    }
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Detail reads its item from the ViewModel by id</h4>
+<p>The detail composable receives only the <code>id</code> and looks the planet up — proving "pass the id, not the object." <em>Expected:</em> the detail shows the correct name + summary; Back returns to the list.</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun PlanetDetail(planetId: Int, onBack: () -&gt; Unit, vm: CatalogViewModel = viewModel()) {
+    val planet = vm.planet(planetId)
+    Column(Modifier.padding(24.dp)) {
+        Text(planet?.name ?: "Unknown", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(8.dp))
+        Text(planet?.summary ?: "No data.")
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = onBack) { Text("Back to list") }
+    }
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Rotate to verify state survival</h4>
+<p>Rotate the device on the list and on the detail screen. <em>Expected:</em> scroll position and selection are sensible; nothing crashes or resets to a blank screen. If you stored data in a plain <code>remember{}</code>, fix it by moving it into the ViewModel.</p>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">🧯</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting — the usual suspects</span>
+<ul>
+<li><strong>"Navigation destination … cannot be found"</strong> → the route string you <code>navigate(...)</code> to doesn't match the <code>composable(...)</code> pattern. Compare them character-for-character (the <code>{planetId}</code> placeholder is replaced by the actual number when navigating).</li>
+<li><strong>Argument is always 0 / null</strong> → you forgot the <code>arguments = listOf(navArgument(...) { type = NavType.IntType })</code> declaration, or you read the wrong key name.</li>
+<li><strong>Two different ViewModel instances</strong> → calling <code>viewModel()</code> inside both screens scopes a ViewModel <em>per destination</em>. For shared state across destinations, scope it to the nav graph / Activity (we cover graph-scoped ViewModels later; for this lab, looking up by id from a per-screen seed is fine).</li>
+<li><strong>Unresolved <code>collectAsStateWithLifecycle</code></strong> → add <code>androidx.lifecycle:lifecycle-runtime-compose</code> and import it.</li>
+<li><strong>List doesn't scroll / recomposes oddly</strong> → make sure <code>items(list, key = { it.id })</code> has a stable key.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Push further — 3-tab bottom navigation</span>
+<p>Wrap the NavHost in a <code>Scaffold</code> with a <code>NavigationBar</code> of three tabs (e.g. Catalog, Favorites, About). Use <code>navController.currentBackStackEntryAsState()</code> to highlight the selected tab and <code>launchSingleTop = true</code> + <code>popUpTo</code> so tabs don't stack endlessly.</p>
+<div class="codeblock" data-lang="Kotlin (Compose)">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>// Each tab carries its OWN icon so the three destinations look distinct.
+data class Tab(val route: String, val label: String, val icon: ImageVector)
+val tabs = listOf(
+    Tab("catalog",   "Catalog",   Icons.Default.List),
+    Tab("favorites", "Favorites", Icons.Default.Favorite),
+    Tab("about",     "About",     Icons.Default.Info)
+)
+val backStack by navController.currentBackStackEntryAsState()
+val current = backStack?.destination?.route
+
+NavigationBar {
+    tabs.forEach { tab -&gt;
+        NavigationBarItem(
+            selected = current == tab.route,
+            onClick = {
+                navController.navigate(tab.route) {
+                    launchSingleTop = true
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                    restoreState = true
+                }
+            },
+            icon = { Icon(tab.icon, contentDescription = null) },  // label already names it
+            label = { Text(tab.label) }
+        )
+    }
+}</code></pre>
+<p class="muted"><small>The built-in <code>Icons.Default.*</code> set comes from <code>androidx.compose.material:material-icons-core</code> (pulled in by Material 3). Reach for the larger <code>material-icons-extended</code> artifact only if you need an icon that isn't in the core set.</small></p>
+</div>
+</div>
+</div>
+</section>
+<!-- =============================================================== -->
+<!-- ASSESSMENTS TODAY                                              -->
+<!-- =============================================================== -->
+<section aria-labelledby="assess-h" class="slide">
+<h2 id="assess-h">Assessments Today</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<h3 class="card__title" style="margin-top:0;">No formal exam today</h3>
+<p>No graded test or milestone is due in this session — Quiz 1 and Project Milestone 1 were Session 6; the final demo + Post-test are Session 12.</p>
+<p class="mini-note">Use the <a href="#checkquiz-h">optional 5-question self-check below</a> to surface gaps before the lab. It feeds your personal mastery, not a grade.</p>
+</div>
+<div class="card card--teal">
+<h3 class="card__title" style="margin-top:0;">Assigned today <span class="badge badge--amber">Async</span></h3>
+<p><strong>Async Activity 2 — Navigation &amp; app architecture</strong>, based on <a href="https://developer.android.com/courses/android-basics-compose/unit-4" rel="noopener" target="_blank">Android Basics with Compose, Unit 4</a>. Due before Session 9.</p>
+</div>
+</div>
+<h3 id="checkquiz-h">In-class knowledge check</h3>
+<p class="muted">Optional 5-question self-check you can run on screen or assign — just to surface misconceptions before the lab.</p>
+<div data-quiz="quiz-s8" data-topic="architecture"></div>
+<script id="quiz-s8" type="application/json">
+          {
+            "title": "Session 8 self-check: Navigation & architecture",
+            "intro": "Five quick questions. Submit to see explanations.",
+            "passingScore": 0.7,
+            "shuffle": false,
+            "questions": [
+              {
+                "id": "q1",
+                "type": "single",
+                "prompt": "Which object owns the navigation back stack in Compose?",
+                "options": [
+                  { "id": "a", "text": "NavHost" },
+                  { "id": "b", "text": "NavController" },
+                  { "id": "c", "text": "The Activity's Bundle" },
+                  { "id": "d", "text": "The ViewModel" }
+                ],
+                "correct": ["b"],
+                "explanation": "NavController owns and manipulates the back stack (navigate/popBackStack). The NavHost just displays whichever destination is on top."
+              },
+              {
+                "id": "q2",
+                "type": "single",
+                "prompt": "When navigating from a list to a detail screen, what should you pass in the route?",
+                "options": [
+                  { "id": "a", "text": "The entire data object" },
+                  { "id": "b", "text": "A primitive id, then look the object up in the detail screen" },
+                  { "id": "c", "text": "A reference to the composable" },
+                  { "id": "d", "text": "Nothing — detail screens can't take data" }
+                ],
+                "correct": ["b"],
+                "explanation": "Route arguments are encoded into the route string and must be primitives. Pass the id and let the destination resolve the data from the ViewModel/repository."
+              },
+              {
+                "id": "q3",
+                "type": "truefalse",
+                "prompt": "A value stored only in a composable's remember{} block survives a screen rotation.",
+                "correct": false,
+                "explanation": "False. remember{} survives recomposition but is lost on a configuration change like rotation. Use a ViewModel for screen data (or rememberSaveable for tiny UI values)."
+              },
+              {
+                "id": "q4",
+                "type": "multi",
+                "prompt": "Which statements about unidirectional data flow (UDF) are correct? (Select all.)",
+                "options": [
+                  { "id": "a", "text": "State flows down from the ViewModel into composables." },
+                  { "id": "b", "text": "Events flow up from composables to the ViewModel." },
+                  { "id": "c", "text": "Composables mutate the ViewModel's private fields directly." },
+                  { "id": "d", "text": "Leaf composables should receive values down and callbacks up." }
+                ],
+                "correct": ["a", "b", "d"],
+                "explanation": "UDF means state down, events up, and the ViewModel owns the updates. Composables call named functions (events); they never reach into the ViewModel's internals."
+              },
+              {
+                "id": "q5",
+                "type": "short",
+                "prompt": "Name the function used to read a ViewModel's StateFlow inside a composable in a lifecycle-aware way.",
+                "correct": ["collectAsStateWithLifecycle", "collectAsStateWithLifecycle()"],
+                "explanation": "collectAsStateWithLifecycle() collects the flow only while the UI is at least STARTED, which is the recommended way to observe a StateFlow in Compose."
+              }
+            ]
+          }
+          </script>
+</section>
+<!-- =============================================================== -->
+<!-- DISCUSSION BOARD                                               -->
+<!-- =============================================================== -->
+<section aria-labelledby="discussion-h" class="slide">
+<h2 id="discussion-h">Discussion Board Prompt</h2>
+<div class="card card--accent">
+<h3 class="card__title" style="margin-top:0;">💬 This week's prompt</h3>
+<blockquote>
+<p>"Sketch the navigation for <strong>your</strong> course project. List your screens (destinations) and the routes between them, and identify <em>one</em> place where you pass an argument (and what id you pass). Then explain: which piece of state will live in a <strong>ViewModel</strong> rather than in a composable, and <em>why</em> — what would break on rotation if you didn't?"</p>
+</blockquote>
+
+<ul>
+<li><strong>Initial post</strong> (≈150–250 words) with your destination list + one argument example + your ViewModel-vs-composable reasoning. Post by end of the week.</li>
+<li><strong>Two peer replies</strong>: react to a classmate's nav graph — suggest a destination they're missing, or question whether a piece of state really needs the ViewModel.</li>
+<li>Reference at least one idea from today (back stack, route arguments, single-Activity, UDF, or config-change survival) by name.</li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Why this prompt</span>
+<p>It pushes every student to apply today's concepts to <strong>their own project</strong> (required feature (a) navigation + (e) ViewModel architecture) before they write code, surfacing design problems early.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- =============================================================== -->
+<!-- HOMEWORK / NEXT CLASS                                          -->
+<!-- =============================================================== -->
+<section aria-labelledby="hw-h" class="slide">
+<h2 id="hw-h">Homework / Next Class</h2>
+<div class="grid grid-2">
+<div class="card card--teal">
+<h3 class="card__title" style="margin-top:0;">📚 Read</h3>
+<ul>
+<li><a href="https://developer.android.com/guide/fragments" rel="noopener" target="_blank">Fragments</a> &amp; <a href="https://developer.android.com/guide/navigation" rel="noopener" target="_blank">Navigation Component</a> (developer.android.com) — so you recognize the legacy pattern in older code.</li>
+<li><a href="https://developer.android.com/topic/architecture" rel="noopener" target="_blank">Guide to app architecture</a> — UI layer, data layer, ViewModel.</li>
+<li>Skim <a href="https://developer.android.com/develop/ui/compose/state" rel="noopener" target="_blank">State and Jetpack Compose</a> to reinforce state hoisting.</li>
+</ul>
+</div>
+<div class="card card--accent">
+<h3 class="card__title" style="margin-top:0;">✍️ Do</h3>
+<ul>
+<li><strong>Async Activity 2 — Navigation &amp; app architecture</strong>: complete the relevant codelabs in <a href="https://developer.android.com/courses/android-basics-compose/unit-4" rel="noopener" target="_blank">Android Basics with Compose, Unit 4</a>.</li>
+<li><strong>Project task:</strong> add <strong>navigation + a ViewModel</strong> to YOUR course app — at least two destinations and one argument pass, with screen state hoisted into a ViewModel. This is direct progress toward required features (a) and (e).</li>
+<li>Post your <a href="#discussion-h">Discussion Board</a> response + two peer replies.</li>
+</ul>
+</div>
+</div>
+<div class="card mt">
+<h3 class="card__title" style="margin-top:0;">🔭 Next class — Session 9</h3>
+<p>We stay in Week 3 (Navigation, Architecture &amp; Local Data) and move toward <strong>local data persistence</strong> — connecting the repository layer we sketched today to real storage (DataStore / Room). Bring your project with working navigation + a ViewModel so we can attach a data layer to it.</p>
+<p class="row">
+<a class="btn btn--ghost" href="../labs/intents-navigator.html">↔ Lab: Intents vs in-app navigation</a>
+<a class="btn btn--ghost" href="session-09.html">Session 9 →</a>
+<a class="btn btn--ghost" href="../index.html">Course hub</a>
+</p>
+</div>
+</section>
+<!-- =============================================================== -->
+<!-- MASTER IT — worked example → fade, misconceptions, production,  -->
+<!-- retrieval check, deliberate practice (self-directed mastery)    -->
+<!-- =============================================================== -->
+<section aria-labelledby="master-h" class="card slide" id="master-it">
+<h2 class="card__title" id="master-h">Master it · Unidirectional data flow, hands-on</h2>
+<p class="muted" style="margin-top:0;">
+        This is where today's ideas become muscle memory. Work the example, complete the faded
+        version, kill the misconceptions, then run the deliberate-practice ladder. Everything here is
+        your own self-directed mastery — pass it when every test case turns green, not for a grade.
+      </p>
+<!-- ===== 1 · WORKED EXAMPLE → FADE ===== -->
+<h3 id="master-we">1 · Worked example — the <code>reduce(state, event)</code> at the heart of a ViewModel</h3>
+<p>
+        Strip away Compose, <code>StateFlow</code>, and the emulator and a ViewModel is doing exactly one
+        thing: it is a <strong>pure function from <em>(current state, an event) → new state</em></strong>.
+        That function is the whole of unidirectional data flow. If you can write it as plain Kotlin, the
+        Android wiring (<code>_uiState.update { reduce(it, event) }</code>) is mechanical. Master the core
+        and the framework is just plumbing.
+      </p>
+<p>Reason through it the way a senior engineer does, one decision at a time:</p>
+<div class="arch-diagram">
+<div class="arch-layer"><b>Step 1 — Name the state</b>One immutable <code>data class</code> snapshot of everything the screen draws. Here: a counter app with <code>count</code>, a <code>step</code>, and a derived <code>parity</code> label. State is the single source of truth.</div>
+<div aria-hidden="true" class="arch-arrow">▼</div>
+<div class="arch-layer"><b>Step 2 — Enumerate the events</b>A <code>sealed interface</code> of everything the user can <em>do</em>: <code>Increment</code>, <code>Decrement</code>, <code>SetStep(n)</code>, <code>Reset</code>. Sealed = the compiler forces you to handle every case in <code>when</code> — no silent gaps.</div>
+<div aria-hidden="true" class="arch-arrow">▼</div>
+<div class="arch-layer"><b>Step 3 — Write the reducer</b>A pure <code>fun reduce(state, event): State</code> that returns a <em>new</em> state via <code>copy(...)</code>. No mutation, no I/O, no clock, no randomness — same inputs always give the same output, so it is trivially testable.</div>
+<div aria-hidden="true" class="arch-arrow">▼</div>
+<div class="arch-layer"><b>Step 4 — Derive, don't store</b><code>parity</code> is computed <em>from</em> <code>count</code> inside <code>reduce</code> every time. Never keep a second field you have to remember to update — that is how UI states drift out of sync.</div>
+</div>
+<p>
+        Here is the complete, runnable reference. <strong>Predict the printed output first</strong>
+        (walk the events through your head), <em>then</em> press Run to confirm. Notice that the harness
+        feeds events one-by-one through <code>reduce</code> exactly as a ViewModel would feed them through
+        <code>_uiState.update { }</code>.
+      </p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable — the reducer, worked</div>
+<pre><code>// ----- Step 1: the immutable UI state snapshot -----
+data class CounterState(
+    val count: Int = 0,
+    val step: Int = 1,
+    val parity: String = "even"   // DERIVED from count — see reduce()
+)
+
+// ----- Step 2: every event the screen can emit -----
+sealed interface CounterEvent {
+    data object Increment : CounterEvent
+    data object Decrement : CounterEvent
+    data class  SetStep(val n: Int) : CounterEvent
+    data object Reset : CounterEvent
+}
+
+// ----- Step 3 + 4: pure reducer; parity is derived, never stored stale -----
+fun reduce(state: CounterState, event: CounterEvent): CounterState {
+    val next = when (event) {
+        CounterEvent.Increment   -&gt; state.copy(count = state.count + state.step)
+        CounterEvent.Decrement   -&gt; state.copy(count = state.count - state.step)
+        is CounterEvent.SetStep  -&gt; state.copy(step = event.n)
+        CounterEvent.Reset       -&gt; CounterState(step = state.step) // keep the step, zero the count
+    }
+    // derive parity from the NEW count, so it can never drift out of sync
+    return next.copy(parity = if (next.count % 2 == 0) "even" else "odd")
+}
+
+fun main() {
+    // This loop is what a ViewModel does: fold events over state.
+    val events = listOf(
+        CounterEvent.Increment,        // 0 -&gt; 1
+        CounterEvent.SetStep(5),       // step becomes 5
+        CounterEvent.Increment,        // 1 -&gt; 6
+        CounterEvent.Decrement,        // 6 -&gt; 1
+        CounterEvent.Reset             // count -&gt; 0, step stays 5
+    )
+    val finalState = events.fold(CounterState()) { state, event -&gt; reduce(state, event) }
+    println(finalState)   // CounterState(count=0, step=5, parity=even)
+}</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🔑</span>
+<div class="callout__body">
+<span class="callout__label">The insight to carry away</span>
+<p><code>events.fold(initial) { s, e -&gt; reduce(s, e) }</code> <em>is</em> unidirectional data flow in one line.
+          A real ViewModel just spreads that fold across time: each user action calls
+          <code>_uiState.update { reduce(it, event) }</code>, and Compose re-reads the new immutable state. Pure
+          reducer in the middle, framework on the outside.</p>
+</div>
+</div>
+<h4 id="master-fade">Now you — faded challenge <span class="badge badge--amber">auto-checked</span></h4>
+<p>
+        Same shape, your turn. Implement the reducer for a tiny <strong>shopping-cart</strong> screen. The
+        scaffolding, events, and the test harness are written — only the <code>// YOUR CODE</code> region is
+        blank. <strong>You've got it when every case prints <code>✓ passed</code> and you see
+        <code>ALL TESTS PASSED 🎉</code>.</strong> Then mark it solved to feed your mastery map.
+      </p>
+<div class="codeblock" data-challenge="s08-reduce" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge — complete the reducer</div>
+<pre><code>// A cart screen's immutable state. itemCount and subtotal are DERIVED.
+data class CartState(
+    val lines: Map&lt;String, Int&gt; = emptyMap(),  // product -&gt; quantity
+    val itemCount: Int = 0,                     // total quantity across lines
+    val subtotalCents: Int = 0                  // sum of qty * price
+)
+
+sealed interface CartEvent {
+    data class Add(val product: String, val priceCents: Int) : CartEvent
+    data class Remove(val product: String) : CartEvent          // remove one unit
+    data object Clear : CartEvent
+}
+
+// A fixed price book the reducer can read (pure: no I/O).
+val PRICES = mapOf("pen" to 150, "mug" to 800, "cap" to 1200)
+
+fun reduce(state: CartState, event: CartEvent): CartState {
+    // ----- YOUR CODE: return a NEW CartState for each event -----
+    // Rules:
+    //  • Add: increment that product's quantity by 1 (start at 1 if absent).
+    //  • Remove: decrement by 1; if it hits 0, drop the key entirely.
+    //  • Clear: empty cart.
+    //  • ALWAYS recompute itemCount (sum of quantities) and
+    //    subtotalCents (sum of qty * PRICES[product]) from the NEW lines.
+    // Do NOT mutate `state`; build a new map and use copy(...) or CartState(...).
+
+    return state // &lt;- replace this
+    // ----- END YOUR CODE -----
+}
+
+// ---------- test harness (do not edit) ----------
+fun derive(lines: Map&lt;String, Int&gt;): Pair&lt;Int, Int&gt; {
+    val count = lines.values.sum()
+    val cents = lines.entries.sumOf { (p, q) -&gt; q * (PRICES[p] ?: 0) }
+    return count to cents
+}
+fun check(name: String, got: CartState, expected: CartState): Boolean {
+    val ok = got == expected
+    println(if (ok) "✓ passed: $name"
+            else "✗ FAILED: $name -&gt; expected $expected, got $got")
+    return ok
+}
+fun st(lines: Map&lt;String, Int&gt;): CartState {
+    val (c, cents) = derive(lines)
+    return CartState(lines = lines, itemCount = c, subtotalCents = cents)
+}
+fun main() {
+    var s = CartState()
+    var all = true
+
+    s = reduce(s, CartEvent.Add("pen", 150))
+    all = check("add first pen", s, st(mapOf("pen" to 1))) &amp;&amp; all
+
+    s = reduce(s, CartEvent.Add("pen", 150))
+    s = reduce(s, CartEvent.Add("mug", 800))
+    all = check("add second pen + a mug", s, st(mapOf("pen" to 2, "mug" to 1))) &amp;&amp; all
+
+    s = reduce(s, CartEvent.Remove("pen"))
+    all = check("remove one pen (1 left)", s, st(mapOf("pen" to 1, "mug" to 1))) &amp;&amp; all
+
+    s = reduce(s, CartEvent.Remove("pen"))
+    all = check("remove last pen drops the key", s, st(mapOf("mug" to 1))) &amp;&amp; all
+
+    s = reduce(s, CartEvent.Clear)
+    all = check("clear empties everything", s, st(emptyMap())) &amp;&amp; all
+
+    println(if (all) "ALL TESTS PASSED 🎉" else "Some cases failed — re-read the rules and try again.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">💡 Hint (stuck on the map updates?)</button>
+<div class="accordion__body">
+<p>Build the new <code>lines</code> map first, then derive the rest:</p>
+<ul>
+<li><strong>Add:</strong> <code>val q = state.lines[product] ?: 0; val lines = state.lines + (product to q + 1)</code>.</li>
+<li><strong>Remove:</strong> compute the new quantity; if it is <code>&lt;= 0</code> use <code>state.lines - product</code>, otherwise <code>state.lines + (product to newQty)</code>.</li>
+<li><strong>Clear:</strong> <code>emptyMap()</code>.</li>
+<li>Then: <code>val count = lines.values.sum()</code> and <code>val cents = lines.entries.sumOf { (p, q) -&gt; q * (PRICES[p] ?: 0) }</code>, and return <code>CartState(lines, count, cents)</code>.</li>
+</ul>
+<p class="muted"><small>Notice you never touched <code>state</code> — you built a new map and a new <code>CartState</code>. That immutability is exactly why a ViewModel can hand the old and new states to Compose safely.</small></p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">✅ Reference solution (open after you've tried)</button>
+<div class="accordion__body">
+<div class="codeblock" data-lang="Kotlin">
+<span class="codeblock__lang">Kotlin · one correct reducer</span>
+<pre><code>fun reduce(state: CartState, event: CartEvent): CartState {
+    val lines: Map&lt;String, Int&gt; = when (event) {
+        is CartEvent.Add -&gt; {
+            val q = state.lines[event.product] ?: 0
+            state.lines + (event.product to q + 1)
+        }
+        is CartEvent.Remove -&gt; {
+            val q = (state.lines[event.product] ?: 0) - 1
+            if (q &lt;= 0) state.lines - event.product
+            else state.lines + (event.product to q)
+        }
+        CartEvent.Clear -&gt; emptyMap()
+    }
+    val itemCount = lines.values.sum()
+    val subtotal = lines.entries.sumOf { (p, q) -&gt; q * (PRICES[p] ?: 0) }
+    return CartState(lines = lines, itemCount = itemCount, subtotalCents = subtotal)
+}</code></pre>
+</div>
+<p class="muted"><small>This is the same skeleton as your real <code>NotesViewModel</code> / <code>CartViewModel</code> — only the map plumbing changes. The pure reducer is the part worth memorizing.</small></p>
+</div>
+</div>
+</div>
+<!-- ===== 2 · COMMON MISCONCEPTIONS & PITFALLS ===== -->
+<h3 id="master-misconceptions">2 · Common misconceptions &amp; pitfalls</h3>
+<p class="muted">Each one is a real wrong mental model that bites people shipping navigation + ViewModel code. Read the symptom — it's how you'll recognize it in your own app.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ "I'll just pass the whole object through the route."</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> a route argument is like a function parameter, so I can hand <code>navigate</code> my <code>Planet</code> data class directly.</p>
+<p><strong>Why it's wrong:</strong> a route is a <em>string</em> (<code>"detail/3"</code>). Arguments are serialized into that string, so they must be primitives (<code>Int</code>, <code>String</code>, <code>Boolean</code>…). There is no slot for a live object reference. Even where libraries appear to allow it, the object can't survive a deep link or process death — the OS only restored a string.</p>
+<p><strong>Correct model:</strong> pass the <strong>id</strong> in the route; the destination looks the object up from the ViewModel/repository (the single source of truth).</p>
+<p><strong>Symptom you'd see:</strong> compile errors trying to put a class in <code>navArgument</code>; or, after relaunch-from-recents, the detail screen shows blank/garbage because the "object" was never really there.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ "A plain <code>var</code> (or <code>remember{}</code>) in my composable will hold the screen's data."</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> the composable is my screen, so state I keep inside it is the screen's state.</p>
+<p><strong>Why it's wrong:</strong> a plain <code>var</code> resets on every recomposition; <code>remember{}</code> survives recomposition but is <strong>destroyed and rebuilt on a configuration change</strong> (rotation, dark-mode switch, font-size change, language change). The composition is not a stable home for real data.</p>
+<p><strong>Correct model:</strong> screen data lives in a <strong>ViewModel</strong> (survives config changes), exposed as <code>StateFlow&lt;UiState&gt;</code> and read with <code>collectAsStateWithLifecycle()</code>. Use <code>rememberSaveable</code> only for tiny throwaway UI bits (an expanded toggle, an in-progress text field).</p>
+<p><strong>Symptom you'd see:</strong> rotate the phone and your list, scroll, or selection vanishes / resets to the initial value. The classic "it worked until I turned the phone sideways" bug.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ "I'll expose the <code>MutableStateFlow</code> so the screen can update it directly."</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> it's fewer lines if the composable just sets <code>viewModel.uiState.value = ...</code> when something happens.</p>
+<p><strong>Why it's wrong:</strong> that breaks unidirectional data flow. Now <em>two</em> places mutate state, ordering becomes unpredictable, and the screen can put the ViewModel into a state the ViewModel's own logic would never allow. State changes scatter across the codebase and become impossible to reason about or reproduce.</p>
+<p><strong>Correct model:</strong> keep the mutable flow <code>private</code> and expose a read-only one (<code>val uiState = _uiState.asStateFlow()</code>). The composable sends <strong>events</strong> up (<code>onItemClick(id)</code> → <code>viewModel.onItemSelected(id)</code>); only the ViewModel writes state. State down, events up — one direction each.</p>
+<p><strong>Symptom you'd see:</strong> "impossible" UI states (loading <em>and</em> error at once), heisenbugs you can't reproduce, and merge conflicts because state writes are sprinkled everywhere.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ "<code>viewModel()</code> can build any ViewModel, even one that needs a repository."</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> <code>val vm: NotesViewModel = viewModel()</code> always works, so I'll add a constructor parameter and keep calling <code>viewModel()</code>.</p>
+<p><strong>Why it's wrong:</strong> the default <code>viewModel()</code> can only construct a ViewModel with a <strong>no-argument constructor</strong>. The moment your ViewModel needs <code>NotesViewModel(repo)</code>, the default factory has no idea how to supply <code>repo</code> and crashes at runtime.</p>
+<p><strong>Correct model:</strong> provide a factory. The in-scope, current pattern is a <code>viewModelFactory { initializer { ... } }</code> passed to <code>viewModel(factory = ...)</code>:</p>
+<div class="codeblock" data-lang="Kotlin">
+<span class="codeblock__lang">Kotlin · supplying a constructor dependency</span>
+<pre><code>// In the ViewModel's companion, or a top-level val:
+val Factory = viewModelFactory {
+    initializer { NotesViewModel(NotesRepository) }   // hand it what it needs
+}
+
+// At the call site (e.g. inside a composable destination):
+val vm: NotesViewModel = viewModel(factory = NotesViewModel.Factory)</code></pre>
+</div>
+<p><strong>Symptom you'd see:</strong> <code>RuntimeException: Cannot create an instance of class NotesViewModel</code> / "no zero-argument constructor" the instant the screen opens.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">⚠️ "Both screens call <code>viewModel()</code>, so they share the same ViewModel."</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> <code>viewModel()</code> is a singleton, so the list screen and the detail screen see the same instance and the same selection.</p>
+<p><strong>Why it's wrong:</strong> <code>viewModel()</code> is scoped to the nearest <code>ViewModelStoreOwner</code> — and with Navigation-Compose, <strong>each destination is its own owner</strong>. Calling <code>viewModel()</code> in both the list and the detail composable gives you <strong>two different instances</strong>, each with its own (re-seeded) state.</p>
+<p><strong>Correct model:</strong> for genuinely shared state, scope the ViewModel to the nav graph / parent entry, or (simpler and in-scope here) pass the <strong>id</strong> as a route argument and have the detail look the item up. Don't rely on a "shared" instance that isn't shared.</p>
+<p><strong>Symptom you'd see:</strong> you set a selection on the list, navigate to detail, and the detail's ViewModel reports <code>selectedId == null</code> — because it's a brand-new, freshly-seeded instance.</p>
+</div>
+</div>
+</div>
+<!-- ===== 3 · IN PRODUCTION ===== -->
+<h3 id="master-production">3 · In production — how a senior engineer wires this</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">The idiomatic, current pattern (2024+)</span>
+<p>On a real team, a screen's ViewModel almost always looks like this skeleton, and code review will push you toward it:</p>
+<ul>
+<li><strong>One immutable <code>UiState</code> data class per screen</strong>, exposed as a read-only <code>StateFlow</code> built from a <code>private val _uiState = MutableStateFlow(...)</code> via <code>asStateFlow()</code>. Reads in the UI use <code>collectAsStateWithLifecycle()</code> so collection pauses when the screen is backgrounded — saving battery and avoiding work on an invisible screen.</li>
+<li><strong>State is updated with <code>_uiState.update { it.copy(...) }</code></strong>, never by reassigning <code>.value</code> in two places. The <code>update</code> lambda is atomic, which matters once coroutines update the same flow concurrently.</li>
+<li><strong>The ViewModel talks only to a repository</strong>, never to Retrofit/Room directly. That seam is what lets you swap a fake repository in for the screen during development and keeps networking/database concerns out of the UI layer (you'll build that repository in the data + networking sessions).</li>
+<li><strong>Dependencies arrive through a factory</strong> — <code>viewModel(factory = ...)</code> with <code>viewModelFactory { initializer { ... } }</code> — so the ViewModel is constructed with its repository instead of reaching out to grab one. (Bigger apps reach for a DI framework here, but that's beyond this course; the factory is the in-scope, fully sufficient tool.)</li>
+<li><strong>Navigation passes ids, not objects</strong>, and "go home / switch tab" actions use <code>launchSingleTop = true</code> + <code>popUpTo(...)</code> so the back stack stays sane instead of growing a duplicate destination on every tap.</li>
+</ul>
+<p><strong>One tasteful gotcha:</strong> when a ViewModel collects an upstream flow (e.g. from the database) and re-exposes it with <code>stateIn</code>, use <code>SharingStarted.WhileSubscribed(5_000)</code>, <em>not</em> <code>Eagerly</code> or <code>Lazily</code>. The 5-second grace period keeps the upstream alive across a rotation (so you don't re-query the DB on every screen flip) but still tears it down shortly after the user truly leaves — the difference between a snappy app and one that quietly drains the battery or thrashes the database. You'll use this exact idiom in the Room session.</p>
+</div>
+</div>
+<!-- ===== 4 · RETRIEVAL CHECK ===== -->
+<h3 id="master-retrieval">4 · Retrieval check — apply it, don't just recall it</h3>
+<p class="muted">
+        Close your notes. These test whether you can <em>apply</em> the model to a new situation, which is
+        what actually builds durable skill. Submit to see thorough explanations. This is self-check
+        practice — it feeds your personal mastery, never a grade.
+      </p>
+<div data-quiz="rc-8" data-topic="architecture"></div>
+<script id="rc-8" type="application/json">
+        {
+          "title": "Retrieval check · Navigation & app architecture",
+          "intro": "Six application questions. Answer from your mental model, then read every explanation.",
+          "passingScore": 0.7,
+          "shuffle": false,
+          "questions": [
+            {
+              "id": "rc8q1",
+              "type": "single",
+              "prompt": "Your list screen sets viewModel.selectedId on tap, then navigates to detail. The detail composable calls viewModel() and finds selectedId == null. What is the most likely cause?",
+              "options": [
+                { "id": "a", "text": "You forgot to call collectAsStateWithLifecycle() in detail." },
+                { "id": "b", "text": "Each destination is its own ViewModelStoreOwner, so detail got a different ViewModel instance." },
+                { "id": "c", "text": "StateFlow drops its value during navigation." },
+                { "id": "d", "text": "You must call rememberSaveable to keep selectedId." }
+              ],
+              "correct": ["b"],
+              "explanation": "With Navigation-Compose, viewModel() is scoped to the current back-stack entry. Calling it in both screens yields two separate instances. Fix it by passing the id as a route argument (and looking the item up in detail), or by scoping the ViewModel to the nav graph. StateFlow didn't lose anything — detail simply never had that instance."
+            },
+            {
+              "id": "rc8q2",
+              "type": "single",
+              "prompt": "A teammate writes a route as composable(\"detail/{itemId}\") but navigates with navController.navigate(\"detail/\" + planet). 'planet' is a Planet data class. What breaks, and what's the fix?",
+              "options": [
+                { "id": "a", "text": "Nothing — Compose serializes the object automatically." },
+                { "id": "b", "text": "It compiles but the route becomes a garbage string from Planet.toString(); pass planet.id instead and look the object up in detail." },
+                { "id": "c", "text": "It won't compile because routes can't contain slashes." },
+                { "id": "d", "text": "It works only if Planet is @Serializable." }
+              ],
+              "correct": ["b"],
+              "explanation": "String concatenation calls Planet.toString(), so the route becomes something like 'detail/Planet@1a2b' that won't match the {itemId} Int argument — you'll get a 'destination cannot be found' or a 0/null id. Route args are primitives: pass the id, resolve the object from the ViewModel/repository in the destination."
+            },
+            {
+              "id": "rc8q3",
+              "type": "multi",
+              "prompt": "Which of these belong in the reduce(state, event) function (or its ViewModel equivalent) and keep it pure & testable? (Select all that apply.)",
+              "options": [
+                { "id": "a", "text": "Compute a derived field (e.g. parity, subtotal) from the new state." },
+                { "id": "b", "text": "Return a new state via copy(...) instead of mutating the old one." },
+                { "id": "c", "text": "Read the current system time / Random inside reduce to decide the result." },
+                { "id": "d", "text": "Make a network or database call to fetch fresh data." }
+              ],
+              "correct": ["a", "b"],
+              "explanation": "A reducer is pure: same inputs → same output, no I/O, no clock, no randomness. Deriving fields and returning a new immutable copy are exactly its job (a, b). Reading the clock/Random (c) makes it non-deterministic and untestable; I/O (d) belongs in the repository, kicked off from a coroutine in the ViewModel — not inside the pure reducer."
+            },
+            {
+              "id": "rc8q4",
+              "type": "truefalse",
+              "prompt": "Exposing the ViewModel's MutableStateFlow publicly so the composable can set its .value directly is fine, as long as you only do it in one screen.",
+              "correct": false,
+              "explanation": "False. It breaks unidirectional data flow regardless of how many screens touch it: now the UI can write state the ViewModel's own logic would never produce (e.g. loading AND error together), and state changes scatter. Keep the mutable flow private, expose asStateFlow(), and have the UI send events up so only the ViewModel writes state."
+            },
+            {
+              "id": "rc8q5",
+              "type": "single",
+              "prompt": "Your ViewModel needs a repository: class FeedViewModel(repo: FeedRepository). The screen does `val vm: FeedViewModel = viewModel()` and crashes on open. What's the correct in-scope fix?",
+              "options": [
+                { "id": "a", "text": "Make repo a var and set it after construction." },
+                { "id": "b", "text": "Give it a viewModelFactory { initializer { FeedViewModel(repo) } } and call viewModel(factory = ...)." },
+                { "id": "c", "text": "Move the repository call into the composable instead." },
+                { "id": "d", "text": "Add @HiltViewModel and inject it." }
+              ],
+              "correct": ["b"],
+              "explanation": "The default viewModel() can only build a no-arg ViewModel. Supply a factory with viewModelFactory { initializer { FeedViewModel(repo) } } and pass it via viewModel(factory = ...). Setting repo after construction (a) leaves it null during init; moving I/O into the composable (c) violates layer separation; Hilt (d) is a DI framework that's out of scope for this course — the factory is the right, sufficient tool."
+            },
+            {
+              "id": "rc8q6",
+              "type": "short",
+              "prompt": "One word: in unidirectional data flow, state flows DOWN from the ViewModel to the UI, and ____ flow up from the UI to the ViewModel.",
+              "correct": ["events", "event"],
+              "explanation": "Events. State down, events up. The composable never reaches into the ViewModel's internals; it calls a named function (an event like onItemSelected), and only the ViewModel updates state in response."
+            }
+          ]
+        }
+        </script>
+<!-- ===== 5 · DELIBERATE PRACTICE ===== -->
+<h3 id="master-practice">5 · Deliberate practice — your next reps</h3>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Do these next, in this order</span>
+<p>Skill comes from spaced, increasing-difficulty reps with immediate feedback — not from re-reading. Mark the challenge above solved first, then climb this ladder:</p>
+<ol>
+<li><strong>Faded challenges →</strong> <a href="../practice/challenges.html#t-nav">practice/challenges.html</a> — work the <em>architecture</em> ladder: <code>reduce</code> UDF, StateFlow update-copy model, ViewModel-factory wiring, event-up routing, and the "move logic out of the composable" refactor. Each one auto-checks like the cart above.</li>
+<li><strong>Debug drills →</strong> <a href="../practice/debug-drills.html#architecture">practice/debug-drills.html</a> — find-the-bug reps for the exact pitfalls in section 2: a <code>viewModel()</code> that can't build a parameterized VM, business logic stuck in a composable, and a leaked <code>Context</code>. Spot the broken line, then run the fix.</li>
+<li><strong>Spaced repetition →</strong> <a href="../practice/spaced-repetition.html">practice/spaced-repetition.html</a> — add the <em>Navigation / ViewModel / UDF</em> deck. Short daily reviews are what move "NavController owns the back stack" and "state down, events up" from fragile to automatic.</li>
+<li><strong>See where this sits →</strong> <a href="../path.html">path.html</a> — the skill map. <em>Nav / VM / Architecture</em> unlocks once you've cleared Lists, and it gates Room/Flow and Networking. Watch this node turn from in-progress to mastered as you finish the reps.</li>
+</ol>
+<p class="muted"><small>Today's footer also tracks your streak and per-topic mastery. Solve the cart reducer, pass the retrieval check, and this topic starts lighting up.</small></p>
+</div>
+</div>
+</section>
+<!-- =============================================================== -->
+<!-- =============================================================== -->
+</div><!-- /content col -->
+</div><!-- /twoup -->
+</main>
+<!-- ===================================================================== -->
+<!-- FOOTER                                                                -->
+<!-- ===================================================================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Session 8 of 12 · Week 3 — Navigation, Architecture &amp; Local Data
+        <br/><small class="muted">Keiser University · B.S. Software Engineering · 3.0 credit hours · Face-to-Face. Teaching guide — built from official <a href="https://developer.android.com" rel="noopener" target="_blank">Android Developer documentation</a>.</small>
+</div>
+<div class="row no-print">
+<a href="../index.html">Hub</a>
+<a href="session-07.html">‹ Prev</a>
+<a href="session-09.html">Next ›</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

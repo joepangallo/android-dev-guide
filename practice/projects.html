@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — the Project Ladder: five escalating, portfolio-grade Android apps you build for yourself in Kotlin + Jetpack Compose. Each rung forces real in-scope features (navigation, Compose + state, Room/DataStore, Retrofit + repository), ships with a self-checked definition of done, stretch goals, and the senior-engineer bar — culminating in a polished capstone you can show in an interview." name="description"/>
+<title>The Project Ladder — Build Your Android Portfolio · COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ===== Page-specific tweaks — chrome still uses the shared contract classes ===== */
+    .lead { font-size: var(--fs-lg); color: var(--muted); max-width: 74ch; }
+    .anchor-h { scroll-margin-top: 88px; }
+
+    /* Two-column shell with a sticky in-page rail */
+    .ladder-shell { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 1040px) { .ladder-shell { grid-template-columns: 1fr 248px; align-items: start; } }
+    .rail { position: sticky; top: 80px; }
+    @media (max-width: 1039px) { .rail { position: static; } }
+    .rail__card { padding: var(--space-4); }
+    .rail__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+    .rail__list a {
+      display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: center;
+      padding: 7px 8px; border-radius: var(--radius-sm); color: var(--ink);
+      font-weight: 650; font-size: var(--fs-sm); border: 1px solid transparent;
+    }
+    .rail__list a:hover { background: color-mix(in srgb, var(--green) 8%, var(--surface)); border-color: color-mix(in srgb, var(--green) 28%, var(--line)); }
+    .rail__rung {
+      display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px;
+      font-family: var(--font-mono); font-weight: 800; font-size: var(--fs-xs);
+      background: var(--surface-2); color: var(--muted); border: 1px solid var(--line);
+    }
+    .rail__rung.is-cap { background: linear-gradient(135deg, var(--accent), #E29400); color: var(--teal); border-color: transparent; }
+
+    /* The rung "spine" connecting projects vertically */
+    .rung { position: relative; scroll-margin-top: 88px; }
+    .rung + .rung { margin-top: var(--space-6); }
+
+    /* Rung header band */
+    .rung__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+    .rung__no {
+      display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 16px;
+      font-family: var(--font-mono); font-weight: 850; font-size: 1.4rem;
+      background: linear-gradient(135deg, var(--green), var(--green-dark)); color: var(--teal);
+      box-shadow: var(--shadow); flex: 0 0 auto;
+    }
+    .rung--cap .rung__no { background: linear-gradient(135deg, var(--accent), #E29400); }
+    .rung__titles { min-width: 0; }
+    .rung__kicker { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--teal-2); margin: 0; }
+    [data-theme="dark"] .rung__kicker { color: var(--green); }
+    .rung__name { margin: 2px 0 0; font-size: var(--fs-xl); font-weight: 800; letter-spacing: -.01em; line-height: 1.15; }
+
+    /* One-line product idea — the pitch */
+    .pitch {
+      margin: var(--space-3) 0 var(--space-4); padding: var(--space-3) var(--space-4);
+      border-left: 4px solid var(--green); background: color-mix(in srgb, var(--green) 6%, var(--surface));
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-size: var(--fs-lg);
+    }
+    .rung--cap .pitch { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+    .pitch b { color: var(--ink); }
+
+    /* "Forces these features" — the in-scope tech this rung demands */
+    .forces { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin: var(--space-3) 0; }
+    .force {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+      padding: var(--space-3) var(--space-4); border-top: 3px solid var(--teal-2);
+    }
+    .force__cap { display: flex; align-items: center; gap: 8px; font-weight: 750; font-size: var(--fs-sm); margin-bottom: 4px; }
+    .force__cap .force__emoji { font-size: 1.1rem; }
+    .force__why { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+    .force code { white-space: nowrap; }
+
+    /* Sub-section headers inside a rung */
+    .rung__sub { display: flex; align-items: center; gap: 8px; margin: var(--space-5) 0 var(--space-2); font-size: var(--fs-md); font-weight: 750; }
+    .rung__sub .rung__sub-emoji { font-size: 1.1rem; }
+
+    /* Senior-engineer bar block */
+    .senior {
+      margin: var(--space-3) 0; padding: var(--space-4); border-radius: var(--radius);
+      background: var(--teal); color: #E6F8F2; border: 1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow);
+    }
+    [data-theme="dark"] .senior { background: color-mix(in srgb, var(--teal) 70%, #000); }
+    .senior__label { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .05em; color: #BFF3DD; margin-bottom: 6px; }
+    .senior p { margin: 0 0 .6em; line-height: 1.6; }
+    .senior p:last-child { margin-bottom: 0; }
+    .senior code { background: rgba(255,255,255,.12); color: #EAFBF2; padding: .08em .4em; border-radius: 5px; }
+
+    /* Stretch goals — pill checklist style */
+    .stretch-list { list-style: none; padding-left: 0; margin: var(--space-2) 0; display: grid; gap: var(--space-2); }
+    .stretch-list > li {
+      display: grid; grid-template-columns: 26px 1fr; gap: var(--space-3); align-items: start;
+      background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm);
+      padding: var(--space-3) var(--space-4); font-size: var(--fs-sm);
+    }
+    .stretch-list > li::before { content: "↗"; color: var(--accent); font-weight: 900; font-size: 1.05rem; line-height: 1.4; }
+
+    /* Effort / time chips on each rung */
+    .rung__meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+    /* Capstone "what to say" script */
+    .say-card {
+      background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--teal-2);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: var(--space-3) var(--space-4); margin: var(--space-2) 0;
+    }
+    .say-card b { color: var(--teal-2); }
+    [data-theme="dark"] .say-card b { color: var(--green); }
+    .say-card p { margin: 4px 0 0; }
+    .say-card .quote { font-style: italic; color: var(--ink); }
+
+    /* Screenshot slot mock for the README guidance */
+    .shot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin: var(--space-3) 0; }
+    .shot {
+      border: 2px dashed var(--line); border-radius: var(--radius-sm); aspect-ratio: 9 / 16;
+      display: grid; place-items: center; text-align: center; padding: var(--space-3);
+      color: var(--muted); font-size: var(--fs-xs); font-weight: 650; background: var(--surface-2);
+    }
+    .shot b { display: block; color: var(--ink); font-size: var(--fs-sm); margin-bottom: 4px; }
+
+    .ladder-progress { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .mini-note { font-size: var(--fs-sm); color: var(--muted); }
+
+    /* a11y: the shared .badge--green token (green-dark on a light green tint)
+       measures ~2.39:1 in light mode — below WCAG AA (4.5:1) for this small
+       text. Scope a deeper text colour to this page's count badge so it passes
+       AA on the light tint without touching the shared token. Dark theme already
+       passes (lighter --green on a dark surface), so leave it to the base rule. */
+    #ladderCount { color: var(--teal-2); }
+    [data-theme="dark"] #ladderCount { color: var(--green); }
+</style>
+</head>
+<body>
+<!-- ============================ TOP NAV ============================ -->
+<header class="topbar">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">🤖</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="challenges.html">Challenges</a>
+<a href="debug-drills.html">Debug Drills</a>
+<a aria-current="page" class="active" href="projects.html">Project Ladder</a>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+<button aria-label="Toggle dark theme" aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ============================ HERO ============================ -->
+<section aria-labelledby="hero-title" class="hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:12px;">
+<span class="pill pill--green">Your portfolio · not a course grade</span>
+<span class="pill">5 escalating real apps</span>
+<span class="pill">In-scope features only</span>
+</div>
+<h1 class="hero-title" id="hero-title">The Project Ladder</h1>
+<p class="hero-sub">
+        Five real apps, each one harder than the last, that you build <strong>for yourself</strong> — not to hand in.
+        Every rung forces the exact skills this course teaches: multi-screen <strong>navigation</strong>,
+        <strong>Compose + state</strong>, local data with <strong>Room / DataStore</strong>, and live data over
+        <strong>Retrofit through a repository</strong>. Climb them in order and the top rung is a portfolio capstone
+        you can drop into a GitHub profile and talk about in an interview.
+      </p>
+<div class="hero-meta">
+<span class="pill pill--accent">🎯 CLO 1–6</span>
+<span class="pill">Kotlin · Jetpack Compose · Material 3 · Room · Retrofit</span>
+</div>
+</section>
+<div class="ladder-shell">
+<!-- ===================== LEFT: THE LADDER ===================== -->
+<div>
+<!-- ===================== HOW THIS WORKS ===================== -->
+<section aria-labelledby="how-h" class="card card--accent slide">
+<h2 class="card__title anchor-h" id="how-h">🧗 How to climb this ladder</h2>
+<p class="lead">This is <strong>your</strong> build log, kept on your own machine. Nobody scores it. The only judge that
+        matters is the one in a code review or an interview — so each rung is written to that bar, not to a checklist of boxes.</p>
+<div class="grid grid-2">
+<div>
+<ul>
+<li><strong>Build in order.</strong> Each rung assumes the last one's skills and adds exactly one new in-scope capability — no toy apps, no busywork.</li>
+<li><strong>Use only what the course teaches.</strong> Nothing here needs a library, API, or pattern outside this syllabus. If it isn't in a session, you don't need it to finish.</li>
+<li><strong>Tick your own "Definition of Done."</strong> Each rung has a self-checked acceptance list. It saves on this device. When it's all green, the app is portfolio-ready — that's the whole point of the checklist.</li>
+<li><strong>Reach for the stretch goals only after Done is green.</strong> They're how you stand out, not how you pass.</li>
+</ul>
+</div>
+<div>
+<div class="callout callout--clo" role="note">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">What the ladder proves</span>
+<p style="margin:0">By the capstone you'll have demonstrated all six outcomes in one codebase: the Android ecosystem &amp; lifecycle <span class="clo-tag">CLO 1</span>, Compose UI <span class="clo-tag">CLO 2</span>, Kotlin <span class="clo-tag">CLO 3</span>, local storage <span class="clo-tag">CLO 4</span>, API integration <span class="clo-tag">CLO 5</span>, and network protocols <span class="clo-tag">CLO 6</span>.</p>
+</div>
+</div>
+<div class="callout callout--tip mt" role="note">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">"Real" means it would survive a code review</span>
+<p style="margin:0">A real project handles the empty case, the loading case, and the error case; survives a screen rotation; and separates UI from data. A toy app ignores all three. Every rung below is measured against the real bar in your own head.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="ladder-progress mt">
+<span class="mini-note"><strong>Your climb:</strong></span>
+<div class="ms-meter" id="ladderMeter" style="flex:1 1 220px;min-width:200px"><div class="ms-meter__fill"></div></div>
+<span class="badge badge--green" id="ladderCount">0 / 5 rungs done</span>
+</div>
+</section>
+<!-- ===================== RUNG 1 ===================== -->
+<section aria-labelledby="r1-h" class="card slide rung" id="rung-1">
+<div class="rung__head">
+<span class="rung__no">1</span>
+<div class="rung__titles">
+<p class="rung__kicker">Rung 1 · Foundations &amp; state</p>
+<h2 class="rung__name anchor-h" id="r1-h">FocusTimer — a Pomodoro study timer</h2>
+<div class="rung__meta">
+<span class="badge badge--teal">Sessions 3–5</span>
+<span class="badge">~1 weekend</span>
+<span class="clo-tag">CLO 2</span><span class="clo-tag">CLO 3</span>
+</div>
+</div>
+</div>
+<p class="pitch">A focus timer that runs work/break intervals, survives rotation, and keeps a running count of sessions you've completed today.</p>
+<p>Everyone's first "real" app is a timer because it's deceptively hard: it's pure <em>state over time</em>. There's no list to lean on, no network to blame — just a state machine that has to keep ticking correctly when the screen rotates, the app pauses, and the user taps reset mid-countdown. Nail this and <code>remember</code> / state hoisting / lifecycle stop being abstract.</p>
+<h3 class="rung__sub"><span class="rung__sub-emoji">⚙️</span> What this rung forces you to learn</h3>
+<div class="forces">
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🧭</span> Navigation</div>
+<p class="force__why">Two screens: the <strong>Timer</strong> and a <strong>Settings</strong> screen (work/break lengths). A <code>NavHost</code> with two routes — the minimum that makes navigation real.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🎨</span> Compose + state</div>
+<p class="force__why">A countdown driven by a <code>ViewModel</code> + <code>StateFlow</code>, collected with <code>collectAsStateWithLifecycle()</code>. The UI is a pure function of <code>TimerUiState</code> (running / paused / finished).</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🔄</span> Lifecycle</div>
+<p class="force__why">The timer must keep correct time across a rotation. Holding the countdown in the <code>ViewModel</code> (not the Composable) is the whole lesson.</p>
+</div>
+</div>
+<h3 class="rung__sub"><span class="rung__sub-emoji">✅</span> Definition of done <span class="mini-note" style="font-weight:600">(self-checked — your call, not a grade)</span></h3>
+<ul class="checklist" id="dod-1">
+<li><label><input data-key="r1-two-screens" type="checkbox"/><span>Two screens (Timer, Settings) reachable through a <code>NavHost</code>; back button returns to the timer.</span></label></li>
+<li><label><input data-key="r1-statemachine" type="checkbox"/><span>Countdown is held in a <code>ViewModel</code> as a <code>StateFlow</code>; the Composable only reads it and sends events up.</span></label></li>
+<li><label><input data-key="r1-rotate" type="checkbox"/><span>Rotating the device mid-countdown does <em>not</em> reset or skip the timer.</span></label></li>
+<li><label><input data-key="r1-states" type="checkbox"/><span>UI visibly distinguishes running, paused, and finished states (not just a number changing).</span></label></li>
+<li><label><input data-key="r1-counter" type="checkbox"/><span>A "sessions completed" counter increments on each finished work interval and is visible on the Timer screen.</span></label></li>
+<li><label><input data-key="r1-noslop" type="checkbox"/><span>No hardcoded magic numbers in the UI: durations come from Settings and flow into the timer.</span></label></li>
+</ul>
+<h3 class="rung__sub"><span class="rung__sub-emoji">↗</span> Stretch goals (only after Done is green)</h3>
+<ul class="stretch-list">
+<li>Persist the work/break lengths with <strong>DataStore</strong> so Settings survive an app restart (a soft preview of Rung 3).</li>
+<li>Add a subtle progress ring that animates with the countdown using a Compose <code>animateFloatAsState</code>.</li>
+<li>Honor <code>prefers-reduced-motion</code>-style respect: a "no animation" toggle in Settings.</li>
+</ul>
+<div class="senior">
+<span class="senior__label">🎓 The senior-engineer bar</span>
+<p>A junior puts the countdown loop inside the Composable and watches it reset on every rotation. A senior puts the clock in the <code>ViewModel</code>, exposes an immutable <code>TimerUiState</code>, and lets the UI be a dumb projection of it. <strong>If your timer survives rotation without a single line of <code>onSaveInstanceState</code>, you've understood why state lives in the ViewModel.</strong> Bonus tell of seniority: the "finished" state is its own case, not a special value of the running state.</p>
+</div>
+</section>
+<!-- ===================== RUNG 2 ===================== -->
+<section aria-labelledby="r2-h" class="card slide rung" id="rung-2">
+<div class="rung__head">
+<span class="rung__no">2</span>
+<div class="rung__titles">
+<p class="rung__kicker">Rung 2 · Lists, detail &amp; navigation args</p>
+<h2 class="rung__name anchor-h" id="r2-h">TrailLog — a hike journal (list → detail)</h2>
+<div class="rung__meta">
+<span class="badge badge--teal">Sessions 4–8</span>
+<span class="badge">~1 week</span>
+<span class="clo-tag">CLO 2</span><span class="clo-tag">CLO 3</span>
+</div>
+</div>
+</div>
+<p class="pitch">A journal of hikes (or workouts, or books) shown as a scrollable list; tap one to open a full detail screen with everything about it.</p>
+<p>The <strong>list → detail</strong> pattern is the spine of almost every app on your phone. This rung is where navigation grows up: you stop hardcoding screens and start <em>passing an id through a route</em> so the detail screen knows which item to show. Data is still in-memory here (a seeded list) — the point is the UI architecture, not storage. That comes next.</p>
+<h3 class="rung__sub"><span class="rung__sub-emoji">⚙️</span> What this rung forces you to learn</h3>
+<div class="forces">
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🧭</span> Navigation w/ arguments</div>
+<p class="force__why"><code>NavHost</code> with a <code>"detail/{id}"</code> route. Tapping a row navigates by route and passes the id; the detail screen reads it back. This is real navigation, not just two static screens.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🎨</span> Compose lists + state</div>
+<p class="force__why">A <code>LazyColumn</code> of Material 3 <code>Card</code>s, an empty-state when there are no entries, and an "add entry" form whose input is hoisted state. One <code>ViewModel</code> owns the list.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🏛️</span> Architecture</div>
+<p class="force__why">A single source of truth for entries in the <code>ViewModel</code>; both list and detail read the same data. No duplicated copies of the list across screens.</p>
+</div>
+</div>
+<h3 class="rung__sub"><span class="rung__sub-emoji">✅</span> Definition of done <span class="mini-note" style="font-weight:600">(self-checked — your call, not a grade)</span></h3>
+<ul class="checklist" id="dod-2">
+<li><label><input data-key="r2-list" type="checkbox"/><span>A <code>LazyColumn</code> renders the entries as Material 3 cards; the screen scrolls smoothly with 20+ seeded items.</span></label></li>
+<li><label><input data-key="r2-navarg" type="checkbox"/><span>Tapping a row navigates to a <code>detail/{id}</code> route that shows the <em>correct</em> entry — the id is passed through the route, not a global variable.</span></label></li>
+<li><label><input data-key="r2-add" type="checkbox"/><span>An "add entry" flow with form inputs (text + at least one non-text field) appends to the list and returns to it.</span></label></li>
+<li><label><input data-key="r2-empty" type="checkbox"/><span>The list shows a friendly <strong>empty state</strong> when there are zero entries — not a blank screen.</span></label></li>
+<li><label><input data-key="r2-sot" type="checkbox"/><span>List and detail read from one <code>ViewModel</code>-owned source of truth; editing/adding is reflected in both without manual copying.</span></label></li>
+<li><label><input data-key="r2-back" type="checkbox"/><span>Back navigation behaves correctly from detail → list → (exit), with no duplicated or orphaned screens.</span></label></li>
+</ul>
+<h3 class="rung__sub"><span class="rung__sub-emoji">↗</span> Stretch goals (only after Done is green)</h3>
+<ul class="stretch-list">
+<li>Add search/filter over the list using a derived state in the <code>ViewModel</code> (the query is state; the filtered list is computed from it).</li>
+<li>Support delete with a confirmation, and a Material 3 swipe-to-dismiss or overflow menu.</li>
+<li>Add a "sort by" control (date, name, distance) and keep the choice in the <code>ViewModel</code>.</li>
+</ul>
+<div class="senior">
+<span class="senior__label">🎓 The senior-engineer bar</span>
+<p>The junior tell here is two copies of the list — one the <code>LazyColumn</code> reads and one the detail screen reads — that silently drift apart. A senior keeps <strong>one</strong> list in the <code>ViewModel</code> and passes only an <em>id</em> through navigation, looking the entry up from the single source of truth. <strong>If adding an entry on screen A instantly shows up everywhere with no "refresh," your state lives in exactly one place.</strong> Watch the empty state too: seniors design it deliberately; juniors discover it as a bug.</p>
+</div>
+</section>
+<!-- ===================== RUNG 3 ===================== -->
+<section aria-labelledby="r3-h" class="card slide rung" id="rung-3">
+<div class="rung__head">
+<span class="rung__no">3</span>
+<div class="rung__titles">
+<p class="rung__kicker">Rung 3 · Local persistence (it survives a restart)</p>
+<h2 class="rung__name anchor-h" id="r3-h">PantryKeeper — an offline inventory with Room</h2>
+<div class="rung__meta">
+<span class="badge badge--teal">Sessions 9 · 11</span>
+<span class="badge">~1 week</span>
+<span class="clo-tag">CLO 4</span>
+</div>
+</div>
+</div>
+<p class="pitch">Track what's in your pantry (or your tools, or your meds): full create / read / update / delete, with everything saved on the device so it's still there after you force-quit.</p>
+<p>This is the rung where your app stops being a demo. Until now, kill the app and your data is gone. Here you add a <strong>Room database</strong> and a <strong>DataStore</strong> for preferences, and your <code>LazyColumn</code> starts observing a <code>Flow&lt;List&gt;</code> straight off a DAO — so the screen updates itself the instant a row changes. CRUD against a real local DB is the single most common thing Android jobs ask you to have done.</p>
+<h3 class="rung__sub"><span class="rung__sub-emoji">⚙️</span> What this rung forces you to learn</h3>
+<div class="forces">
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🗃️</span> Room (full CRUD)</div>
+<p class="force__why">An <code>@Entity</code>, a <code>@Dao</code> with insert/update/delete and a <code>Flow&lt;List&gt;</code> read query, and a <code>@Database</code>. Writes re-emit the read <code>Flow</code> automatically.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">⚙️</span> DataStore</div>
+<p class="force__why">Store a couple of user preferences (e.g. sort order, "hide out-of-stock") with <strong>Preferences DataStore</strong> — the right tool for small key/value settings vs. a table of rows.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🏛️</span> Repository</div>
+<p class="force__why">A repository wraps the DAO so the <code>ViewModel</code> never imports Room. The <code>ViewModel</code> exposes <code>StateFlow&lt;UiState&gt;</code> via <code>stateIn(...)</code>.</p>
+</div>
+</div>
+<h3 class="rung__sub"><span class="rung__sub-emoji">✅</span> Definition of done <span class="mini-note" style="font-weight:600">(self-checked — your call, not a grade)</span></h3>
+<ul class="checklist" id="dod-3">
+<li><label><input data-key="r3-crud" type="checkbox"/><span>All four CRUD operations work end-to-end against Room: create, read (list + detail), update, delete.</span></label></li>
+<li><label><input data-key="r3-persist" type="checkbox"/><span>Force-quitting and relaunching the app shows the exact same data — nothing is lost.</span></label></li>
+<li><label><input data-key="r3-flow" type="checkbox"/><span>The list observes a <code>Flow&lt;List&gt;</code> from the DAO; after an edit the screen updates with no manual re-query.</span></label></li>
+<li><label><input data-key="r3-datastore" type="checkbox"/><span>At least one user preference is stored in <strong>DataStore</strong> and applied on next launch.</span></label></li>
+<li><label><input data-key="r3-repo" type="checkbox"/><span>The <code>ViewModel</code> has <em>no</em> <code>import androidx.room.*</code>: all DB access goes through a repository.</span></label></li>
+<li><label><input data-key="r3-states3" type="checkbox"/><span>The UI handles loading, empty, and populated states distinctly (empty ≠ loading).</span></label></li>
+</ul>
+<h3 class="rung__sub"><span class="rung__sub-emoji">↗</span> Stretch goals (only after Done is green)</h3>
+<ul class="stretch-list">
+<li>Add a Room <code>@Query</code> with a search term and expose a filtered <code>Flow</code> driven by a query in the <code>ViewModel</code>.</li>
+<li>Undo-able delete: keep the deleted row briefly and offer "Undo" in a snackbar before it's gone for good.</li>
+<li>Seed the DB on first launch from a bundled JSON/asset so a fresh install isn't empty.</li>
+</ul>
+<div class="senior">
+<span class="senior__label">🎓 The senior-engineer bar</span>
+<p>The junior returns <code>List</code> from the DAO and bolts on "now re-fetch and setState" calls after every write — and forgets half of them, so the screen goes stale. The senior returns <code>Flow&lt;List&gt;</code> so Room re-emits on every write and the read path and write path decouple completely. <strong>If your list updates after an edit and you never wrote a single "refresh" call, you've got it.</strong> The other tell: the <code>ViewModel</code> is unaware Room exists — it talks to a repository interface it could swap for a fake in a test.</p>
+</div>
+</section>
+<!-- ===================== RUNG 4 ===================== -->
+<section aria-labelledby="r4-h" class="card slide rung" id="rung-4">
+<div class="rung__head">
+<span class="rung__no">4</span>
+<div class="rung__titles">
+<p class="rung__kicker">Rung 4 · Live data from the internet</p>
+<h2 class="rung__name anchor-h" id="r4-h">SkyCast — a weather/feed app over Retrofit</h2>
+<div class="rung__meta">
+<span class="badge badge--teal">Sessions 10–11</span>
+<span class="badge">~1 week</span>
+<span class="clo-tag">CLO 5</span><span class="clo-tag">CLO 6</span>
+</div>
+</div>
+</div>
+<p class="pitch">Pull live data from a public REST API — weather, news headlines, GitHub repos, your pick — and render it with proper loading, success, and error states.</p>
+<p>Now the data comes from a server you don't control, which is where the three states become non-negotiable: the network is slow (<strong>loading</strong>), sometimes it works (<strong>success</strong>), and sometimes it doesn't (<strong>error</strong>). This rung is the whole networking pipeline from <a href="../labs/retrofit-flow.html">the visualizer</a>: a tap → a coroutine → an HTTP <code>GET</code> → JSON → Kotlin objects → a <code>StateFlow</code> the UI recomposes from. The fork between <code>IOException</code> (offline) and <code>HttpException</code> (server said no) is what separates a real app from a demo.</p>
+<h3 class="rung__sub"><span class="rung__sub-emoji">⚙️</span> What this rung forces you to learn</h3>
+<div class="forces">
+<div class="force">
+<div class="force__cap"><span class="force__emoji">📡</span> Retrofit + repository</div>
+<p class="force__why">A typed Retrofit interface (<code>@GET</code>), kotlinx.serialization DTOs, a repository that catches and returns <code>Result&lt;T&gt;</code>, and the <code>INTERNET</code> permission in the manifest.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🧵</span> Coroutines off the main thread</div>
+<p class="force__why">The call runs in <code>viewModelScope.launch</code> on a background dispatcher. No <code>NetworkOnMainThreadException</code>, no frozen UI.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🎨</span> Three real UI states</div>
+<p class="force__why">A sealed <code>UiState</code> with <code>Loading</code> / <code>Success(data)</code> / <code>Error(msg)</code>; a <code>when</code> renders exactly one, and Error has a working Retry.</p>
+</div>
+</div>
+<h3 class="rung__sub"><span class="rung__sub-emoji">✅</span> Definition of done <span class="mini-note" style="font-weight:600">(self-checked — your call, not a grade)</span></h3>
+<ul class="checklist" id="dod-4">
+<li><label><input data-key="r4-fetch" type="checkbox"/><span>The app fetches live data from a real HTTPS REST API via Retrofit and renders it in a list or detail.</span></label></li>
+<li><label><input data-key="r4-states3" type="checkbox"/><span>All three states are visible and correct: a loading indicator, a populated success view, and a friendly error view.</span></label></li>
+<li><label><input data-key="r4-retry" type="checkbox"/><span>Turning off Wi-Fi shows the error state with a <strong>Retry</strong> that recovers once the connection is back.</span></label></li>
+<li><label><input data-key="r4-thread" type="checkbox"/><span>No networking on the main thread: the call is a <code>suspend</code> function launched in <code>viewModelScope</code>.</span></label></li>
+<li><label><input data-key="r4-repo" type="checkbox"/><span>A repository catches <code>IOException</code> vs <code>HttpException</code> separately and returns a <code>Result</code>; the <code>ViewModel</code> maps it to a state.</span></label></li>
+<li><label><input data-key="r4-perm" type="checkbox"/><span>The <code>INTERNET</code> permission is declared and the base URL is <code>https://</code> (no cleartext).</span></label></li>
+</ul>
+<h3 class="rung__sub"><span class="rung__sub-emoji">↗</span> Stretch goals (only after Done is green)</h3>
+<ul class="stretch-list">
+<li>Add pull-to-refresh and a "last updated" timestamp so the user knows how fresh the data is.</li>
+<li>Add an <code>OkHttp</code> logging interceptor at <code>Level.BODY</code> and read your real requests in Logcat.</li>
+<li>Handle a 404/empty result as its own friendly state, distinct from a connectivity error.</li>
+</ul>
+<div class="senior">
+<span class="senior__label">🎓 The senior-engineer bar</span>
+<p>The junior wraps the call in one <code>catch (e: Exception)</code> and shows "No internet" — even for a <code>401</code> on a full signal. The senior branches the catch: <code>IOException</code> means it never reached a healthy server (retry is fair), <code>HttpException</code> means the server <em>was</em> reached and refused (inspect <code>code()</code>, don't blind-retry). <strong>If a user with full bars and an expired token gets a real error message instead of "check your connection," your error taxonomy is correct.</strong> And the spinner always ends — even on failure — because the repository always returns a terminal <code>Result</code>.</p>
+</div>
+</section>
+<!-- ===================== RUNG 5 — CAPSTONE ===================== -->
+<section aria-labelledby="r5-h" class="card card--amber slide rung rung--cap" id="rung-5">
+<div class="rung__head">
+<span class="rung__no">★</span>
+<div class="rung__titles">
+<p class="rung__kicker">Rung 5 · The portfolio capstone</p>
+<h2 class="rung__name anchor-h" id="r5-h">RouteMate — offline-first, the whole stack in one app</h2>
+<div class="rung__meta">
+<span class="badge badge--amber">Sessions 11–12</span>
+<span class="badge">~2 weeks</span>
+<span class="clo-tag">CLO 1</span><span class="clo-tag">CLO 2</span><span class="clo-tag">CLO 3</span><span class="clo-tag">CLO 4</span><span class="clo-tag">CLO 5</span><span class="clo-tag">CLO 6</span>
+</div>
+</div>
+</div>
+<p class="pitch">One polished app that fetches live data from a REST API, <b>caches it locally in Room</b>, and shows the cached copy instantly even with no signal — list → detail → settings, every state handled, the lot.</p>
+<p>This is the rung you actually show people. It's not a new pattern — it's <strong>every previous rung fused into one architecture</strong>: navigation with arguments (Rung 2), a Compose UI driven by state (Rungs 1–2), Room persistence (Rung 3), and Retrofit networking (Rung 4) — wired into the <strong>offline-first</strong> pattern where the local cache is the single source of truth and the network's only job is to keep it fresh. Pick a domain you'd actually use: saved hiking routes, a reading list synced from an API, tracked GitHub repos, a recipe box. The domain is yours; the architecture is the deliverable.</p>
+<div class="callout callout--tip" role="note">
+<span aria-hidden="true" class="callout__icon">🧭</span>
+<div class="callout__body">
+<span class="callout__label">The one rule that makes offline-first work</span>
+<p style="margin:0">Data flows in <strong>one direction</strong>: the network writes into Room, and the UI only ever reads from Room. The Composable never touches the Retrofit response directly. Get this backwards — render the API result into the UI <em>and</em> save it to Room as two parallel paths — and the two copies drift, an empty refresh blanks a full screen, and "why is my list flickering" becomes your weekend. Funnel everything through Room and the offline behavior, the loading flicker, and process-death survival all fall out for free.</p>
+</div>
+</div>
+<h3 class="rung__sub"><span class="rung__sub-emoji">⚙️</span> Every in-scope skill, in one codebase</h3>
+<div class="forces">
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🧭</span> Navigation</div>
+<p class="force__why">3+ screens: list, detail (via <code>{id}</code> route), and settings. Clean back-stack behavior throughout.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🎨</span> Compose + state</div>
+<p class="force__why">A sealed <code>UiState</code> (Loading / Success / Empty / Error); UI is a pure function of state; survives rotation.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">🗃️</span> Room + DataStore</div>
+<p class="force__why">Room is the source of truth, read as a <code>Flow</code>; DataStore holds user settings. Full CRUD where it fits the domain.</p>
+</div>
+<div class="force">
+<div class="force__cap"><span class="force__emoji">📡</span> Retrofit + repository</div>
+<p class="force__why">Network refresh writes into Room. One repository owns both sources; the <code>ViewModel</code> imports neither Room nor Retrofit.</p>
+</div>
+</div>
+<h3 class="rung__sub"><span class="rung__sub-emoji">✅</span> Definition of done <span class="mini-note" style="font-weight:600">(self-checked — this is your "ship it" bar, not a grade)</span></h3>
+<ul class="checklist" id="dod-5">
+<li><label><input data-key="r5-nav" type="checkbox"/><span>3+ screens via <code>NavHost</code> with a <code>detail/{id}</code> route and correct back-stack behavior.</span></label></li>
+<li><label><input data-key="r5-offline" type="checkbox"/><span><strong>Offline-first:</strong> Room is the source of truth; the UI observes it via <code>Flow</code>; a failed network refresh never clears cached data.</span></label></li>
+<li><label><input data-key="r5-network" type="checkbox"/><span>Live data is fetched over Retrofit and written into Room; the cached copy renders instantly on launch with no signal.</span></label></li>
+<li><label><input data-key="r5-allstates" type="checkbox"/><span>Loading, Success, Empty, and Error states are each handled and distinct; Error offers Retry; Empty is friendly.</span></label></li>
+<li><label><input data-key="r5-arch" type="checkbox"/><span>Clean layering: <code>ViewModel</code> → one repository interface → (Room + Retrofit). No Room/Retrofit imports in any <code>ViewModel</code> or Composable.</span></label></li>
+<li><label><input data-key="r5-settings" type="checkbox"/><span>At least one persisted user setting via DataStore, applied across launches.</span></label></li>
+<li><label><input data-key="r5-rotate" type="checkbox"/><span>The app survives rotation and process-death without losing the user's place or data.</span></label></li>
+<li><label><input data-key="r5-polish" type="checkbox"/><span>Material 3 theming (incl. dark mode), a real app icon, a real app name, and no leftover "Hello Android" / placeholder text.</span></label></li>
+<li><label><input data-key="r5-readme" type="checkbox"/><span>A GitHub repo with the README, screenshots, and architecture note described below — buildable from a clean clone.</span></label></li>
+</ul>
+<h3 class="rung__sub"><span class="rung__sub-emoji">↗</span> Stretch goals — what makes it portfolio-stand-out</h3>
+<ul class="stretch-list">
+<li>A short <strong>unit test</strong> for the repository's state-mapping or the <code>IOException</code>/<code>HttpException</code> branch, using a fake data source (no live server in the test).</li>
+<li>Pull-to-refresh with a "last synced" timestamp, and a snackbar on a failed refresh that keeps the cached list on screen.</li>
+<li>An empty-search and a no-results state that are visibly different from each other and from a network error.</li>
+<li>A 20–40 second screen-recording GIF in the README showing the offline-first behavior (turn off Wi-Fi, relaunch, data's still there).</li>
+</ul>
+<div class="senior">
+<span class="senior__label">🎓 The senior-engineer bar</span>
+<p>The junior's "final app" works only with a perfect connection on a fresh install and falls over the moment anything is missing. The senior's capstone is <strong>boringly robust</strong>: it opens instantly to cached data offline, a failed refresh is a quiet snackbar rather than a cleared screen, every state has a deliberate UI, and the architecture is so clean a reviewer can find the data flow in thirty seconds. <strong>The interview-grade signal isn't that it's flashy — it's that nothing about it surprises an experienced engineer.</strong> That's exactly what makes it worth putting your name on.</p>
+</div>
+</section>
+<!-- ===================== PRESENTING THE CAPSTONE ===================== -->
+<section aria-labelledby="present-h" class="card slide" id="present">
+<h2 class="card__title anchor-h" id="present-h">📦 Ship it: turn the capstone into a portfolio piece</h2>
+<p class="lead">A finished app on your laptop is invisible. A finished app with a clean GitHub repo, three screenshots, and a 60-second story is a portfolio piece. Here's exactly how to package it.</p>
+<h3 class="rung__sub"><span class="rung__sub-emoji">📝</span> The README a reviewer actually reads</h3>
+<p>Most reviewers spend under a minute on a repo before deciding whether to clone it. Front-load the README so that minute lands. Use this skeleton:</p>
+<div class="codeblock">
+<span class="codeblock__lang">markdown · README.md</span>
+<pre><code># RouteMate
+
+&gt; One sentence: an offline-first Android app that &lt;does the thing&gt;,
+&gt; built in Kotlin + Jetpack Compose with Room caching and a Retrofit API layer.
+
+![App demo](docs/demo.gif)
+
+## What it does
+- &lt;3–4 bullet points a non-engineer understands&gt;
+
+## Screenshots
+| List | Detail | Offline |
+|------|--------|---------|
+| ![](docs/list.png) | ![](docs/detail.png) | ![](docs/offline.png) |
+
+## Architecture
+UI (Compose) → ViewModel (StateFlow&lt;UiState&gt;) → Repository → { Room (source of truth), Retrofit (refresh) }
+
+- **Offline-first:** Room is the single source of truth; the UI observes it via Flow.
+  A failed network refresh never clears the cache.
+- **State:** sealed UiState = Loading | Success | Empty | Error, each with its own UI.
+- **Tech:** Jetpack Compose · Material 3 · Navigation-Compose · Room · DataStore ·
+  Retrofit + kotlinx.serialization · Coroutines/Flow.
+
+## Run it
+1. Clone, open in Android Studio (latest stable).
+2. (If needed) add your API key to `local.properties` as `API_KEY=...`.
+3. Run on an emulator or device (min SDK 24).
+
+## What I'd do next
+- &lt;1–2 honest "next steps" — shows you know what's unfinished&gt;</code></pre>
+</div>
+<div class="callout callout--tip" role="note">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Three things that quietly disqualify a repo</span>
+<p style="margin:0">A committed API key or secret (use <code>local.properties</code>, which is git-ignored), a build that doesn't compile from a clean clone, and a default <code>app/build/</code> or <code>.idea/</code> committed. Add a real <code>.gitignore</code> (Android Studio generates one) before your first push.</p>
+</div>
+</div>
+<h3 class="rung__sub"><span class="rung__sub-emoji">📸</span> The three screenshots to capture (and one GIF)</h3>
+<p>You don't need ten screenshots — you need the three that prove the hard parts, plus a short recording of the offline-first trick. Capture them on an emulator (Android Studio → running device → camera / record icons) and drop them in a <code>docs/</code> folder.</p>
+<div aria-hidden="true" class="shot-grid">
+<div class="shot"><div><b>1 · The list</b>Populated, scrolling, real data — your best-looking screen.</div></div>
+<div class="shot"><div><b>2 · The detail</b>One item open via the <code>{id}</code> route — proves navigation.</div></div>
+<div class="shot"><div><b>3 · Offline / error</b>Wi-Fi off, cache still showing or a clean error+Retry.</div></div>
+<div class="shot"><div><b>4 · Demo GIF</b>20–40s: launch → list → detail → turn off Wi-Fi → still works.</div></div>
+</div>
+<h3 class="rung__sub"><span class="rung__sub-emoji">🗣️</span> What to say (the 60-second walkthrough)</h3>
+<p>Whether it's a demo day, a portfolio review, or an interview, you'll get about a minute. Don't narrate the UI ("here's a button") — narrate the <em>decisions</em>. Rehearse this arc out loud until it's natural:</p>
+<div class="say-card">
+<p><b>1 · The one-liner (10s):</b> <span class="quote">"RouteMate is an offline-first Android app for &lt;domain&gt;. It pulls live data from &lt;API&gt;, caches it in Room, and works with no signal."</span></p>
+</div>
+<div class="say-card">
+<p><b>2 · The hard part, demoed (20s):</b> <span class="quote">"The interesting bit is the data flow — let me kill the Wi-Fi and relaunch. The cache is the source of truth, so the UI reads from Room and the network just refreshes it in the background. A failed refresh shows a snackbar but never wipes your data."</span></p>
+</div>
+<div class="say-card">
+<p><b>3 · The architecture (20s):</b> <span class="quote">"The ViewModel only knows about one repository interface — it never imports Room or Retrofit, so I can test it with a fake. State flows down as an immutable UiState; events flow up as function calls. Every state — loading, success, empty, error — has its own deliberate UI."</span></p>
+</div>
+<div class="say-card">
+<p><b>4 · The honest next step (10s):</b> <span class="quote">"If I had another week I'd add &lt;X&gt; — I scoped it out to ship something solid first."</span> (Naming what's unfinished reads as judgment, not weakness.)</p>
+</div>
+<div class="callout callout--clo mt" role="note">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Why this lands</span>
+<p style="margin:0">Anyone can build a screen. What a reviewer is listening for is whether you made <em>engineering decisions</em> and can defend them: source of truth, state modeling, separation of concerns, error taxonomy. You made all four on this ladder — so say them out loud.</p>
+</div>
+</div>
+</section>
+<!-- ===================== MINI SELF-CHECK ===================== -->
+<section aria-labelledby="qz-h" class="card slide" id="quiz">
+<h2 class="card__title anchor-h" id="qz-h">🤔 Before you call the capstone "done"</h2>
+<p class="muted">A quick self-check on the judgment the ladder is meant to build. Submit to see why each answer is what a senior would defend — this is your own check, never a grade.</p>
+<div data-quiz="ladderQuiz" data-topic="project"></div>
+<script id="ladderQuiz" type="application/json">
+{
+  "title": "Portfolio readiness — quick check",
+  "intro": "Five questions on the decisions that make the capstone interview-grade.",
+  "passingScore": 0.7,
+  "shuffle": true,
+  "questions": [
+    {
+      "id": "sot",
+      "type": "single",
+      "prompt": "In your offline-first capstone, what is the single source of truth the UI reads from?",
+      "options": [
+        { "id": "a", "text": "The Retrofit response — whatever the API last returned" },
+        { "id": "b", "text": "The Room database, observed as a Flow; the network only keeps it fresh" },
+        { "id": "c", "text": "A mutable list held in the Composable" },
+        { "id": "d", "text": "DataStore — it stores everything as key/value pairs" }
+      ],
+      "correct": ["b"],
+      "explanation": "Offline-first means the local cache (Room) is the source of truth. The UI observes Room via Flow; the network's only job is to refresh the cache. That's what lets the app open instantly with no signal."
+    },
+    {
+      "id": "refreshfail",
+      "type": "single",
+      "prompt": "The user pulls to refresh with no signal and the request throws IOException. What should be on screen one second later?",
+      "options": [
+        { "id": "a", "text": "A blank screen, because the refresh failed" },
+        { "id": "b", "text": "A spinner that stays up until a refresh eventually succeeds" },
+        { "id": "c", "text": "The same cached data — the failed refresh never touched the cache — plus a small 'couldn't refresh' signal" },
+        { "id": "d", "text": "An empty state, since nothing new came back" }
+      ],
+      "correct": ["c"],
+      "explanation": "A failed refresh must not mutate the cache. The cached list stays; the failure becomes a transient signal (a snackbar), not a reason to clear data. Clearing the screen on a failed refresh is the classic junior bug."
+    },
+    {
+      "id": "vmimports",
+      "type": "single",
+      "prompt": "You open your own FeedViewModel and see `import androidx.room.*` and `import retrofit2.Retrofit` at the top. What does that tell you?",
+      "options": [
+        { "id": "a", "text": "Good — fewer layers means less code" },
+        { "id": "b", "text": "The ViewModel is reaching past the repository into the data sources; it should depend on one repository interface" },
+        { "id": "c", "text": "You need a second ViewModel to separate network from database" },
+        { "id": "d", "text": "Nothing — ViewModels are supposed to import their data sources" }
+      ],
+      "correct": ["b"],
+      "explanation": "The ViewModel should talk to ONE repository interface and import neither Room nor Retrofit. That keeps it testable with fakes and lets data sources change without touching UI logic. Those imports in a ViewModel are a code smell to fix before you show the repo."
+    },
+    {
+      "id": "emptyvloading",
+      "type": "single",
+      "prompt": "A brand-new user opens the app, the network call succeeds, and it returns zero items. The screen should show…",
+      "options": [
+        { "id": "a", "text": "Loading — keep the spinner until something arrives" },
+        { "id": "b", "text": "Empty — a friendly 'nothing here yet' message" },
+        { "id": "c", "text": "Error — getting nothing back is a failure" },
+        { "id": "d", "text": "Success with an invisible empty list" }
+      ],
+      "correct": ["b"],
+      "explanation": "A successful response with zero rows is Empty, not Loading. Leaving the spinner up is the #1 'my app is frozen' bug. Loading ends at the first emission — even an empty one — and Empty deserves its own friendly branch."
+    },
+    {
+      "id": "readme",
+      "type": "multi",
+      "prompt": "Which of these would quietly hurt your capstone repo in a portfolio review? (Select all that apply.)",
+      "options": [
+        { "id": "a", "text": "A committed API key in source control" },
+        { "id": "b", "text": "A README that opens with one clear sentence and a demo GIF" },
+        { "id": "c", "text": "A build that won't compile from a clean clone" },
+        { "id": "d", "text": "Leftover 'Hello Android' placeholder text and the default app icon" }
+      ],
+      "correct": ["a", "c", "d"],
+      "explanation": "A committed secret, a build that doesn't run from a clean clone, and unfinished placeholder polish all read as 'not actually done.' A strong one-sentence README with a GIF (b) is exactly what you want — it's the only good item in the list."
+    }
+  ]
+}
+        </script>
+</section>
+<!-- ===================== DELIBERATE PRACTICE / NEXT ===================== -->
+<section aria-labelledby="next-h" class="card card--accent slide" id="next">
+<h2 class="card__title anchor-h" id="next-h">🔁 Where to sharpen between rungs</h2>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Build the app, drill the patterns</span>
+<p>Each rung leans on a pattern you can rehearse in isolation when a build stalls. When you're stuck on a rung, don't grind the whole app — drill the one piece:</p>
+<ol style="margin:0 0 var(--space-2)">
+<li><strong>Pattern reps:</strong> the auto-checked <a href="challenges.html">coding challenges</a> — practice the <em>repository cache+network merge</em>, the <em>four-state mapping</em>, and the <em>IOException-vs-HttpException classifier</em> until each goes green from blank.</li>
+<li><strong>Find the bug:</strong> the <a href="debug-drills.html">debug drills</a> — the "DAO returns List not Flow," "no Loading/Error/Empty," and "main-thread network" seeds are the exact failures you'll hit on Rungs 3 and 4.</li>
+<li><strong>Keep it warm:</strong> the <a href="spaced-repetition.html">spaced-repetition deck</a> — so the patterns are still automatic on demo day, not just the day you learned them.</li>
+<li><strong>Trace the pipeline:</strong> the <a href="../labs/retrofit-flow.html">networking visualizer</a> and the <a href="../labs/sqlite-crud-sim.html">Room CRUD simulator</a> when a Rung 3 or 4 mental model feels fuzzy.</li>
+</ol>
+<p class="muted" style="margin-bottom:0">Ticking a rung's Definition of Done and passing the self-check above moves your <em>Project</em> mastery — your own progress on this device, never a course grade.</p>
+</div>
+</div>
+</section>
+<!-- Personal mastery snapshot (auto-renders streak + global % + solved count) -->
+<div class="card card--accent slide" id="ladder-master" style="margin-top:var(--space-5)">
+<h3 class="card__title" style="margin-top:0">📈 Your build log</h3>
+<p class="muted">Your self-directed progress on this device — mastery %, study-day streak, and rungs whose Definition of Done you've completed. Pure progress, never a grade.</p>
+<div data-mastery-stats=""></div>
+</div>
+</div>
+<!-- ===================== RIGHT: STICKY RAIL ===================== -->
+<aside aria-label="Jump to a rung" class="rail">
+<div class="card rail__card">
+<p class="rung__kicker" style="margin:0 0 var(--space-2)">The five rungs</p>
+<ul class="rail__list">
+<li><a href="#rung-1"><span class="rail__rung">1</span> FocusTimer</a></li>
+<li><a href="#rung-2"><span class="rail__rung">2</span> TrailLog</a></li>
+<li><a href="#rung-3"><span class="rail__rung">3</span> PantryKeeper</a></li>
+<li><a href="#rung-4"><span class="rail__rung">4</span> SkyCast</a></li>
+<li><a href="#rung-5"><span class="rail__rung is-cap">★</span> RouteMate <span class="mini-note">(capstone)</span></a></li>
+</ul>
+<hr style="border:0;border-top:1px solid var(--line);margin:var(--space-3) 0"/>
+<p class="rung__kicker" style="margin:0 0 var(--space-2)">Then</p>
+<ul class="rail__list">
+<li><a href="#present"><span class="rail__rung">📦</span> Ship &amp; present</a></li>
+<li><a href="#quiz"><span class="rail__rung">🤔</span> Readiness check</a></li>
+<li><a href="#next"><span class="rail__rung">🔁</span> Drill the patterns</a></li>
+</ul>
+<div class="callout callout--tip" style="margin-top:var(--space-3)">
+<div class="callout__body">
+<p style="margin:0;font-size:var(--fs-sm)">Climb in order — each rung is built on the last.</p>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- ===================================================================== -->
+<!--  FOOTER                                                               -->
+<!-- ===================================================================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · The Project Ladder ·
+      Build your own Android portfolio
+</div>
+<div class="row">
+<a href="../index.html">Course Hub</a>
+<a href="challenges.html">Challenges</a>
+<a href="debug-drills.html">Debug Drills</a>
+<a href="spaced-repetition.html">Spaced Deck</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/mastery.js"></script>
+<script>
+  /* Self-contained "rungs done" meter. A rung counts as done when every
+     box in its dod-N checklist is checked. Reads the live DOM (app.js has
+     already restored persisted state) and re-counts on every change — no
+     dependency on app.js internals or storage-key formats. */
+  (function () {
+    var RUNGS = ["dod-1", "dod-2", "dod-3", "dod-4", "dod-5"];
+    var meterFill = document.querySelector("#ladderMeter .ms-meter__fill");
+    var countEl = document.getElementById("ladderCount");
+    if (!meterFill || !countEl) return;
+
+    function rungDone(id) {
+      var list = document.getElementById(id);
+      if (!list) return false;
+      var boxes = list.querySelectorAll('input[type="checkbox"]');
+      if (!boxes.length) return false;
+      for (var i = 0; i < boxes.length; i++) {
+        if (!boxes[i].checked) return false;
+      }
+      return true;
+    }
+
+    function recount() {
+      var done = 0;
+      for (var i = 0; i < RUNGS.length; i++) {
+        if (rungDone(RUNGS[i])) done++;
+      }
+      var pct = Math.round((done / RUNGS.length) * 100);
+      meterFill.style.width = pct + "%";
+      countEl.textContent = done + " / " + RUNGS.length + " rungs done";
+    }
+
+    RUNGS.forEach(function (id) {
+      var list = document.getElementById(id);
+      if (list) list.addEventListener("change", recount);
+    });
+    // app.js's "↺ Reset checklist" button clears boxes via b.checked = false
+    // WITHOUT dispatching a 'change' event, so the per-list listeners above
+    // never fire on a reset. Re-count after the reset handler runs (next tick)
+    // so the meter follows the cleared rung instead of going stale until reload.
+    document.addEventListener("click", function (e) {
+      var resetBtn = e.target && e.target.closest && e.target.closest(".checklist-reset");
+      if (resetBtn) setTimeout(recount, 0);
+    });
+    // Recount once app.js has restored saved checkbox state.
+    setTimeout(recount, 0);
+  })();
+</script>
+</body>
+</html>

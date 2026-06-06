@@ -1,0 +1,551 @@
+/* ==========================================================================
+   COP4667 Android Development — Teaching Guide
+   mastery.css — the shared MASTERY ENGINE styles (companion to mastery.js)
+   --------------------------------------------------------------------------
+   Self-directed learning instrument. This is the STUDENT'S OWN progress:
+   spaced-repetition review, challenge "Mark solved" ticks, a skill map / learning
+   path, a personal streak + stat strip, and reveal/spoiler answers.
+
+   NOT a gradebook. There are no grades, weights, points-as-grades, or rubrics
+   anywhere in this file. Everything is framed as the student's own mastery.
+
+   Design rules:
+     - Reuse the existing design tokens from style.css via var() — never hardcode
+       brand colors. Inherits dark theme automatically through those tokens.
+     - Every class is namespaced .ms- so nothing here can collide with style.css.
+     - No web fonts / CDNs / build step. Works from file://.
+     - Print-friendly (see @media print at the bottom).
+   --------------------------------------------------------------------------
+   TABLE OF CONTENTS
+     1.  Local helper tokens (derived from style.css tokens)
+     2.  Shared atoms: panels, headers, buttons, due/maturity badges
+     3.  Stat strip (streak + mastery %)
+     4.  Challenge "Mark solved" control + ticks
+     5.  SRS review card + rating buttons
+     6.  Skill map (learning path) — nodes, edges, states
+     7.  Reveal / spoiler
+     8.  Reduced motion + print
+   ========================================================================== */
+
+/* ==========================================================================
+   1. LOCAL HELPER TOKENS  (purely derived; safe to override per-page)
+   ========================================================================== */
+:root {
+  /* State colors map onto the existing brand palette. */
+  --ms-locked:   var(--muted);
+  --ms-progress: var(--accent);
+  --ms-mastered: var(--green-dark);
+  --ms-tint:     color-mix(in srgb, var(--green) 14%, transparent);
+}
+[data-theme="dark"] {
+  --ms-mastered: var(--green);
+  --ms-tint: color-mix(in srgb, var(--green) 18%, transparent);
+}
+
+/* ==========================================================================
+   2. SHARED ATOMS
+   ========================================================================== */
+.ms-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--space-5);
+  margin: var(--space-5) 0;
+}
+.ms-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.ms-panel__title {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.ms-panel__title .ms-kicker {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--link);
+}
+[data-theme="dark"] .ms-panel__title .ms-kicker { color: var(--green); }
+.ms-spacer { margin-left: auto; }
+
+/* Buttons reuse the look of .btn but stay namespaced so style.css is untouched. */
+.ms-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--green);
+  color: var(--teal);
+  border: 1px solid var(--green);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  padding: var(--space-3) var(--space-5);
+  cursor: pointer;
+  line-height: 1;
+  transition: background .15s ease, transform .1s ease, box-shadow .15s ease, color .15s ease, border-color .15s ease;
+}
+.ms-btn:hover { background: var(--green-dark); color: #fff; box-shadow: var(--shadow); }
+.ms-btn:active { transform: translateY(1px); }
+.ms-btn:focus-visible { outline: none; box-shadow: var(--focus); }
+.ms-btn--ghost { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.ms-btn--ghost:hover { background: var(--surface-2); color: var(--ink); border-color: var(--green); }
+.ms-btn--sm { padding: var(--space-2) var(--space-3); font-size: var(--fs-xs); }
+.ms-btn[disabled] { opacity: .5; cursor: not-allowed; pointer-events: none; }
+
+/* Pill badges (due counts, maturity, "new"). */
+.ms-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.ms-badge--due    { background: color-mix(in srgb, var(--accent) 24%, transparent); color: #8A5D00; border-color: transparent; }
+.ms-badge--new    { background: color-mix(in srgb, var(--info) 18%, transparent);   color: var(--info); border-color: transparent; }
+.ms-badge--done   { background: color-mix(in srgb, var(--green) 22%, transparent);  color: var(--link); border-color: transparent; }
+.ms-badge--mature { background: color-mix(in srgb, var(--teal-2) 18%, transparent); color: var(--teal-2); border-color: transparent; }
+[data-theme="dark"] .ms-badge--due { color: var(--accent); }
+[data-theme="dark"] .ms-badge--done { color: var(--green); }
+
+/* ==========================================================================
+   3. STAT STRIP  (personal streak + mastery %, NOT a grade)
+   ========================================================================== */
+.ms-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+}
+.ms-stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--space-4) var(--space-5);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.ms-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--green), var(--teal-2));
+}
+.ms-stat__num {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xl);
+  font-weight: 750;
+  line-height: 1.1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.ms-stat__label {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+.ms-stat__sub { display: block; font-size: var(--fs-xs); color: var(--muted); margin-top: 2px; }
+.ms-stat--streak .ms-stat__num { color: var(--accent); }
+.ms-stat--mastery .ms-stat__num { color: var(--link); }
+[data-theme="dark"] .ms-stat--mastery .ms-stat__num { color: var(--green); }
+
+/* Thin progress meter (self-directed mastery, never a course grade). */
+.ms-meter {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin-top: var(--space-3);
+}
+.ms-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green), var(--green-dark));
+  transition: width .4s ease;
+}
+
+/* ==========================================================================
+   4. CHALLENGE "MARK SOLVED" CONTROL + TICKS
+   ========================================================================== */
+.ms-solve {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--line);
+}
+.ms-solve__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.ms-solve__state .ms-tick {
+  width: 18px; height: 18px;
+  display: inline-grid; place-items: center;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  font-size: 11px;
+  color: transparent;
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+.ms-solve.is-solved .ms-solve__state { color: var(--link); }
+[data-theme="dark"] .ms-solve.is-solved .ms-solve__state { color: var(--green); }
+.ms-solve.is-solved .ms-tick {
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--teal);
+}
+/* A row of small ticks summarizing how many challenges in a set are solved. */
+.ms-ticks { display: inline-flex; gap: 5px; flex-wrap: wrap; vertical-align: middle; }
+.ms-ticks__dot {
+  width: 12px; height: 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.ms-ticks__dot.is-on { background: var(--green); border-color: var(--green-dark); }
+
+/* ==========================================================================
+   5. SRS REVIEW CARD  (SM-2 spaced repetition — personal practice)
+   ========================================================================== */
+.ms-srs { /* mount container */ }
+.ms-srs__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.ms-srs__counts { display: inline-flex; gap: var(--space-2); flex-wrap: wrap; }
+
+.ms-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.ms-card__topic {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  padding: var(--space-3) var(--space-5) 0;
+}
+.ms-card__face {
+  padding: var(--space-5);
+  min-height: 96px;
+  font-size: var(--fs-lg);
+}
+.ms-card__face p:last-child { margin-bottom: 0; }
+.ms-card__front { font-weight: 650; }
+.ms-card__divider { border: 0; border-top: 1px dashed var(--line); margin: 0 var(--space-5); }
+.ms-card__back {
+  background: var(--surface-2);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+}
+.ms-card__back code,
+.ms-card__back pre { font-family: var(--font-mono); }
+.ms-card__back pre {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  overflow-x: auto;
+  font-size: var(--fs-sm);
+}
+
+.ms-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line);
+}
+.ms-srs__reveal { width: 100%; justify-content: center; }
+
+/* Rating buttons: Again / Hard / Good / Easy. Colors signal effort, not a grade. */
+.ms-rate { display: flex; flex-wrap: wrap; gap: var(--space-2); width: 100%; }
+.ms-rate__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1 1 0;
+  min-width: 88px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  padding: var(--space-3) var(--space-2);
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.15;
+  transition: transform .1s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+.ms-rate__btn small { display: block; font-weight: 600; font-size: var(--fs-xs); color: var(--muted); margin-top: 2px; }
+.ms-rate__btn:hover { box-shadow: var(--shadow); }
+.ms-rate__btn:active { transform: translateY(1px); }
+.ms-rate__btn:focus-visible { outline: none; box-shadow: var(--focus); }
+.ms-rate__btn--again { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+.ms-rate__btn--again:hover { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
+.ms-rate__btn--hard  { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.ms-rate__btn--hard:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.ms-rate__btn--good  { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); }
+.ms-rate__btn--good:hover { background: color-mix(in srgb, var(--green) 14%, var(--surface)); }
+.ms-rate__btn--easy  { border-color: color-mix(in srgb, var(--teal-2) 55%, var(--line)); }
+.ms-rate__btn--easy:hover { background: color-mix(in srgb, var(--teal-2) 12%, var(--surface)); }
+
+.ms-srs__empty {
+  text-align: center;
+  padding: var(--space-6) var(--space-5);
+  color: var(--muted);
+}
+.ms-srs__empty strong { color: var(--link); font-size: var(--fs-lg); }
+[data-theme="dark"] .ms-srs__empty strong { color: var(--green); }
+
+.ms-srs__maturity {
+  display: flex; flex-wrap: wrap; gap: var(--space-2);
+  margin-top: var(--space-3); font-size: var(--fs-xs); color: var(--muted);
+}
+
+/* ==========================================================================
+   6. SKILL MAP / LEARNING PATH
+   ========================================================================== */
+.ms-map {
+  position: relative;
+  margin: var(--space-5) 0;
+}
+.ms-map__legend {
+  display: flex; flex-wrap: wrap; gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: var(--fs-xs); color: var(--muted);
+}
+.ms-map__legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ms-map__legend i {
+  width: 12px; height: 12px; border-radius: 4px; display: inline-block;
+  border: 1px solid var(--line);
+}
+.ms-map__legend .ms-i-locked   { background: var(--surface-2); }
+.ms-map__legend .ms-i-progress { background: var(--ms-progress); border-color: transparent; }
+.ms-map__legend .ms-i-mastered { background: var(--ms-mastered); border-color: transparent; }
+
+.ms-map__canvas {
+  position: relative;
+  width: 100%;
+  /* height set inline by JS to fit the laid-out tree */
+}
+.ms-map__edges {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.ms-map__edge {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 2;
+  transition: stroke .25s ease;
+}
+.ms-map__edge.is-cleared { stroke: var(--green); stroke-width: 2.5; }
+
+/* Unit lane labels down the left rail. */
+.ms-map__lane {
+  position: absolute;
+  left: 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  z-index: 1;
+}
+
+.ms-node {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 156px;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .15s ease, border-color .2s ease, background .2s ease;
+}
+.ms-node:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-bottom-color: var(--line); }
+.ms-node:focus-visible { outline: none; box-shadow: var(--focus); }
+.ms-node__label { font-weight: 700; font-size: var(--fs-sm); line-height: 1.25; }
+.ms-node__meta { display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--muted); }
+.ms-node__pct { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; }
+
+.ms-node__ring {
+  width: 14px; height: 14px; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  font-size: 9px; line-height: 1;
+  border: 2px solid var(--ms-locked);
+  color: transparent;
+  flex: none;
+}
+
+/* States */
+.ms-node.is-locked {
+  opacity: .72;
+  border-style: dashed;
+  cursor: not-allowed;
+}
+.ms-node.is-locked:hover { transform: none; box-shadow: var(--shadow); }
+.ms-node.is-locked .ms-node__ring::before { content: "🔒"; font-size: 9px; }
+
+.ms-node.is-progress {
+  border-color: var(--ms-progress);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+.ms-node.is-progress .ms-node__ring { border-color: var(--ms-progress); }
+.ms-node.is-progress .ms-node__pct { color: var(--accent); }
+
+.ms-node.is-mastered {
+  border-color: var(--ms-mastered);
+  background: var(--ms-tint);
+}
+.ms-node.is-mastered .ms-node__ring {
+  border-color: var(--ms-mastered);
+  background: var(--ms-mastered);
+  color: var(--teal);
+}
+.ms-node.is-mastered .ms-node__ring::before { content: "✓"; }
+.ms-node.is-mastered .ms-node__pct { color: var(--ms-mastered); }
+
+/* ==========================================================================
+   7. REVEAL / SPOILER  (debug-drill answers etc.)
+   ========================================================================== */
+.ms-reveal {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  margin: var(--space-4) 0;
+  overflow: hidden;
+}
+.ms-reveal__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  color: var(--teal-2);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+}
+[data-theme="dark"] .ms-reveal__btn { color: var(--green); }
+.ms-reveal__btn::before {
+  content: "▸";
+  transition: transform .15s ease;
+  color: var(--muted);
+}
+.ms-reveal__btn:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--radius-sm); }
+.ms-reveal.is-open .ms-reveal__btn::before { transform: rotate(90deg); }
+.ms-reveal__body {
+  display: none;
+  padding: 0 var(--space-4) var(--space-4);
+  border-top: 1px solid var(--line);
+}
+.ms-reveal.is-open .ms-reveal__body { display: block; }
+.ms-reveal__body > :first-child { margin-top: var(--space-3); }
+.ms-reveal__body > :last-child { margin-bottom: 0; }
+
+/* Inline spoiler variant: blur until revealed. */
+.ms-spoiler[data-reveal] {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0 .2em;
+  background: var(--surface-2);
+  filter: blur(5px);
+  transition: filter .2s ease;
+  user-select: none;
+}
+.ms-spoiler.is-open { filter: none; user-select: auto; }
+
+/* ==========================================================================
+   8. REDUCED MOTION + PRINT
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .ms-meter__fill, .ms-node, .ms-map__edge, .ms-reveal__btn::before,
+  .ms-rate__btn, .ms-btn, .ms-spoiler[data-reveal] { transition: none !important; }
+}
+
+@media print {
+  /* Hide the interactive trainers; keep static, useful artifacts visible. */
+  .ms-srs, .ms-rate, .ms-card__actions, .ms-srs__bar,
+  .ms-solve__btn, .ms-btn, .ms-reveal__btn {
+    display: none !important;
+  }
+  .ms-panel, .ms-stat, .ms-card, .ms-node {
+    box-shadow: none !important;
+    border: 1px solid #999 !important;
+    break-inside: avoid;
+  }
+  /* Reveal answers and spoilers in print so a printed page is complete. */
+  .ms-reveal__body { display: block !important; border-top: 0; }
+  .ms-spoiler[data-reveal] { filter: none !important; background: none !important; }
+  /* The skill map's absolute layout doesn't print well; flatten it. */
+  .ms-map__canvas { height: auto !important; }
+  .ms-map__edges, .ms-map__lane { display: none !important; }
+  .ms-node {
+    position: static !important;
+    width: auto !important;
+    display: inline-flex !important;
+    margin: 4px;
+  }
+}

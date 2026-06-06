@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Session 10 — Networking, REST APIs, JSON &amp; Retrofit · COP4667</title>
+<meta content="COP4667 Android Development — Session 10 of 12. Networking, REST APIs, JSON parsing, and Retrofit with Kotlin coroutines and Jetpack Compose. Live-coding demo, hands-on API consumer lab, overview." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* Page-specific tweaks only — chrome uses the shared design system. */
+    .nutshell { font-size: var(--fs-lg); color: #DCF6EC; max-width: 70ch; }
+    .obj-list { list-style: none; padding-left: 0; display: grid; gap: var(--space-3); }
+    .obj-list > li { display: flex; gap: var(--space-3); align-items: flex-start; }
+    .obj-list .clo-tag { flex: 0 0 auto; margin-top: 2px; }
+    .pipeline {
+      display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-2);
+      margin: var(--space-4) 0; font-size: var(--fs-sm);
+    }
+    .pipeline__node {
+      flex: 1 1 130px; min-width: 120px;
+      background: var(--surface-2); border: 1px solid var(--line);
+      border-radius: var(--radius-sm); padding: var(--space-3);
+      text-align: center; font-weight: 700; color: var(--teal-2);
+      display: flex; flex-direction: column; gap: 4px; justify-content: center;
+    }
+    [data-theme="dark"] .pipeline__node { color: var(--green); }
+    .pipeline__node small { font-weight: 500; color: var(--muted); }
+    .pipeline__arrow { align-self: center; font-size: 1.4rem; color: var(--green-dark); font-weight: 800; }
+    .statebar { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: var(--space-3); margin: var(--space-4) 0; }
+    .statebar > div { border-radius: var(--radius-sm); padding: var(--space-3); border: 1px solid var(--line); }
+    .statebar .st-loading { background: color-mix(in srgb, var(--info) 10%, var(--surface)); border-left: 4px solid var(--info); }
+    .statebar .st-success { background: color-mix(in srgb, var(--green) 12%, var(--surface)); border-left: 4px solid var(--green-dark); }
+    .statebar .st-error { background: color-mix(in srgb, var(--danger) 10%, var(--surface)); border-left: 4px solid var(--danger); }
+    .layout-2col { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 980px) { .layout-2col { grid-template-columns: 230px 1fr; align-items: start; } .layout-2col .toc-card { position: sticky; top: 76px; } }
+    .status-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+    .status-table th, .status-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .status-table th { color: var(--teal-2); }
+    [data-theme="dark"] .status-table th { color: var(--green); }
+    .status-table code { white-space: nowrap; }
+    .timeblock__body details { margin-top: var(--space-2); }
+    .timeblock__body summary { cursor: pointer; font-weight: 700; color: var(--teal-2); }
+    [data-theme="dark"] .timeblock__body summary { color: var(--green); }
+    .mini-legend { display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: var(--fs-sm); color: var(--muted); }
+  </style>
+</head>
+<body>
+<!-- ====================================================================
+       TOP NAVIGATION
+  ===================================================================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">🤖</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-09.html">‹ Prev (S9)</a>
+<a aria-current="page" class="active" href="session-10.html">S10</a>
+<a href="session-11.html">Next (S11) ›</a>
+<a href="../labs/retrofit-flow.html">Retrofit Lab</a>
+<a href="../assessments/quiz-1.html">Quiz 1</a>
+<button aria-label="Toggle dark theme" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶️ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ================================================================
+         HERO
+    ================================================================= -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:12px;">
+<span class="pill pill--green">Session 10 of 12</span>
+<span class="pill">Week 4</span>
+<span class="pill">Networking, APIs &amp; the Final Project</span>
+</div>
+<h1 class="hero-title" id="hero-title">Networking, REST APIs, JSON &amp; Retrofit</h1>
+<p class="hero-sub nutshell">
+        Today the app reaches beyond the device: students learn HTTP and REST, request data
+        from a public web API on a background coroutine, parse the JSON into Kotlin data classes
+        with Retrofit, and render it in a Compose <code>LazyColumn</code> with proper loading and
+        error states.
+      </p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 5</span>
+<span class="clo-tag">CLO 6</span>
+<span class="pill">Unit 5 — Connect to the internet</span>
+<span class="pill">Kotlin · Coroutines · Retrofit · Compose</span>
+</div>
+</section>
+<div class="layout-2col">
+<!-- On-page index (sticky on wide screens) -->
+<aside aria-label="On this page" class="card toc-card no-print">
+<h2 class="card__title" style="font-size:var(--fs-md);margin-top:0;">On this page</h2>
+<nav aria-label="Section index" data-toc="main"></nav>
+</aside>
+<div>
+<!-- ==============================================================
+           1. LEARNING OBJECTIVES
+      =============================================================== -->
+<section aria-labelledby="obj-h" class="slide">
+<h2 id="obj-h">Learning Objectives</h2>
+<div class="card card--accent">
+<p class="muted" style="margin-top:0;">By the end of this session a student can…</p>
+<ul class="obj-list">
+<li><span class="clo-tag">CLO 6</span>
+<span><strong>Explain HTTP &amp; REST:</strong> describe the request/response cycle, common verbs
+              (GET/POST/PUT/DELETE), and what status codes (2xx/4xx/5xx) mean for app logic.</span></li>
+<li><span class="clo-tag">CLO 5</span>
+<span><strong>Request data from a web API:</strong> declare the <code>INTERNET</code> permission and
+              call a public JSON endpoint over the network from an Android app.</span></li>
+<li><span class="clo-tag">CLO 6</span>
+<span><strong>Keep the UI responsive:</strong> run network I/O off the main thread using Kotlin
+              <code>suspend</code> functions and coroutines launched from a <code>ViewModel</code>.</span></li>
+<li><span class="clo-tag">CLO 5</span>
+<span><strong>Parse JSON to data classes:</strong> map a JSON payload into Kotlin
+              <code>data class</code> models with a converter (kotlinx.serialization / Moshi / Gson).</span></li>
+<li><span class="clo-tag">CLO 6</span>
+<span><strong>Define a Retrofit service:</strong> write an API <code>interface</code> with annotated
+              endpoints and call it from a repository.</span></li>
+<li><span class="clo-tag">CLO 5</span>
+<span><strong>Render remote data with state:</strong> display results in a Compose
+              <code>LazyColumn</code> and handle <em>Loading</em>, <em>Success</em>, and <em>Error</em> UI states.</span></li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p>This session is the heart of <strong>CLO5 (integrate APIs — location &amp; cloud storage)</strong> and
+              <strong>CLO6 (network protocols for backend communication)</strong>. It directly unblocks the
+              required project feature <em>"data from a web API over the network"</em> and reinforces
+              <em>clean architecture (ViewModel + repository)</em>. Source course material: Android Basics with
+              Compose, <strong>Unit 5</strong>.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ==============================================================
+           6. LECTURE / CONCEPT NOTES
+      =============================================================== -->
+<section aria-labelledby="concept-h" class="slide">
+<h2 id="concept-h">Lecture / Concept Notes</h2>
+<p class="muted">Learn-from-here notes — everything you need to understand Concept Block A is in this section.</p>
+<div class="accordion">
+<!-- Big idea 1 -->
+<div class="accordion__item is-open">
+<button class="accordion__head" type="button">1  Network protocols &amp; HTTP: requests, responses, methods, status codes, REST</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Analogy first.</strong> HTTP is like ordering at a restaurant. Your <em>request</em> is the order
+              ("a GET for table 5's menu"); the server prepares it and sends back a <em>response</em> (the food + a
+              receipt). The <strong>status code</strong> is the waiter's reply: <em>200</em> = "here you go,"
+              <em>404</em> = "we don't have that dish," <em>500</em> = "the kitchen caught fire."</p>
+<p>An HTTP <strong>request</strong> has a method (verb), a URL, headers, and an optional body. The
+              <strong>response</strong> has a status code, headers, and a body (often JSON). REST (Representational
+              State Transfer) is a convention for designing those URLs around <em>resources</em>:</p>
+<table class="status-table">
+<thead><tr><th>Verb</th><th>Means</th><th>Example (REST)</th></tr></thead>
+<tbody>
+<tr><td><code>GET</code></td><td>Read data (no side effects)</td><td><code>GET /quotes?limit=20</code></td></tr>
+<tr><td><code>POST</code></td><td>Create a new resource</td><td><code>POST /quotes</code> (+ JSON body)</td></tr>
+<tr><td><code>PUT</code>/<code>PATCH</code></td><td>Update an existing resource</td><td><code>PUT /quotes/42</code></td></tr>
+<tr><td><code>DELETE</code></td><td>Remove a resource</td><td><code>DELETE /quotes/42</code></td></tr>
+</tbody>
+</table>
+<h4>Status code families (memorize the first digit)</h4>
+<table class="status-table">
+<thead><tr><th>Range</th><th>Family</th><th>What your app does</th></tr></thead>
+<tbody>
+<tr><td><code>2xx</code></td><td>Success (200 OK, 201 Created, 204 No Content)</td><td>Parse the body, show data.</td></tr>
+<tr><td><code>3xx</code></td><td>Redirect</td><td>Usually handled by the HTTP client.</td></tr>
+<tr><td><code>4xx</code></td><td><strong>Client</strong> error (400 Bad Request, 401 Unauthorized, 404 Not Found, 429 Too Many Requests)</td><td>Your fault: bad URL, missing auth, wrong params. Show a useful error.</td></tr>
+<tr><td><code>5xx</code></td><td><strong>Server</strong> error (500, 503 Service Unavailable)</td><td>Their fault: offer retry.</td></tr>
+</tbody>
+</table>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">CLO 6 framing</span>
+<p>HTTP rides on top of TCP; HTTPS adds a TLS encryption layer (this is why endpoints are
+                  <code>https://</code> — Android blocks plain <code>http://</code> cleartext by default since API 28).
+                  We'll mention WebSockets later for real-time, but REST-over-HTTPS is the workhorse for "backend
+                  communication" in this course.</p>
+</div>
+</div>
+<p><a href="../labs/retrofit-flow.html">Open the Retrofit-flow visualizer</a> to show the request → response
+              cycle interactively before moving on.</p>
+</div></div>
+</div>
+<!-- Big idea 2 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">2  The INTERNET permission &amp; never blocking the main thread (coroutines)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>Two non-negotiables before any network code runs.</p>
+<h4>(a) Declare the INTERNET permission</h4>
+<p>Without this line your request throws <code>SecurityException</code> / silently fails. It's a
+              <em>normal</em> permission — no runtime prompt, just the manifest entry.</p>
+<div class="codeblock">
+<span class="codeblock__lang">XML</span>
+<pre><code>&lt;!-- AndroidManifest.xml — child of &lt;manifest&gt;, BEFORE &lt;application&gt; --&gt;
+&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code></pre>
+</div>
+<h4>(b) Never block the main thread</h4>
+<p>Android draws the UI on a single <strong>main (UI) thread</strong>. A network call can take seconds. If
+              you do it on the main thread, the screen freezes; after ~5 seconds Android shows the dreaded
+              <strong>ANR</strong> ("Application Not Responding"). Modern Android forbids it outright: a synchronous
+              network call on the main thread throws <code>NetworkOnMainThreadException</code>.</p>
+<p>The Kotlin answer is <strong>coroutines</strong>. A <code>suspend</code> function can pause and resume
+              without blocking a thread. We launch it from <code>viewModelScope</code> and let Retrofit move the actual
+              I/O onto a background dispatcher.</p>
+<div aria-label="Blocking vs suspend" class="tabs" role="tablist">
+<button class="tab" data-tab="bad">❌ Blocking (don't)</button>
+<button class="tab" data-tab="good">✅ Suspend (do)</button>
+</div>
+<div class="tabpanel" data-tabpanel="bad">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · anti-pattern</span>
+<pre><code>// DON'T: runs on the calling (main) thread → freeze + crash
+fun loadQuotes() {
+    val response = api.getQuotes()   // synchronous I/O on main thread
+    _quotes.value = response.results // ANR / NetworkOnMainThreadException
+}</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="good">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · correct</span>
+<pre><code>// DO: suspend fn launched on viewModelScope; Retrofit handles the dispatcher
+fun loadQuotes() {
+    viewModelScope.launch {            // coroutine tied to ViewModel lifecycle
+        val response = api.getQuotes() // suspends here, does NOT block the thread
+        _uiState.value = QuoteUiState.Success(response.results)
+    }
+}</code></pre>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ⓘ</span>
+<div class="callout__body">
+<span class="callout__label">Why viewModelScope?</span>
+<p>A coroutine launched in <code>viewModelScope</code> is automatically cancelled when the ViewModel
+                  is cleared (screen destroyed). That prevents leaking work or updating state for a screen that no
+                  longer exists. You get this scope free from <code>androidx.lifecycle:lifecycle-viewmodel-compose</code>.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Big idea 3 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">3  JSON &amp; parsing it into Kotlin data classes</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>JSON</strong> (JavaScript Object Notation) is the text format almost every web API speaks. Objects
+              are <code>{ "key": value }</code>; arrays are <code>[ ... ]</code>. Our job is to turn that text into typed
+              Kotlin objects so the compiler can help us.</p>
+<p>Sample response from our demo endpoint:</p>
+<div class="codeblock">
+<span class="codeblock__lang">JSON</span>
+<pre><code>{
+  "count": 2,
+  "results": [
+    { "_id": "abc123", "content": "Stay hungry, stay foolish.", "author": "Steve Jobs", "tags": ["wisdom"] },
+    { "_id": "def456", "content": "Simplicity is the soul of efficiency.", "author": "Austin Freeman", "tags": ["technology"] }
+  ]
+}</code></pre>
+</div>
+<p>Each JSON object becomes a Kotlin <code>data class</code>. Field names should match the JSON keys (or be
+              mapped with an annotation). A converter library does the heavy lifting at runtime.</p>
+<div aria-label="JSON converter options" class="tabs" role="tablist">
+<button class="tab" data-tab="kx">kotlinx.serialization</button>
+<button class="tab" data-tab="moshi">Moshi</button>
+<button class="tab" data-tab="gson">Gson</button>
+</div>
+<div class="tabpanel" data-tabpanel="kx">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · kotlinx.serialization (recommended)</span>
+<pre><code>import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class QuoteResponse(
+    val count: Int,
+    val results: List&lt;Quote&gt;
+)
+
+@Serializable
+data class Quote(
+    @SerialName("_id") val id: String,     // JSON "_id" → Kotlin id
+    val content: String,
+    val author: String,
+    val tags: List&lt;String&gt; = emptyList()  // default makes it null-safe
+)</code></pre>
+</div>
+<p class="muted">Pairs with the <code>kotlinx-serialization-converter</code>. Compile-time safe, no
+                reflection, Kotlin-first. This is the modern default.</p>
+</div>
+<div class="tabpanel" data-tabpanel="moshi">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Moshi</span>
+<pre><code>import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
+
+@JsonClass(generateAdapter = true)
+data class Quote(
+    @Json(name = "_id") val id: String,
+    val content: String,
+    val author: String,
+    val tags: List&lt;String&gt; = emptyList()
+)</code></pre>
+</div>
+<p class="muted">Pairs with <code>converter-moshi</code> + the Moshi Kotlin codegen. Fast, widely used.</p>
+</div>
+<div class="tabpanel" data-tabpanel="gson">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Gson</span>
+<pre><code>import com.google.gson.annotations.SerializedName
+
+data class Quote(
+    @SerializedName("_id") val id: String,
+    val content: String,
+    val author: String,
+    val tags: List&lt;String&gt; = emptyList()
+)</code></pre>
+</div>
+<p class="muted">Pairs with <code>converter-gson</code>. Oldest/most familiar to Java devs; uses
+                reflection and is less Kotlin-aware (watch out for non-null fields the parser can leave null).</p>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common JSON-mapping bugs</span>
+<p>(1) A key in the JSON that's missing from your data class is simply ignored — you don't need
+                  to model every field. (2) But a <strong>non-null</strong> Kotlin field that's absent/null in the JSON
+                  will crash at parse time. Give optional fields a default or a nullable type. (3) Names are
+                  case-sensitive: JSON <code>author</code> ≠ Kotlin <code>Author</code>.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Big idea 4 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">4  Retrofit: API interface, calling it, mapping JSON (and Volley as an alternative)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Retrofit</strong> (by Square, built on OkHttp) turns an HTTP API into a Kotlin
+              <code>interface</code>. You annotate methods with the verb + path; Retrofit generates the implementation,
+              performs the call, and uses a converter to deserialize the JSON into your data classes.</p>
+<h4>Step 1 — the API interface</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Retrofit interface</span>
+<pre><code>import retrofit2.http.GET
+import retrofit2.http.Query
+
+interface QuoteApiService {
+
+    // GET https://api.quotable.io/quotes?limit=20
+    @GET("quotes")
+    suspend fun getQuotes(
+        @Query("limit") limit: Int = 20
+    ): QuoteResponse        // Retrofit + converter return the parsed object
+}</code></pre>
+</div>
+<p>Note <code>suspend</code> — Retrofit natively supports coroutines, so the call neatly fits inside
+              <code>viewModelScope.launch { }</code> with no callbacks.</p>
+<h4>Step 2 — build the Retrofit instance (singleton)</h4>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition — <code>by lazy</code></span>
+<p><code>val api by lazy { … }</code> means "don't build this object yet — run the <code>{ … }</code> block the <strong>first time</strong> someone reads <code>api</code>, then cache that result and hand back the same instance forever after," which is exactly what you want for an expensive object you might not need right away.</p>
+</div>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Retrofit builder (kotlinx.serialization)</span>
+<pre><code>import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import retrofit2.Retrofit
+
+private const val BASE_URL = "https://api.quotable.io/"
+
+private val json = Json { ignoreUnknownKeys = true }  // tolerate extra fields
+
+object QuoteApi {
+    val retrofitService: QuoteApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create(QuoteApiService::class.java)
+    }
+}</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Two rules students always trip on</span>
+<p>(1) <strong>BASE_URL must end with a trailing slash</strong> <code>/</code>, and the
+                  <code>@GET</code> path must <em>not</em> start with one, or Retrofit throws
+                  <code>IllegalArgumentException</code>. (2) Use <code>by lazy</code> so the service is built once, not
+                  on every call.</p>
+</div>
+</div>
+<p>Read that builder block <strong>chunk by chunk</strong> — it is one long method chain where each call returns something the next call hangs off of:</p>
+<ul>
+<li><strong><code>val retrofitService: QuoteApiService by lazy { … }</code></strong> — declares the service, but the <code>{ … }</code> body does <em>not</em> run now. The first time any code reads <code>QuoteApi.retrofitService</code>, the block runs once, builds the service, caches it, and every later read returns that same cached instance. It is <strong>thread-safe by default</strong>, so two coroutines asking at once still get one shared instance. (This is the same <code>by</code> delegate idea you met in Session 5 — not a new keyword, just a different delegate behind it.)</li>
+<li><strong><code>Retrofit.Builder()</code></strong> — starts a fresh, empty builder. You configure it step by step, then ask it to assemble the finished object (the <em>builder pattern</em>).</li>
+<li><strong><code>.baseUrl(BASE_URL)</code></strong> — sets the root URL every request is resolved against. It <strong>must end in a slash</strong> (<code>"https://api.quotable.io/"</code>); the <code>@GET("quotes")</code> path gets appended to it.</li>
+<li><strong><code>.addConverterFactory(json.asConverterFactory(…))</code></strong> — plugs in the piece that does JSON ↔ Kotlin-object conversion. Here it's kotlinx.serialization (Moshi and Gson ship their own factories). Without a converter, Retrofit wouldn't know how to turn the response body into a <code>QuoteResponse</code>.</li>
+<li><strong><code>.build()</code></strong> — takes everything you configured and produces the actual <code>Retrofit</code> instance. The builder's job is finished here.</li>
+<li><strong><code>.create(QuoteApiService::class.java)</code></strong> — the magic step: you hand Retrofit your <em>interface</em> and it <strong>generates a concrete implementation of it at runtime</strong>, returning an object that satisfies <code>QuoteApiService</code>. Calling <code>getQuotes()</code> on that returned object is what actually fires the HTTP request.</li>
+</ul>
+<p>To see <code>by lazy</code> on its own — stripped of all the Retrofit noise — here is the whole idea in one tiny example:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · by lazy in isolation</span>
+<pre><code>val greeting: String by lazy {
+    println("...building it now...")   // runs ONCE, on first read
+    "Hello"
+}
+
+fun main() {
+    println("before")        // the block has NOT run yet
+    println(greeting)        // first read → prints "...building it now..." then "Hello"
+    println(greeting)        // second read → just "Hello" (cached; block skipped)
+}
+// Output:
+// before
+// ...building it now...
+// Hello
+// Hello</code></pre>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p>You <strong>never write the body of <code>QuoteApiService</code></strong> and you <strong>never <code>new</code> it up</strong> — there is no <code>QuoteApiServiceImpl</code> class for you to author. The interface is just a <em>description</em> of the endpoints; <code>.create(QuoteApiService::class.java)</code> is what builds the working implementation behind the scenes and returns it. And <code>by lazy</code> is <em>not</em> a brand-new keyword — it's the same property-delegate (<code>by</code>) mechanism from Session 5, just using Kotlin's built-in <code>lazy { }</code> delegate to defer and cache the value.</p>
+</div>
+</div>
+<h4>Compare: Retrofit vs Volley</h4>
+<div aria-label="Retrofit vs Volley" class="tabs" role="tablist">
+<button class="tab" data-tab="rf">Retrofit (this course)</button>
+<button class="tab" data-tab="vl">Volley (alternative)</button>
+</div>
+<div class="tabpanel" data-tabpanel="rf">
+<ul>
+<li>Type-safe interface; JSON → data class automatically via a converter.</li>
+<li>First-class <code>suspend</code> / coroutine support — clean, sequential code.</li>
+<li>Industry standard for REST clients today; pairs with OkHttp interceptors.</li>
+</ul>
+</div>
+<div class="tabpanel" data-tabpanel="vl">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Volley (for awareness only)</span>
+<pre><code>val queue = Volley.newRequestQueue(context)
+val request = JsonObjectRequest(Request.Method.GET, url, null,
+    { json -&gt; /* manually pull fields out of json */ },
+    { error -&gt; /* handle */ })
+queue.add(request)</code></pre>
+</div>
+<p class="muted">Volley is callback-based and you parse JSON by hand. Fine for tiny apps, but no
+                type-safety and awkward with coroutines. We mention it so students recognize it; we build with Retrofit.</p>
+</div>
+</div></div>
+</div>
+<!-- Big idea 5 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">5  Displaying remote data in a LazyColumn with Loading / Error / Success states</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>A network screen is <em>always</em> in one of three states. Model them explicitly with a
+              <strong>sealed interface</strong> so the UI is exhaustive and you can never forget the spinner or the
+              error message.</p>
+<div class="statebar">
+<div class="st-loading"><strong>Loading</strong><br/><small>Show a spinner. The request is in flight.</small></div>
+<div class="st-success"><strong>Success(data)</strong><br/><small>Render the list in a LazyColumn.</small></div>
+<div class="st-error"><strong>Error(msg)</strong><br/><small>Show a message + Retry button.</small></div>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · sealed UI state</span>
+<pre><code>sealed interface QuoteUiState {
+    data object Loading : QuoteUiState
+    data class Success(val quotes: List&lt;Quote&gt;) : QuoteUiState
+    data class Error(val message: String) : QuoteUiState
+}</code></pre>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose renders the state</span>
+<pre><code>@Composable
+fun QuoteScreen(
+    uiState: QuoteUiState,
+    onRetry: () -&gt; Unit,
+    modifier: Modifier = Modifier
+) {
+    when (uiState) {
+        is QuoteUiState.Loading -&gt; LoadingView(modifier)
+        is QuoteUiState.Error   -&gt; ErrorView(uiState.message, onRetry, modifier)
+        is QuoteUiState.Success -&gt; QuoteList(uiState.quotes, modifier)
+    }
+}
+
+@Composable
+fun LoadingView(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+fun ErrorView(message: String, onRetry: () -&gt; Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("⚠️ $message", style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = onRetry) { Text("Retry") }
+    }
+}
+
+@Composable
+fun QuoteList(quotes: List&lt;Quote&gt;, modifier: Modifier = Modifier) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(quotes, key = { it.id }) { quote -&gt;
+            QuoteCard(quote)
+        }
+    }
+}</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Why a key in items{}</span>
+<p>Passing <code>key = { it.id }</code> lets Compose track items across data changes — better
+                  recomposition performance and correct animations when the list updates (e.g., after a refresh).</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Big idea 6 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">6  CLO5 horizon: location services &amp; cloud-based storage as further API integrations</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>Retrofit is one kind of API integration. <strong>CLO5</strong> is broader: Android apps integrate many
+              platform and cloud APIs. Two you'll meet again:</p>
+<ul>
+<li><strong>Location services</strong> — the Fused Location Provider
+                (<code>com.google.android.gms:play-services-location</code>) gives device location. It requires a
+                <em>runtime</em> permission (<code>ACCESS_FINE_LOCATION</code>), unlike <code>INTERNET</code>. A common
+                pattern: get the user's lat/long, then call a weather REST API with it — exactly the Retrofit skill
+                from today, plus a permission prompt.</li>
+<li><strong>Cloud-based storage</strong> — services like Firebase / cloud object stores let an app
+                read/write data remotely. Conceptually it's the same request/response model; the SDK wraps the HTTP for
+                you.</li>
+</ul>
+</div></div>
+</div>
+</div>
+<!-- Flashcards reinforce vocabulary -->
+<h3>Quick-review flashcards</h3>
+<p class="muted">Use these for a quick retrieval rep now, and again next session to warm up. Click a card to flip.</p>
+<div data-flashcards="s10-cards"></div>
+<script id="s10-cards" type="application/json">
+        [
+          { "front": "Why can't you do a network call on the main thread?", "back": "It blocks UI drawing → frozen screen and an ANR after ~5s. Modern Android throws NetworkOnMainThreadException. Use a suspend function on a background dispatcher.", "tag": "Threading" },
+          { "front": "Which manifest line is required for any network call?", "back": "<uses-permission android:name=\"android.permission.INTERNET\" /> — a normal permission, no runtime prompt.", "tag": "Permissions" },
+          { "front": "What does a 4xx vs 5xx status code tell you?", "back": "4xx = client error (your request was bad: 400/401/404/429). 5xx = server error (their side: 500/503). 2xx = success.", "tag": "HTTP" },
+          { "front": "What is Retrofit?", "back": "A type-safe HTTP client (on OkHttp) that turns an annotated Kotlin interface into API calls and uses a converter to map JSON ↔ data classes. Supports suspend functions.", "tag": "Retrofit" },
+          { "front": "Two BASE_URL/path rules in Retrofit", "back": "BASE_URL must END with '/'; the @GET path must NOT start with '/'. Otherwise Retrofit throws IllegalArgumentException.", "tag": "Retrofit" },
+          { "front": "What three UI states does a network screen need?", "back": "Loading (spinner), Success(data) (render list), Error(message) (+ Retry). Model with a sealed interface so the when() is exhaustive.", "tag": "State" },
+          { "front": "What does Json { ignoreUnknownKeys = true } do?", "back": "Tells kotlinx.serialization to skip JSON fields you didn't model instead of throwing. Prevents crashes from extra API fields.", "tag": "JSON" },
+          { "front": "Why launch the call in viewModelScope?", "back": "It's tied to the ViewModel lifecycle and auto-cancels when the screen is destroyed — no leaks or updates to dead UI.", "tag": "Coroutines" }
+        ]
+        </script>
+</section>
+<!-- ==============================================================
+           7. GUIDED LIVE-CODING
+      =============================================================== -->
+<section aria-labelledby="live-h" class="slide" id="livecoding">
+<h2 id="live-h">Guided Live-Coding</h2>
+<div aria-label="Data pipeline" class="pipeline">
+<div class="pipeline__node">UI / Compose<small>LazyColumn</small></div>
+<div class="pipeline__arrow">→</div>
+<div class="pipeline__node">ViewModel<small>viewModelScope</small></div>
+<div class="pipeline__arrow">→</div>
+<div class="pipeline__node">Repository<small>suspend</small></div>
+<div class="pipeline__arrow">→</div>
+<div class="pipeline__node">Retrofit<small>interface</small></div>
+<div class="pipeline__arrow">→</div>
+<div class="pipeline__node">Web API<small>JSON</small></div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Add dependencies + the INTERNET permission</h4>
+<p>In the module <code>build.gradle.kts</code> (the starter already has these; show them):</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin DSL · build.gradle.kts</span>
+<pre><code>plugins {
+    // The serialization plugin version must match your Kotlin version.
+    kotlin("plugin.serialization") version "2.2.20"
+}
+
+dependencies {
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    // Official converter, now shipped by Square inside Retrofit 3 (was the com.jakewharton artifact pre-3.0).
+    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:3.0.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.3.0") // see HTTP in Logcat
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+}</code></pre>
+</div>
+<p>And in <code>AndroidManifest.xml</code> add <code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code>. <strong>Say it:</strong> "Forget this line and nothing downloads."</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ⓘ</span>
+<div class="callout__body">
+<span class="callout__label">Why these versions</span>
+<p><strong>Retrofit 3.x is binary-compatible with 2.x</strong> — the same <code>@GET</code>/<code>suspend</code>
+                  API you'd learn in any 2.x tutorial — so the upgrade is a one-line version bump. The big change is that
+                  Retrofit now ships its own first-party <code>converter-kotlinx-serialization</code> (you no longer add
+                  the older third-party <code>com.jakewharton…</code> artifact), and it pulls a current Kotlin/OkHttp in
+                  transitively. Keep the <code>plugin.serialization</code> version equal to your Kotlin version, or the
+                  build fails.</p>
+</div>
+</div>
+</li>
+<li class="step">
+<h4>Model the JSON as data classes</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · model/Quote.kt</span>
+<pre><code>import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class QuoteResponse(val count: Int, val results: List&lt;Quote&gt;)
+
+@Serializable
+data class Quote(
+    @SerialName("_id") val id: String,
+    val content: String,
+    val author: String,
+    val tags: List&lt;String&gt; = emptyList()
+)</code></pre>
+</div>
+<p><strong>Show:</strong> open the API URL in a browser, point at the JSON, and trace each key to a field.</p>
+</li>
+<li class="step">
+<h4>Define the Retrofit service interface</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · network/QuoteApiService.kt</span>
+<pre><code>import retrofit2.http.GET
+import retrofit2.http.Query
+
+interface QuoteApiService {
+    @GET("quotes")
+    suspend fun getQuotes(@Query("limit") limit: Int = 20): QuoteResponse
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Build the Retrofit singleton (with logging)</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · network/QuoteApi.kt</span>
+<pre><code>import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+
+private const val BASE_URL = "https://api.quotable.io/"
+private val json = Json { ignoreUnknownKeys = true }
+
+private val client = OkHttpClient.Builder()
+    .addInterceptor(HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY  // print requests/responses to Logcat
+    })
+    .build()
+
+object QuoteApi {
+    val service: QuoteApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(client)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create(QuoteApiService::class.java)
+    }
+}</code></pre>
+</div>
+<p><strong>Worth doing:</strong> the logging interceptor is a superpower — you'll
+            <em>see</em> the raw HTTP in Logcat, which demystifies the whole thing.</p>
+</li>
+<li class="step">
+<h4>Add a thin repository</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · data/QuoteRepository.kt</span>
+<pre><code>interface QuoteRepository {
+    suspend fun getQuotes(limit: Int = 20): List&lt;Quote&gt;
+}
+
+class NetworkQuoteRepository(
+    private val service: QuoteApiService = QuoteApi.service
+) : QuoteRepository {
+    override suspend fun getQuotes(limit: Int): List&lt;Quote&gt; =
+        service.getQuotes(limit).results
+}</code></pre>
+</div>
+<p><strong>Say it:</strong> "The ViewModel doesn't know it's Retrofit — it just asks the repository for
+            quotes. That's the seam that lets us swap in a fake/local repo for tests or offline class."</p>
+</li>
+<li class="step">
+<h4>Create the sealed UI state + ViewModel</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · ui/QuoteViewModel.kt</span>
+<pre><code>import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.io.IOException
+
+sealed interface QuoteUiState {
+    data object Loading : QuoteUiState
+    data class Success(val quotes: List&lt;Quote&gt;) : QuoteUiState
+    data class Error(val message: String) : QuoteUiState
+}
+
+class QuoteViewModel(
+    private val repository: QuoteRepository = NetworkQuoteRepository()
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow&lt;QuoteUiState&gt;(QuoteUiState.Loading)
+    val uiState: StateFlow&lt;QuoteUiState&gt; = _uiState.asStateFlow()
+
+    init { loadQuotes() }
+
+    fun loadQuotes() {
+        _uiState.value = QuoteUiState.Loading
+        viewModelScope.launch {
+            _uiState.value = try {
+                QuoteUiState.Success(repository.getQuotes())
+            } catch (e: IOException) {
+                QuoteUiState.Error("No internet connection. Check your network and retry.")
+            } catch (e: Exception) {
+                QuoteUiState.Error("Couldn't load quotes: ${e.message}")
+            }
+        }
+    }
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Wire it into Compose &amp; RUN (first checkpoint)</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · ui/QuoteScreen.kt</span>
+<pre><code>import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+
+@Composable
+fun QuoteRoute(viewModel: QuoteViewModel = viewModel()) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    QuoteScreen(uiState = uiState, onRetry = viewModel::loadQuotes)
+}</code></pre>
+</div>
+<p><strong>Expected result:</strong> spinner flashes, then a list of quote cards appears. Open Logcat —
+            you'll see the <code>GET</code> and the JSON body printed by the interceptor.</p>
+</li>
+<li class="step">
+<h4>Build the LazyColumn + card</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · QuoteList &amp; QuoteCard</span>
+<pre><code>@Composable
+fun QuoteList(quotes: List&lt;Quote&gt;, modifier: Modifier = Modifier) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(quotes, key = { it.id }) { quote -&gt; QuoteCard(quote) }
+    }
+}
+
+@Composable
+fun QuoteCard(quote: Quote) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text("“${quote.content}”", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(8.dp))
+            Text("— ${quote.author}", style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Demonstrate the LOADING state on a slow link</h4>
+<p>In Android Studio's <strong>Device Manager / emulator extended controls → Cellular</strong>, set the
+            network speed to <em>GSM/EDGE</em>, then re-run. The spinner is visible long enough to point at. Then set it
+            back to full.</p>
+</li>
+<li class="step">
+<h4>Demonstrate the ERROR state &amp; RUN (second checkpoint)</h4>
+<p>Enable <strong>Airplane mode</strong> on the emulator and tap Retry (or relaunch). The UI shows the error
+            message + Retry button. Turn airplane mode off, tap Retry → the list returns. <strong>This is the
+            money moment</strong> — it proves the sealed-state design.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">✅</span>
+<div class="callout__body">
+<span class="callout__label">Recap line to leave on screen</span>
+<p>"UI → ViewModel (viewModelScope) → Repository (suspend) → Retrofit (interface) → Web API →
+                JSON → data class → StateFlow → Compose <code>when</code>." That sentence is the whole lesson.</p>
+</div>
+</div>
+</li>
+</ol>
+</section>
+<!-- ==============================================================
+           8. HANDS-ON LAB
+      =============================================================== -->
+<section aria-labelledby="lab-h" class="slide" id="lab">
+<h2 id="lab-h">Hands-On Lab — API Consumer App</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<h3 class="card__title">Goal</h3>
+<p>Build (or extend) an app that fetches data from a <strong>free public JSON API</strong>, parses it into
+            Kotlin data classes, and displays the results in a <code>LazyColumn</code> with working
+            <strong>loading</strong> and <strong>error</strong> states.</p>
+<p class="muted">Pick one endpoint (no API key needed):</p>
+<ul>
+<li><strong>Quotes</strong> — <code>https://api.quotable.io/quotes?limit=20</code></li>
+<li><strong>Countries</strong> — <code>https://restcountries.com/v3.1/all?fields=name,capital,flags</code></li>
+<li><strong>Weather (Open-Meteo, no key)</strong> — <code>https://api.open-meteo.com/v1/forecast?latitude=28.5&amp;longitude=-81.4&amp;current=temperature_2m</code></li>
+</ul>
+</div>
+<div class="card card--teal">
+<h3 class="card__title">✅ Done when (your self-check)</h3>
+<p class="muted" style="margin-top:0;">Check each off as you go — your progress is saved on this device.</p>
+<ul class="checklist" id="s10-lab">
+<li><code>&lt;uses-permission … INTERNET /&gt;</code> is in the manifest and Gradle sync is green.</li>
+<li>The JSON is modeled as <code>@Serializable</code> data class(es); odd keys use <code>@SerialName</code> and optional fields have defaults/nullable types.</li>
+<li>A Retrofit <code>interface</code> + a <code>by lazy</code> singleton call the endpoint (BASE_URL ends with <code>/</code>; path doesn't start with one).</li>
+<li>A repository hides Retrofit; the ViewModel exposes <code>StateFlow&lt;UiState&gt;</code> and loads in <code>init</code>.</li>
+<li>The call is wrapped in try/catch with a distinct <code>IOException</code> branch (no crash when offline).</li>
+<li>Compose renders all three states via <code>when(uiState)</code>: spinner → list in a <code>LazyColumn</code> → error + Retry.</li>
+<li>Airplane-mode test passes: error view shows offline, Retry recovers when the network returns.</li>
+</ul>
+</div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Set up: permission + dependencies</h4>
+<p>Confirm <code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code> is in the manifest
+            and the Retrofit/converter dependencies are synced. <strong>Starter hint:</strong> if Gradle sync fails,
+            check you added <code>kotlin("plugin.serialization")</code>.</p>
+</li>
+<li class="step">
+<h4>Inspect the JSON, then model it</h4>
+<p>Open your endpoint in a browser. Write only the data classes you need; annotate keys that aren't valid
+            Kotlin identifiers (e.g., <code>@SerialName("_id")</code>). Give optional fields defaults.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">RestCountries note</span>
+<p>That endpoint returns a top-level <em>array</em>, so your service returns
+                <code>List&lt;Country&gt;</code> directly (no wrapper class). <code>name</code> is a nested object —
+                model it as <code>data class Name(val common: String)</code>.</p>
+</div>
+</div>
+</li>
+<li class="step">
+<h4>Retrofit interface + singleton</h4>
+<p>Mirror the live-coding pattern. Remember: <strong>BASE_URL ends with</strong> <code>/</code>, path does not start with one.</p>
+</li>
+<li class="step">
+<h4>Repository + ViewModel + sealed state</h4>
+<p>Expose <code>StateFlow&lt;UiState&gt;</code>; load in <code>init</code>; wrap the call in try/catch with a
+            distinct <code>IOException</code> branch.</p>
+</li>
+<li class="step">
+<h4>Compose UI for all three states</h4>
+<p>Collect with <code>collectAsStateWithLifecycle()</code>, then <code>when (uiState)</code> → spinner /
+            list / error+retry. <strong>Expected result:</strong> launch shows a spinner, then your live data fills a
+            scrollable list.</p>
+</li>
+<li class="step">
+<h4>Prove your error handling</h4>
+<p>Toggle airplane mode on the emulator, relaunch or hit Retry, confirm the error view shows, then toggle
+            off and retry to recover. <strong>Done = green checklist above.</strong></p>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting (most common → fix)</span>
+<ul style="margin:.3em 0 0;">
+<li><strong>Nothing loads / <code>SecurityException</code>:</strong> missing <code>INTERNET</code>
+              permission. #1 cause.</li>
+<li><strong><code>IllegalArgumentException: baseUrl must end in /</code>:</strong> add the trailing slash;
+              remove leading slash from the <code>@GET</code> path.</li>
+<li><strong><code>MissingFieldException</code> / parse crash:</strong> a non-null field is absent in the
+              JSON. Make it nullable or add a default; set <code>Json { ignoreUnknownKeys = true }</code>.</li>
+<li><strong><code>NetworkOnMainThreadException</code>:</strong> the call isn't <code>suspend</code> /
+              isn't inside <code>viewModelScope.launch</code>.</li>
+<li><strong>CLEARTEXT not permitted:</strong> you used <code>http://</code>. Use <code>https://</code>.</li>
+<li><strong>Emulator can't reach the internet:</strong> cold-boot the emulator, or toggle its Wi-Fi;
+              verify by opening a site in the emulator browser. Last resort: switch to the local-JSON fake repo.</li>
+</ul>
+</div>
+</div>
+<div class="grid grid-2">
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Stretch goal</span>
+<p>Add a <strong>search/filter query param</strong> (e.g., <code>@Query("tags") tag: String?</code> or a
+              country name search) wired to a Compose <code>TextField</code> that re-triggers the load; <em>or</em> add
+              <strong>pull-to-refresh</strong> with <code>PullToRefreshBox</code> that calls
+              <code>viewModel.loadQuotes()</code>.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ==============================================================
+           9. ASSESSMENTS TODAY
+      =============================================================== -->
+<section aria-labelledby="assess-h" class="slide">
+<h2 id="assess-h">Assessments Today</h2>
+<div class="grid grid-2">
+<div class="card card--teal">
+<h3 class="card__title">Async Activity 3 <span class="badge badge--amber">assigned</span></h3>
+<p><strong>Unit 5 — Connect to the internet.</strong> Assigned at wrap-up, completed before the next session.
+            Link in <a href="#hw">Homework</a>.</p>
+</div>
+</div>
+<h3>Optional 60-second self-check</h3>
+<p class="muted">Project on screen during the break or assign as a 0-stakes confidence check. Answers reveal only after Submit.</p>
+<div data-quiz="s10-quiz" data-topic="networking"></div>
+<script id="s10-quiz" type="application/json">
+        {
+          "title": "Session 10 self-check — Networking & Retrofit",
+          "intro": "Five quick questions. 70% to pass. For your own understanding.",
+          "passingScore": 0.7,
+          "shuffle": false,
+          "questions": [
+            {
+              "id": "thread",
+              "type": "single",
+              "prompt": "Where should a Retrofit network call actually execute?",
+              "options": [
+                { "id": "a", "text": "On the main/UI thread for simplicity" },
+                { "id": "b", "text": "On a background dispatcher, launched from a coroutine (e.g., viewModelScope)" },
+                { "id": "c", "text": "Inside the composable's body during recomposition" },
+                { "id": "d", "text": "In Application.onCreate so it runs once" }
+              ],
+              "correct": ["b"],
+              "explanation": "Network I/O must be off the main thread. A suspend function launched in viewModelScope lets Retrofit run the call on a background dispatcher without blocking the UI or leaking work."
+            },
+            {
+              "id": "perm",
+              "type": "truefalse",
+              "prompt": "An app must declare the INTERNET permission in the manifest before it can make network requests.",
+              "correct": true,
+              "explanation": "Yes. <uses-permission android:name=\"android.permission.INTERNET\" /> is required. It's a normal permission, so there is no runtime prompt — but omit it and requests fail."
+            },
+            {
+              "id": "status",
+              "type": "single",
+              "prompt": "A request comes back with status 404. What does that indicate?",
+              "options": [
+                { "id": "a", "text": "Success — data is in the body" },
+                { "id": "b", "text": "A server crash on their side" },
+                { "id": "c", "text": "A client error — the resource/URL was not found" },
+                { "id": "d", "text": "The device has no internet" }
+              ],
+              "correct": ["c"],
+              "explanation": "4xx = client error. 404 means the requested resource/URL doesn't exist. 5xx would be a server-side problem; no internet typically surfaces as an IOException, not an HTTP status."
+            },
+            {
+              "id": "states",
+              "type": "multi",
+              "prompt": "Which UI states should a screen that loads data over the network model? (Select all.)",
+              "options": [
+                { "id": "a", "text": "Loading" },
+                { "id": "b", "text": "Success (with data)" },
+                { "id": "c", "text": "Error (with a retry)" },
+                { "id": "d", "text": "Compiling" }
+              ],
+              "correct": ["a", "b", "c"],
+              "explanation": "Model Loading, Success(data), and Error(message) — typically with a sealed interface so the Compose when() is exhaustive. 'Compiling' is not a runtime UI state."
+            },
+            {
+              "id": "annotation",
+              "type": "short",
+              "prompt": "What annotation maps a JSON key like \"_id\" to a differently-named Kotlin property when using kotlinx.serialization? (One word/identifier.)",
+              "correct": ["SerialName", "@SerialName"],
+              "explanation": "@SerialName(\"_id\") renames the property for (de)serialization. Moshi uses @Json(name=...); Gson uses @SerializedName(...)."
+            }
+          ]
+        }
+        </script>
+</section>
+<!-- ==============================================================
+           10. DISCUSSION BOARD PROMPT
+      =============================================================== -->
+<section aria-labelledby="disc-h" class="slide" id="discussion">
+<h2 id="disc-h">Discussion Board Prompt</h2>
+<div class="card card--teal">
+<h3 class="card__title">This week's prompt — "An API for my app"</h3>
+<blockquote>
+<p>Identify <strong>one real, free web API</strong> you could integrate into <em>your</em> course project
+            (it can be the one your project actually needs). In your post:</p>
+<ol>
+<li>Name the API and link its docs; give the exact <strong>endpoint URL</strong> you'd call and the HTTP
+              <strong>verb</strong>.</li>
+<li>Paste a <strong>small slice of its JSON</strong> response and sketch the Kotlin <code>data class</code>(es)
+              you'd map it to.</li>
+<li>Explain how you'd handle the <strong>error/loading states</strong> in your UI, and which status codes
+              you'd specifically watch for.</li>
+</ol>
+</blockquote>
+
+</div>
+</section>
+<!-- ==============================================================
+           11. HOMEWORK / NEXT CLASS
+      =============================================================== -->
+<section aria-labelledby="hw-h" class="slide" id="hw">
+<h2 id="hw-h">Homework &amp; Next Class</h2>
+<div class="grid grid-3">
+<div class="card card--accent">
+<h3 class="card__title">Async activity</h3>
+<ul>
+<li><strong>Async Activity 3 — Connect to the internet</strong><br/>
+<a href="https://developer.android.com/courses/android-basics-compose/unit-5" rel="noopener" target="_blank">developer.android.com · Unit 5</a></li>
+</ul>
+<p class="muted">Due before Session 11.</p>
+</div>
+<div class="card card--teal">
+<h3 class="card__title">Reading</h3>
+<ul>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-5" rel="noopener" target="_blank">Connect to the Internet (Unit 5)</a></li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/course" rel="noopener" target="_blank">Android Basics with Compose — full course</a></li>
+<li><a href="https://developer.android.com" rel="noopener" target="_blank">Android Code Samples (developer.android.com)</a></li>
+</ul>
+</div>
+<div class="card card--amber">
+<h3 class="card__title">Project task</h3>
+<ul>
+<li><strong>Integrate a network call into YOUR project.</strong> Add a Retrofit service + repository and
+              show <em>some</em> remote data on a screen with loading/error states.</li>
+</ul>
+<p class="muted">This satisfies the required Final-Project feature: <em>"data from a web API over the
+            network."</em></p>
+</div>
+</div>
+<div class="card mt">
+<h3 class="card__title">Looking ahead — Session 11</h3>
+<p>Next session brings the pieces together for the Final Project: combining the network layer with
+          <strong>local persistence</strong> (Room/DataStore from Week-3 work) for offline caching, polishing
+          architecture (ViewModel + repository), and prepping the demo. Bring your project with today's network call
+          working. <a href="session-11.html">Preview Session 11 ›</a></p>
+</div>
+</section>
+<!-- ==============================================================
+           12. MASTER IT — worked example, misconceptions, production, retrieval
+      =============================================================== -->
+<section aria-labelledby="master-h" class="card slide" id="master-it">
+<h2 class="card__title" id="master-h" style="margin-top:0;">🧠 Master it — turn the network layer into a reflex</h2>
+<p class="muted" style="max-width:72ch;">
+        The hardest part of networking isn't the happy path — it's the <em>edge</em>: the request that
+        fails, the body that's empty, the exception that escapes. Below you'll build the one piece of
+        logic that decides everything downstream — the function that turns a <code>Result</code> into a
+        <strong>UI state</strong> — first by watching it worked out, then by writing it yourself with the
+        playground checking every case.
+      </p>
+<!-- ----- 1. WORKED EXAMPLE → FADED ----- -->
+<h3>Worked example: the <code>Result&lt;T&gt; → UiState</code> reducer</h3>
+<p>
+        Notice the seam in the live-coding ViewModel: the repository did the network call, and the
+        ViewModel turned the outcome into <code>Loading / Success / Error</code>. A senior engineer pulls
+        that decision into <strong>one pure function</strong> — no Android, no Retrofit, no coroutine —
+        so it is trivial to reason about and to test. Let's reason through it step by step.
+      </p>
+<ol class="stepper">
+<li class="step">
+<h4>Model the four states explicitly (add <code>Empty</code>)</h4>
+<p>
+            A real network screen has <strong>four</strong> states, not three. A request can succeed and
+            still hand back <em>zero rows</em> — "200 OK, here are your zero photos." Rendering an empty
+            <code>LazyColumn</code> looks identical to a bug ("did it even load?"). Give emptiness its own
+            state so the UI can say <em>"Nothing here yet."</em></p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · the four-state model</span>
+<pre><code>sealed interface UiState {
+    data object Loading : UiState
+    data object Empty : UiState                      // 200 OK, but zero rows
+    data class Success(val photos: List&lt;Photo&gt;) : UiState
+    data class Error(val message: String) : UiState
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Decide what each branch of <code>Result</code> becomes</h4>
+<p>
+            The repository returns <code>Result&lt;List&lt;Photo&gt;&gt;</code> (the idiomatic Kotlin
+            wrapper). Reducing it is a four-line decision: success-with-rows → <code>Success</code>;
+            success-with-no-rows → <code>Empty</code>; failure → <code>Error</code> with a message that
+            <em>matches the cause</em>. That last point is the whole game: an <code>IOException</code>
+            (you're offline) deserves a different message and a <em>retry</em>, while an
+            <code>HttpException</code> (the server answered, badly) usually should not be blindly retried.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · the reducer (read it, predict its output)</span>
+<pre><code>fun reduce(result: Result&lt;List&lt;Photo&gt;&gt;): UiState =
+    result.fold(
+        onSuccess = { photos -&gt;
+            if (photos.isEmpty()) UiState.Empty
+            else UiState.Success(photos)
+        },
+        onFailure = { e -&gt;
+            UiState.Error(
+                when (e) {
+                    is IOException   -&gt; "You appear to be offline. Tap Retry."
+                    is HttpException -&gt; "Server error (HTTP ${'$'}{e.code()}). Try again later."
+                    else             -&gt; "Something went wrong: ${'$'}{e.message}"
+                }
+            )
+        }
+    )</code></pre>
+</div>
+<p class="muted">
+            This mirrors the canonical taxonomy used in the
+            <a href="../labs/retrofit-flow.html">Retrofit-flow lab</a>: <code>IOException</code> = never
+            reached the server (retryable); <code>HttpException</code> = reached it, got a non-2xx
+            (don't blindly retry); generic last.
+          </p>
+</li>
+</ol>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🔮</span>
+<div class="callout__body">
+<span class="callout__label">Predict, then run</span>
+<p>
+            Before you press Run below: what should <code>reduce</code> return for an
+            <em>empty</em> success list? For an <code>IOException</code>? Say it out loud, then confirm.
+          </p>
+</div>
+</div>
+<!-- Runnable worked example so the reasoning is verifiable -->
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable — the worked reducer in action</div>
+<pre><code>// A tiny stand-in for the real exceptions (the JVM playground has no Retrofit on its classpath).
+class IOException(msg: String) : Exception(msg)
+class HttpException(val codeValue: Int) : Exception("HTTP ${'$'}codeValue") {
+    fun code() = codeValue
+}
+
+data class Photo(val id: Int, val title: String)
+
+sealed interface UiState {
+    data object Loading : UiState
+    data object Empty : UiState
+    data class Success(val photos: List&lt;Photo&gt;) : UiState
+    data class Error(val message: String) : UiState
+}
+
+fun reduce(result: Result&lt;List&lt;Photo&gt;&gt;): UiState =
+    result.fold(
+        onSuccess = { photos -&gt;
+            if (photos.isEmpty()) UiState.Empty else UiState.Success(photos)
+        },
+        onFailure = { e -&gt;
+            UiState.Error(
+                when (e) {
+                    is IOException   -&gt; "You appear to be offline. Tap Retry."
+                    is HttpException -&gt; "Server error (HTTP ${'$'}{e.code()}). Try again later."
+                    else             -&gt; "Something went wrong: ${'$'}{e.message}"
+                }
+            )
+        }
+    )
+
+fun main() {
+    println(reduce(Result.success(listOf(Photo(1, "sunset")))))
+    println(reduce(Result.success(emptyList())))
+    println(reduce(Result.failure(IOException("no network"))))
+    println(reduce(Result.failure(HttpException(503))))
+}</code></pre>
+</div>
+<h3>Now you: finish the faded version <span class="badge badge--green">auto-checked</span></h3>
+<p>
+        Same idea, but the decision logic is blanked out. Fill in the <code>// YOUR CODE</code> region so
+        every case prints <code>✓ passed</code>. Press <strong>Run</strong> for immediate feedback — green
+        across the board means you own this pattern.
+      </p>
+<div class="codeblock" data-challenge="s10-parse-state" data-run="kotlin" data-topic="networking">
+<div class="codeblock__lang">Kotlin · runnable challenge — map outcomes to UiState</div>
+<pre><code>class IOException(msg: String) : Exception(msg)
+class HttpException(val codeValue: Int) : Exception("HTTP ${'$'}codeValue") {
+    fun code() = codeValue
+}
+
+data class Photo(val id: Int, val title: String)
+
+sealed interface UiState {
+    data object Loading : UiState
+    data object Empty : UiState
+    data class Success(val photos: List&lt;Photo&gt;) : UiState
+    data class Error(val message: String) : UiState
+}
+
+fun reduce(result: Result&lt;List&lt;Photo&gt;&gt;): UiState {
+    // YOUR CODE — return the right UiState for each outcome:
+    //   • success with a non-empty list -&gt; Success(thatList)
+    //   • success with an empty list    -&gt; Empty
+    //   • failure that is an IOException   -&gt; Error("offline")
+    //   • failure that is an HttpException -&gt; Error("http " + code), e.g. Error("http 404")
+    //   • any other failure                -&gt; Error("other")
+    return UiState.Loading // &lt;- replace this
+}
+
+// ---- test harness (do not edit) ----
+fun main() {
+    var passed = 0
+    var failed = 0
+    fun check(name: String, expected: UiState, actual: UiState) {
+        if (expected == actual) { passed++; println("✓ passed: ${'$'}name") }
+        else { failed++; println("✗ FAILED: ${'$'}name — expected ${'$'}expected, got ${'$'}actual") }
+    }
+
+    check(
+        "non-empty success -&gt; Success",
+        UiState.Success(listOf(Photo(1, "a"))),
+        reduce(Result.success(listOf(Photo(1, "a"))))
+    )
+    check("empty success -&gt; Empty", UiState.Empty, reduce(Result.success(emptyList())))
+    check(
+        "IOException -&gt; Error(offline)",
+        UiState.Error("offline"),
+        reduce(Result.failure(IOException("x")))
+    )
+    check(
+        "HttpException(404) -&gt; Error(http 404)",
+        UiState.Error("http 404"),
+        reduce(Result.failure(HttpException(404)))
+    )
+    check(
+        "generic failure -&gt; Error(other)",
+        UiState.Error("other"),
+        reduce(Result.failure(IllegalStateException("boom")))
+    )
+
+    println()
+    if (failed == 0) println("ALL TESTS PASSED 🎉") else println("${'$'}failed case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>
+              Use <code>result.fold(onSuccess = { ... }, onFailure = { ... })</code>. Inside
+              <code>onSuccess</code>, branch on <code>it.isEmpty()</code>. Inside <code>onFailure</code>,
+              branch with <code>when (it) { is IOException -&gt; …; is HttpException -&gt; …; else -&gt; … }</code>.
+              The exact strings the harness expects: <code>"offline"</code>, <code>"http "</code> +
+              <code>code()</code>, and <code>"other"</code>.
+            </p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · one idiomatic solution</span>
+<pre><code>fun reduce(result: Result&lt;List&lt;Photo&gt;&gt;): UiState =
+    result.fold(
+        onSuccess = { if (it.isEmpty()) UiState.Empty else UiState.Success(it) },
+        onFailure = {
+            UiState.Error(
+                when (it) {
+                    is IOException   -&gt; "offline"
+                    is HttpException -&gt; "http ${'$'}{it.code()}"
+                    else             -&gt; "other"
+                }
+            )
+        }
+    )</code></pre>
+</div>
+<p class="muted">
+              The real app would put richer, user-facing strings in those branches — but the
+              <em>shape</em> (offline → retry, http code → don't-blind-retry, else → generic) is exactly
+              what production code does.
+            </p>
+</div></div>
+</div>
+</div>
+<!-- ----- 2. MISCONCEPTIONS ----- -->
+<h3>Common misconceptions &amp; pitfalls</h3>
+<p class="muted">Each of these has bitten real Android apps in production. Recognize the wrong mental model so you never ship it.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">1 · "Any failure means the user has no internet."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> a single <code>catch (e: Exception)</code> with the message "No internet connection."</p>
+<p><strong>Why it's wrong:</strong> "no internet" is only the <code>IOException</code> case — the
+              request never reached the server. A <code>404</code> (wrong URL), <code>401</code> (bad/expired
+              auth), or <code>500</code> (their bug) all <em>reached</em> the server and come back as a
+              Retrofit <code>HttpException</code>, not an <code>IOException</code>.</p>
+<p><strong>Correct model:</strong> catch <code>IOException</code> first (offline → show
+              <em>Retry</em>), then <code>HttpException</code> (read <code>e.code()</code>; a 4xx is usually
+              <em>your</em> bug to fix, not something to spam-retry), then a generic last resort.</p>
+<p><strong>Symptom you'd see:</strong> a tester on perfect Wi-Fi reports "it says I'm offline" — because
+              your code mislabeled a <code>500</code> as a connectivity problem, and your Retry button just
+              re-hits the same broken endpoint forever.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">2 · "<code>suspend</code> automatically means the work runs off the main thread."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> "I marked it <code>suspend</code>, so it can't block the UI."</p>
+<p><strong>Why it's wrong:</strong> <code>suspend</code> only means the function <em>can</em> suspend; it
+              does not by itself move work to a background thread. <code>viewModelScope</code> launches on
+              <code>Dispatchers.Main</code>. Retrofit's generated <code>suspend</code> functions are
+              <em>main-safe</em> (they internally switch to a background dispatcher), which is why the
+              live-coding code is correct. But if you do your own CPU/IO work — parsing a huge string, reading
+              a file — inside that coroutine, it runs on Main and freezes the UI.</p>
+<p><strong>Correct model:</strong> wrap your own blocking work in
+              <code>withContext(Dispatchers.IO) { … }</code>. Trust Retrofit/Room to be main-safe; don't trust
+              your own loops.</p>
+<p><strong>Symptom you'd see:</strong> the spinner appears, the screen jank-freezes for a beat on a big
+              response, and on slower devices you get an ANR — even though "everything is <code>suspend</code>."</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">3 · "A non-null Kotlin field is safe because the API always sends it."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> <code>data class Photo(val title: String)</code> — "the docs say
+              <code>title</code> is always there."</p>
+<p><strong>Why it's wrong:</strong> JSON is dynamically typed and APIs change. The day the server omits
+              <code>title</code> or sends <code>null</code>, kotlinx.serialization throws a
+              <code>MissingFieldException</code> at <em>parse</em> time — which surfaces as a thrown exception
+              from your Retrofit call, crashing your "Success" path you assumed was safe.</p>
+<p><strong>Correct model:</strong> model truly-optional fields as nullable (<code>val title: String?</code>)
+              or give them a default (<code>val tags: List&lt;String&gt; = emptyList()</code>), and set
+              <code>Json { ignoreUnknownKeys = true }</code> so <em>extra</em> fields are skipped (extra keys
+              are fine; <em>missing required</em> keys are the killer).</p>
+<p><strong>Symptom you'd see:</strong> the app works for weeks, then crashes for a subset of users whose
+              data happens to be missing one field — a "works on my machine" bug that's brutal to reproduce.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">4 · "I'll let the ViewModel call Retrofit directly — the repository is boilerplate."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> inject <code>QuoteApiService</code> straight into the ViewModel and
+              call <code>service.getQuotes()</code> from <code>viewModelScope</code>.</p>
+<p><strong>Why it's wrong:</strong> the ViewModel now knows about HTTP, DTOs, and exceptions. You can't
+              swap in a fake for offline work, you can't add caching (Session 11's offline-first), and the
+              ViewModel grows two jobs: networking <em>and</em> state. That seam is exactly where Session 11
+              inserts the local-database source of truth.</p>
+<p><strong>Correct model:</strong> the repository owns "where data comes from" and returns clean domain
+              types (or <code>Result&lt;T&gt;</code>); the ViewModel owns "what state the screen is in." Keep
+              network DTOs out of the ViewModel entirely.</p>
+<p><strong>Symptom you'd see:</strong> when you try to add caching or write a quick fake for class, you
+              have to rewrite the ViewModel — and the test/offline path becomes "just trust the network."</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">5 · "An exception thrown in a coroutine just gets logged — the UI is fine."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> set state to <code>Loading</code>, call the network, set
+              <code>Success</code> — and assume a failure "doesn't matter, it'll just not update."</p>
+<p><strong>Why it's wrong:</strong> if the call throws and you never catch it, the line that sets
+              <code>Success</code> never runs, so the state is stuck on <code>Loading</code> <em>forever</em>.
+              Worse, an uncaught exception in <code>viewModelScope</code> can crash the app.</p>
+<p><strong>Correct model:</strong> always reach a <em>terminal</em> state. Wrap the call in try/catch (or
+              <code>runCatching</code> → <code>Result</code>) and map <em>every</em> outcome — success, empty,
+              and each failure — to a concrete <code>UiState</code>. The <code>reduce</code> function above
+              guarantees this: there is no path out of it that isn't a real state.</p>
+<p><strong>Symptom you'd see:</strong> a spinner that never stops. Users force-quit; you can't reproduce it
+              because your network never fails on your desk.</p>
+</div></div>
+</div>
+</div>
+<!-- ----- 3. IN PRODUCTION ----- -->
+<h3>In production</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">How a senior engineer actually wires this</span>
+<p>
+            The repository never lets a raw exception leak to the ViewModel. It wraps the call in
+            <code>runCatching { … }</code> and returns a <code>Result&lt;T&gt;</code> (or a sealed
+            <code>NetworkResult</code>); the ViewModel <code>fold</code>s that into the sealed
+            <code>UiState</code> — the exact <code>reduce</code> pattern you just wrote. One
+            <code>OkHttpClient</code> / one <code>Retrofit</code> instance is built once and shared
+            (a singleton via <code>by lazy</code>), because creating one per call leaks connection pools and
+            thread pools. The current converter coordinate is
+            <code>com.squareup.retrofit2:converter-kotlinx-serialization</code>, now first-party in Retrofit 3
+            (the same one used in the <a href="../labs/retrofit-flow.html">Retrofit-flow lab</a>); the older
+            <code>com.jakewharton…</code> artifact still works on 2.x but Square folded it into Retrofit itself.
+            And <code>Json { ignoreUnknownKeys = true }</code> is non-negotiable — servers add fields you didn't
+            model all the time, and without it your app crashes the day they ship a new feature.
+          </p>
+<p class="mt" style="margin-bottom:0;">
+<strong>Tasteful gotcha:</strong> a Retrofit <code>suspend fun</code> that returns
+            <code>List&lt;Photo&gt;</code> directly throws <code>HttpException</code> on a non-2xx; but if you
+            declare it as <code>Response&lt;List&lt;Photo&gt;&gt;</code> instead, a 404 does <em>not</em> throw
+            — you get a <code>Response</code> with <code>isSuccessful == false</code>, and forgetting to check
+            that is how a "successful" call silently delivers <code>null</code>/empty data. Pick one style and
+            be deliberate: bare body (exceptions) is simplest for this course.
+          </p>
+</div>
+</div>
+<!-- ----- 4. RETRIEVAL CHECK ----- -->
+<h3>Retrieval check</h3>
+<p class="muted">
+        Application questions, not recall — work out the answer before you reveal it. This is your own
+        self-check — just for you.
+      </p>
+<div data-quiz="rc-10" data-topic="networking"></div>
+<script id="rc-10" type="application/json">
+        {
+          "title": "Retrieval check — make the call, handle the failure",
+          "intro": "Six applied scenarios. Reason it through, then check. Aim to explain WHY, not just pick.",
+          "passingScore": 0.7,
+          "shuffle": false,
+          "questions": [
+            {
+              "id": "rc10-classify",
+              "type": "single",
+              "prompt": "Your repository calls a Retrofit suspend fun and the server responds 500 Service Error. Which exception does the call throw, and what should the UI do?",
+              "options": [
+                { "id": "a", "text": "IOException → show 'you're offline' and auto-retry immediately" },
+                { "id": "b", "text": "HttpException → show a server-error message; a blind auto-retry is reasonable only with backoff" },
+                { "id": "c", "text": "MissingFieldException → the JSON model is wrong" },
+                { "id": "d", "text": "Nothing throws; you get an empty list" }
+              ],
+              "correct": ["b"],
+              "explanation": "A non-2xx response from a suspend body call throws HttpException (you can read e.code() == 500). The request DID reach the server, so it isn't an IOException. A 5xx is the server's fault and may be transient, so retry is OK — but with backoff, not a tight loop. IOException is the 'never reached the server / offline' case."
+            },
+            {
+              "id": "rc10-empty",
+              "type": "single",
+              "prompt": "Your call succeeds with HTTP 200 but the JSON array is []. With only Loading/Success/Error states, what does the user see — and what's the fix?",
+              "options": [
+                { "id": "a", "text": "An error screen; fix by treating empty as an error" },
+                { "id": "b", "text": "A blank list that looks like a bug; fix by adding a distinct Empty state" },
+                { "id": "c", "text": "The spinner forever; fix by removing the spinner" },
+                { "id": "d", "text": "A crash; fix with a null check" }
+              ],
+              "correct": ["b"],
+              "explanation": "200 + empty array is a SUCCESS with zero rows. Rendering an empty LazyColumn shows a blank screen that's indistinguishable from a failure. The fix is a fourth state — Empty — so the UI can say 'Nothing here yet.' That's the four-state model from the worked example."
+            },
+            {
+              "id": "rc10-stuck",
+              "type": "single",
+              "prompt": "A screen is permanently stuck on its spinner after a flaky network. Which mistake most likely caused it?",
+              "options": [
+                { "id": "a", "text": "The list had no key in items{}" },
+                { "id": "b", "text": "The network call threw and no catch set a terminal state, so it stayed Loading" },
+                { "id": "c", "text": "BASE_URL was missing a trailing slash" },
+                { "id": "d", "text": "ignoreUnknownKeys was set to true" }
+              ],
+              "correct": ["b"],
+              "explanation": "If the call throws and nothing maps the failure to Error, the line that sets Success never runs and the state stays Loading forever. Always reach a terminal state — try/catch every branch (or runCatching → fold). A missing key affects animation, not the spinner; a bad BASE_URL throws at build time, not mid-load."
+            },
+            {
+              "id": "rc10-thread",
+              "type": "single",
+              "prompt": "Inside viewModelScope.launch { } you call a main-safe Retrofit suspend fun, then run a heavy 50k-item transform on the result. Where does the heavy transform run, and is that a problem?",
+              "options": [
+                { "id": "a", "text": "On Dispatchers.IO automatically — no problem" },
+                { "id": "b", "text": "On Dispatchers.Main (where viewModelScope launches) — it can jank/ANR; wrap it in withContext(Dispatchers.IO)" },
+                { "id": "c", "text": "On a random thread — undefined behavior" },
+                { "id": "d", "text": "It can't run; suspend functions block heavy work" }
+              ],
+              "correct": ["b"],
+              "explanation": "viewModelScope launches on Dispatchers.Main. Retrofit's call is main-safe (it switches internally), but YOUR transform after it runs back on Main and can freeze the UI. Wrap your own CPU/IO work in withContext(Dispatchers.IO). 'suspend' alone does not move work off the main thread."
+            },
+            {
+              "id": "rc10-parse",
+              "type": "single",
+              "prompt": "Your data class is data class Photo(val id: Int, val title: String). For a few users the API omits \"title\". What happens, and what's the minimal correct fix?",
+              "options": [
+                { "id": "a", "text": "title becomes empty string \"\" — nothing to fix" },
+                { "id": "b", "text": "Parsing throws MissingFieldException → crash; make title nullable or give it a default" },
+                { "id": "c", "text": "ignoreUnknownKeys=true already handles it" },
+                { "id": "d", "text": "Retrofit retries the request automatically" }
+              ],
+              "correct": ["b"],
+              "explanation": "A required (non-null, no-default) field absent in the JSON makes kotlinx.serialization throw MissingFieldException at parse time, crashing the success path. ignoreUnknownKeys only skips EXTRA keys — it does nothing for a MISSING required key. Fix: val title: String? (nullable) or a default value."
+            },
+            {
+              "id": "rc10-seam",
+              "type": "multi",
+              "prompt": "Why put a repository between the ViewModel and Retrofit instead of calling the service directly? (Select all that apply.)",
+              "options": [
+                { "id": "a", "text": "So you can swap in a fake/local data source for offline work or quick checks" },
+                { "id": "b", "text": "So Session 11 can add a local database as the source of truth without touching the ViewModel" },
+                { "id": "c", "text": "So the ViewModel stays focused on UI state, not HTTP/DTOs/exceptions" },
+                { "id": "d", "text": "Because Retrofit refuses to be called from a ViewModel" }
+              ],
+              "correct": ["a", "b", "c"],
+              "explanation": "The repository is the seam that decouples 'where data comes from' from 'what state the screen is in.' It enables fakes/offline, lets you add caching (offline-first in Session 11) without rewriting the ViewModel, and keeps DTOs and exceptions out of the ViewModel. (d) is false — Retrofit has no such restriction; the repository is an architecture choice, not a requirement of the library."
+            }
+          ]
+        }
+        </script>
+<!-- ----- 5. DELIBERATE PRACTICE ----- -->
+<div class="callout callout--clo mt">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Deliberate practice — do these next, in order</span>
+<p>You've watched, you've written one reducer, you've self-tested. Now build the reflex with spaced, progressive reps:</p>
+<ol style="margin:.4em 0 0;">
+<li><strong>Challenge ladder →</strong> <a href="../practice/challenges.html">practice/challenges.html</a> —
+              do the <em>networking</em> rungs: JSON→data-class parse, the <code>@SerialName</code> map, the
+              <code>IOException</code>-vs-<code>HttpException</code> classifier, and the full
+              Loading/Success/Error/<strong>Empty</strong> state machine.</li>
+<li><strong>Debug drills →</strong> <a href="../practice/debug-drills.html">practice/debug-drills.html</a> —
+              hunt the seeded bugs: missing <code>INTERNET</code> permission, the main-thread ANR, no
+              Error/Empty branch, and a DTO field-name mismatch. Spot the line, predict the symptom, run the fix.</li>
+<li><strong>Spaced repetition →</strong> <a href="../practice/spaced-repetition.html">practice/spaced-repetition.html</a> —
+              add the networking deck and let the Leitner schedule resurface "IOException vs HttpException,"
+              "what does ignoreUnknownKeys do," and "why a repository" until they're automatic.</li>
+<li><strong>See where this fits →</strong> <a href="../path.html">the skill map</a> — Networking unlocks the
+              <em>Project</em> node. Get this green, then carry it into Session 11's offline-first repository.</li>
+</ol>
+<p class="muted" style="margin-bottom:0;">
+            You've got it when the auto-checked challenge above goes all-green <em>and</em> you score the
+            Retrieval check without revealing answers first — that's mastery, on your own terms.
+          </p>
+</div>
+</div>
+</section>
+</div><!-- /content col -->
+</div><!-- /layout-2col -->
+</main>
+<!-- ====================================================================
+       FOOTER
+  ===================================================================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Session 10 of 12 ·
+        Networking, REST APIs, JSON &amp; Retrofit
+      </div>
+<div class="muted">
+        Keiser University · B.S. Software Engineering · Jetpack Compose + Kotlin ·
+        <a href="../index.html">Course Hub</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

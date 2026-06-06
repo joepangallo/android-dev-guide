@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>COP4667 Pre-Test (Diagnostic Baseline)</title>
+<meta content="COP4667 Android Development — diagnostic pre-test administered in Session 1. A 19-question baseline across the whole course (Android ecosystem, Kotlin reading, Jetpack Compose, the Activity lifecycle, multi-screen navigation, local persistence, app architecture, networking/REST/JSON, and runtime permissions) so growth is measurable against the Session 12 post-test. No stakes; every question carries a full explanation so the page doubles as a study guide." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .pretest-layout { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 1040px) {
+      .pretest-layout { grid-template-columns: 230px 1fr; align-items: start; }
+      .pretest-rail { position: sticky; top: 76px; }
+    }
+    .pretest-rail .card { padding: var(--space-4); }
+    .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: var(--fs-xs); font-weight: 800; color: #9BE8C5; margin: 0 0 .35em; }
+    .lead { font-size: var(--fs-lg); color: var(--muted); }
+    .section-anchor { scroll-margin-top: 76px; }
+    /* domain coverage legend chips */
+    .domain-list { list-style: none; padding-left: 0; margin: var(--space-3) 0 0; display: grid; gap: var(--space-2); }
+    .domain-list > li { display: flex; gap: var(--space-3); align-items: baseline; padding: var(--space-2) 0; border-bottom: 1px dashed var(--line); }
+    .domain-list > li:last-child { border-bottom: none; }
+    .domain-list .qn { flex: 0 0 auto; font-family: var(--font-mono); font-weight: 800; font-size: var(--fs-xs); color: var(--teal-2); white-space: nowrap; }
+    [data-theme="dark"] .domain-list .qn { color: var(--green); }
+    .how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: var(--space-4); }
+    .figure-frame { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); padding: var(--space-4); font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.7; overflow-x: auto; white-space: pre; }
+    .score-grid th, .score-grid td { text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
+    .score-grid { width: 100%; border-collapse: collapse; }
+    .score-grid th { color: var(--teal-2); font-weight: 800; }
+    [data-theme="dark"] .score-grid th { color: var(--green); }
+    .score-grid td.mono { font-family: var(--font-mono); }
+  </style>
+</head>
+<body>
+<!-- ====================== TOP NAV ====================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 teaching guide home" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▶</span>
+<span>COP4667
+          <small>Android Development</small>
+</span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="../sessions/session-01.html">Session 1</a>
+<a aria-current="page" class="active" href="pre-test.html">Pre-Test</a>
+<a href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">🖥️ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ====================== HERO ====================== -->
+<section aria-labelledby="hero-title" class="hero slide section-anchor" id="top">
+<p class="eyebrow">Diagnostic · Administered Session 1 · Re-used as the Post-Test baseline (Session 12)</p>
+<h1 class="hero-title" id="hero-title">Pre-Test — Diagnostic Baseline</h1>
+<p class="hero-sub">A short-for-mastery snapshot of what you already know across the whole course — so by Week 4 we can <em>measure how far you have come</em>. Answer honestly; guessing only hides what we should teach you.</p>
+<div class="hero-meta">
+<span class="pill">📊 Diagnostic only</span>
+<span class="pill"><span class="clo-tag">CLO 1</span></span>
+<span class="pill"><span class="clo-tag">CLO 2</span></span>
+<span class="pill"><span class="clo-tag">CLO 3</span></span>
+<span class="pill"><span class="clo-tag">CLO 4</span></span>
+<span class="pill"><span class="clo-tag">CLO 5</span></span>
+<span class="pill"><span class="clo-tag">CLO 6</span></span>
+</div>
+</section>
+<div class="pretest-layout">
+<!-- ----- left rail: on-page index ----- -->
+<aside aria-label="On this page" class="pretest-rail no-print">
+<div class="card">
+<p class="card__title">On this page</p>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+</aside>
+<div class="pretest-main">
+<!-- ====================== HOW TO USE ====================== -->
+<section aria-labelledby="h-howto" class="slide section-anchor">
+<h2 id="h-howto">How to use this page</h2>
+<div class="card card--accent">
+<p class="lead">This is a <strong>diagnostic pre-test</strong>, not an exam. There is no penalty for a low score.</p>
+<div class="how-grid">
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Why we do it</span>
+<p>We capture a <strong>baseline</strong> today (Session 1). At the very end of the course (Session 12) you take the <strong>post-test</strong> — the same kind of questions — and the difference is the growth you can point to.</p>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">✅</span>
+<div class="callout__body">
+<span class="callout__label">How to answer</span>
+<p>Answer from what you actually know. If you have never seen Kotlin or Compose, that is completely expected — <strong>"I don't know" is useful data.</strong> Make your best guess rather than leaving it blank, but don't look anything up while taking it.</p>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">📚</span>
+<div class="callout__body">
+<span class="callout__label">It becomes a study guide</span>
+<p>After you press <strong>Submit</strong>, every question reveals a full explanation. Come back here at the end of each week — the explanations are a fast self-check, and you will be surprised how much obvious it all looks by Week 4.</p>
+</div>
+</div>
+</div>
+<div class="row no-print" style="margin-top: var(--space-4);">
+<a class="btn" href="#h-quiz">Start the pre-test ↓</a>
+</div>
+</div>
+</section>
+<!-- ====================== WHAT THIS COVERS ====================== -->
+<section aria-labelledby="h-covers" class="slide section-anchor">
+<h2 id="h-covers">What this covers (the spread)</h2>
+<p>The 19 questions are deliberately spread across every major course outcome so the baseline is sensitive to growth in <em>each</em> area, not just one. Coverage map:</p>
+<div class="grid grid-2">
+<div class="card card--teal">
+<p class="card__title">Domains &amp; question map <span class="clo-tag">All CLOs</span></p>
+<ul class="domain-list">
+<li><span class="qn">Q1–Q3</span><span><strong>Android ecosystem &amp; tooling.</strong> What Android is, what Kotlin/Compose are for, Android Studio, the emulator. <span class="tag">CLO 1</span></span></li>
+<li><span class="qn">Q4–Q7</span><span><strong>Kotlin reading comprehension.</strong> <code>val</code>/<code>var</code>, null safety, functions, <code>when</code>, collections — read the code, predict the output. <span class="tag">CLO 3</span></span></li>
+<li><span class="qn">Q8–Q9</span><span><strong>Jetpack Compose &amp; UI state.</strong> What a <code>@Composable</code> is, declarative UI, recomposition, <code>remember</code> / <code>mutableStateOf</code>. <span class="tag">CLO 2</span></span></li>
+<li><span class="qn">Q10</span><span><strong>Activity lifecycle.</strong> Configuration changes, when state is lost. <span class="tag">CLO 1</span></span></li>
+<li><span class="qn">Q11–Q13</span><span><strong>Local persistence.</strong> DataStore vs. Room/SQLite, why you save data, basic SQL. <span class="tag">CLO 4</span></span></li>
+<li><span class="qn">Q14</span><span><strong>App architecture.</strong> ViewModel + repository, why we separate layers. <span class="tag">CLO 3</span></span></li>
+<li><span class="qn">Q15–Q17</span><span><strong>Networking, REST &amp; JSON.</strong> HTTP verbs, status codes, what JSON is, doing network work off the main thread. <span class="tag">CLO 5</span> <span class="tag">CLO 6</span></span></li>
+<li><span class="qn">Q18</span><span><strong>Multi-screen navigation.</strong> Moving between screens with Navigation-Compose (NavController + NavHost). <span class="tag">CLO 2</span> <span class="tag">CLO 3</span></span></li>
+<li><span class="qn">Q19</span><span><strong>Runtime permissions.</strong> Why a manifest entry alone is not enough for dangerous permissions like location. <span class="tag">CLO 5</span></span></li>
+</ul>
+</div>
+<div class="card">
+<p class="card__title">Question formats</p>
+<div class="kpi-grid">
+<div class="kpi"><span class="kpi__num">16</span><span class="kpi__label">Single choice</span></div>
+<div class="kpi"><span class="kpi__num">2</span><span class="kpi__label">True / False</span></div>
+<div class="kpi"><span class="kpi__num">1</span><span class="kpi__label">Short answer</span></div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Scoring</span>
+<p>The passing threshold is set intentionally low (40%) because this is a diagnostic — a "pass" here just means you walked in with some prior exposure. <strong>Your real target is to beat this score on the post-test.</strong> The short answer is matched case-insensitively against a small set of accepted words, so write the single key term, not a sentence.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ====================== THE QUIZ ====================== -->
+<section aria-labelledby="h-quiz" class="slide section-anchor">
+<h2 id="h-quiz">Take the pre-test</h2>
+<div class="callout callout--tip no-print">
+<span aria-hidden="true" class="callout__icon">🔒</span>
+<div class="callout__body">
+<span class="callout__label">Answers stay hidden until you submit</span>
+<p>Choose an answer for each of the 19 questions, then press <strong>Submit answers</strong> at the bottom. You will get a per-question verdict, an explanation, your total score, and a <strong>Retry</strong> button.</p>
+</div>
+</div>
+<!-- Quiz mount point: TG.quiz auto-inits from the JSON script below -->
+<div aria-label="COP4667 diagnostic pre-test" data-quiz="quizData"></div>
+</section>
+<!-- ====================== AFTER YOU SUBMIT ====================== -->
+<section aria-labelledby="h-after" class="slide section-anchor">
+<h2 id="h-after">After you submit — what your score means</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<p class="card__title">Reading your result</p>
+<table class="score-grid">
+<thead>
+<tr><th>Pre-test %</th><th>What it suggests (diagnostic only)</th></tr>
+</thead>
+<tbody>
+<tr><td class="mono">0–39%</td><td>New to most of this — totally normal. You are exactly who this course is built for.</td></tr>
+<tr><td class="mono">40–69%</td><td>Some prior exposure (maybe other languages or a little Android). Expect the Kotlin/Compose specifics to be new.</td></tr>
+<tr><td class="mono">70–100%</td><td>Strong prior background. Push yourself on the term project — aim for a polished, fully-architected app.</td></tr>
+</tbody>
+</table>
+<p class="muted" style="margin-top: var(--space-3);">Whatever you scored, the <strong>post-test</strong> in Session 12 is the one that shows your growth.</p>
+</div>
+<div class="card">
+<p class="card__title">Where each topic gets taught</p>
+<p class="muted">Each pre-test band maps to a point in the course. Tick a row off when you have covered it — by Week 4 the whole list should be green, and these questions should feel obvious.</p>
+<ul class="checklist" id="pretest-coverage">
+<li><label><input data-key="cover-q1-3" type="checkbox"/><span><strong>Q1–Q3 · Android ecosystem &amp; tooling</strong> — <a href="../sessions/session-01.html">Session 1</a> (Week 1).</span></label></li>
+<li><label><input data-key="cover-q4-7" type="checkbox"/><span><strong>Q4–Q7 · Kotlin reading comprehension</strong> — <a href="../sessions/session-02.html">Session 2</a> (Week 1), reinforced with the <a href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a>.</span></label></li>
+<li><label><input data-key="cover-q8-9" type="checkbox"/><span><strong>Q8–Q9 · Jetpack Compose &amp; UI state</strong> — Sessions <a href="../sessions/session-04.html">4</a>–<a href="../sessions/session-05.html">5</a> (Week 2).</span></label></li>
+<li><label><input data-key="cover-q10" type="checkbox"/><span><strong>Q10 · Activity lifecycle &amp; config changes</strong> — <a href="../sessions/session-03.html">Session 3</a> (Week 1).</span></label></li>
+<li><label><input data-key="cover-q11-13" type="checkbox"/><span><strong>Q11–Q13 · Local persistence (DataStore, Room/SQLite)</strong> — <a href="../sessions/session-09.html">Session 9</a> (Week 3).</span></label></li>
+<li><label><input data-key="cover-q14" type="checkbox"/><span><strong>Q14 · App architecture (ViewModel + repository)</strong> — <a href="../sessions/session-08.html">Session 8</a> (Week 2), applied across the term project.</span></label></li>
+<li><label><input data-key="cover-q15-17" type="checkbox"/><span><strong>Q15–Q17 · Networking, REST &amp; JSON</strong> — Sessions <a href="../sessions/session-10.html">10</a>–<a href="../sessions/session-11.html">11</a> (Week 3).</span></label></li>
+<li><label><input data-key="cover-q18" type="checkbox"/><span><strong>Q18 · Multi-screen navigation</strong> — <a href="../sessions/session-08.html">Session 8</a> (Week 2).</span></label></li>
+<li><label><input data-key="cover-q19" type="checkbox"/><span><strong>Q19 · Runtime permissions</strong> — Sessions <a href="../sessions/session-10.html">10</a>–<a href="../sessions/session-11.html">11</a> (Week 3, alongside API integration).</span></label></li>
+</ul>
+</div>
+</div>
+</section>
+</div><!-- /.pretest-main -->
+</div><!-- /.pretest-layout -->
+<!-- ====================== QUIZ DATA (TG.quiz schema) ====================== -->
+<script id="quizData" type="application/json">
+    {
+      "title": "COP4667 Diagnostic Pre-Test",
+      "intro": "19 questions across the whole course. This is no-stakes — it sets your personal baseline so we can measure your growth against the Session 12 post-test. Answer from what you know; explanations appear after you submit.",
+      "passingScore": 0.4,
+      "shuffle": false,
+      "questions": [
+        {
+          "id": "q1-what-is-android",
+          "type": "single",
+          "prompt": "1. At its core, what IS Android?",
+          "options": [
+            { "id": "a", "text": "A programming language created by Google." },
+            { "id": "b", "text": "A mobile operating system (based on a modified Linux kernel) that runs apps on phones, tablets, watches, TVs and more." },
+            { "id": "c", "text": "A single brand of smartphone made only by Google." },
+            { "id": "d", "text": "A web browser for mobile devices." }
+          ],
+          "correct": ["b"],
+          "explanation": "Android is an operating system built on a modified Linux kernel. It powers a huge range of devices from many manufacturers, and apps are typically distributed through the Google Play Store. Android is not a language — the language we write apps in is Kotlin — and it is not a single phone brand."
+        },
+        {
+          "id": "q2-kotlin-role",
+          "type": "single",
+          "prompt": "2. In this course we write Android apps in Kotlin. What kind of thing is Kotlin?",
+          "options": [
+            { "id": "a", "text": "A statically-typed programming language that runs on the JVM and is Google's preferred language for Android." },
+            { "id": "b", "text": "A drag-and-drop visual UI designer." },
+            { "id": "c", "text": "An emulator that pretends to be a phone." },
+            { "id": "d", "text": "A database engine bundled with Android." }
+          ],
+          "correct": ["a"],
+          "explanation": "Kotlin is a modern, statically-typed language that compiles to JVM bytecode and is fully interoperable with Java. Since 2019 Google has recommended Kotlin first for Android development. It is concise, has built-in null safety, and is what every code sample in this course uses."
+        },
+        {
+          "id": "q3-android-studio",
+          "type": "single",
+          "prompt": "3. What is Android Studio?",
+          "options": [
+            { "id": "a", "text": "The Google Play Store app for downloading apps." },
+            { "id": "b", "text": "The official IDE (integrated development environment) for building Android apps — code editor, emulator manager, debugger and Gradle build, all in one." },
+            { "id": "c", "text": "A cloud service that hosts your app's backend." },
+            { "id": "d", "text": "A physical Android phone supplied by Google." }
+          ],
+          "correct": ["b"],
+          "explanation": "Android Studio (downloaded from developer.android.com/studio) is the official IDE. It bundles the code editor, the Gradle build system, the SDK Manager, the Device Manager (for creating emulators / AVDs), Logcat for logs, and the debugger. You will install it in Session 1 and live in it all term."
+        },
+        {
+          "id": "q4-val-vs-var",
+          "type": "single",
+          "prompt": "4. Read this Kotlin:  val name = \"Ada\"   then later:   name = \"Grace\".  What happens?",
+          "options": [
+            { "id": "a", "text": "It runs fine; name is now \"Grace\"." },
+            { "id": "b", "text": "It is a compile error — val declares a read-only (immutable) reference, so it cannot be reassigned." },
+            { "id": "c", "text": "It prints a runtime warning but still reassigns." },
+            { "id": "d", "text": "It creates a second variable also called name." }
+          ],
+          "correct": ["b"],
+          "explanation": "In Kotlin, val declares a read-only reference (assign once), while var declares a reassignable variable. Reassigning a val is a compile-time error. Prefer val by default — immutability prevents whole classes of bugs and is central to how Compose state works."
+        },
+        {
+          "id": "q5-null-safety",
+          "type": "single",
+          "prompt": "5. In Kotlin, what does the '?' mean in a type like  val title: String?",
+          "options": [
+            { "id": "a", "text": "title must always be empty." },
+            { "id": "b", "text": "title is optional at runtime but the compiler ignores it." },
+            { "id": "c", "text": "title is nullable — it is allowed to hold null, and the compiler forces you to handle that null safely." },
+            { "id": "d", "text": "title is a question the user must answer." }
+          ],
+          "correct": ["c"],
+          "explanation": "Kotlin distinguishes non-null types (String) from nullable types (String?). A plain String can NEVER be null. The ? opts a type into allowing null, and then the compiler requires you to handle it — e.g. with a safe call (title?.length) or the Elvis operator (title ?: \"untitled\"). This design eliminates most NullPointerExceptions at compile time."
+        },
+        {
+          "id": "q6-when-expression",
+          "type": "single",
+          "prompt": "6. What does this Kotlin function return when called with grade(85)?\n\nfun grade(score: Int): String = when {\n    score >= 90 -> \"A\"\n    score >= 80 -> \"B\"\n    score >= 70 -> \"C\"\n    else -> \"F\"\n}",
+          "options": [
+            { "id": "a", "text": "\"A\"" },
+            { "id": "b", "text": "\"B\"" },
+            { "id": "c", "text": "\"C\"" },
+            { "id": "d", "text": "\"F\"" }
+          ],
+          "correct": ["b"],
+          "explanation": "when (used here without a subject) checks each branch top-to-bottom and returns the first that is true. For 85: 85 >= 90 is false, 85 >= 80 is true, so it returns \"B\" and stops. Branches are evaluated in order, so the order matters. when is Kotlin's powerful replacement for long if/else-if chains and switch statements, and as an expression it produces a value directly."
+        },
+        {
+          "id": "q7-list-iteration",
+          "type": "single",
+          "prompt": "7. What does this print?\n\nval nums = listOf(1, 2, 3, 4)\nval result = nums.filter { it % 2 == 0 }.map { it * 10 }\nprintln(result)",
+          "options": [
+            { "id": "a", "text": "[10, 20, 30, 40]" },
+            { "id": "b", "text": "[20, 40]" },
+            { "id": "c", "text": "[1, 3]" },
+            { "id": "d", "text": "[2, 4]" }
+          ],
+          "correct": ["b"],
+          "explanation": "filter { it % 2 == 0 } keeps only the even numbers -> [2, 4]. Then map { it * 10 } transforms each -> [20, 40]. 'it' is the implicit name for the single lambda parameter. These collection operations (filter, map, forEach) are everywhere in Kotlin and Compose, so reading them fluently matters."
+        },
+        {
+          "id": "q8-what-is-composable",
+          "type": "single",
+          "prompt": "8. In Jetpack Compose, what is a @Composable function?",
+          "options": [
+            { "id": "a", "text": "A function annotated with @Composable that describes a piece of UI by emitting other UI elements (Text, Button, Column …)." },
+            { "id": "b", "text": "A function that can only run on a background thread." },
+            { "id": "c", "text": "An XML layout file converted to Kotlin." },
+            { "id": "d", "text": "A special kind of database query." }
+          ],
+          "correct": ["a"],
+          "explanation": "Jetpack Compose is Android's modern, declarative UI toolkit. You build UI by writing Kotlin functions marked @Composable that call other composables (like Text, Button, Column, Row). You describe WHAT the UI should look like for the current state, and Compose figures out the rendering — no XML layouts and no findViewById."
+        },
+        {
+          "id": "q9-recomposition",
+          "type": "single",
+          "prompt": "9. In Compose, 'state drives the UI.' When a piece of state held in remember { mutableStateOf(...) } changes, what happens?",
+          "options": [
+            { "id": "a", "text": "Nothing — you must manually call a refresh() method to redraw." },
+            { "id": "b", "text": "The whole Activity restarts from scratch." },
+            { "id": "c", "text": "Compose automatically re-runs (recomposes) the affected composables so the UI reflects the new state." },
+            { "id": "d", "text": "The app crashes unless you reload the screen." }
+          ],
+          "correct": ["c"],
+          "explanation": "This is the heart of declarative UI. State read inside a composable is observed; when that state changes, Compose re-invokes (recomposes) the composables that read it, producing updated UI automatically. 'remember' keeps the value across recompositions, and 'mutableStateOf' makes it observable. You never imperatively poke the UI — you change the state and the UI follows."
+        },
+        {
+          "id": "q10-lifecycle-rotation",
+          "type": "truefalse",
+          "prompt": "10. True or False: By default, rotating the device (a configuration change) destroys and recreates the Activity, which can wipe out UI state that was not saved or hoisted somewhere durable (e.g., a ViewModel).",
+          "correct": true,
+          "explanation": "True. A configuration change such as rotation destroys and recreates the Activity by default, running through the lifecycle (onPause → onStop → onDestroy → onCreate …). Transient state that lives only in the destroyed objects is lost. That is why we hoist important state into a ViewModel (which survives configuration changes) and persist long-term data to DataStore or Room. Understanding the lifecycle (onCreate/onStart/onResume/onPause/onStop/onDestroy) is a Week-2 topic."
+        },
+        {
+          "id": "q11-why-persist",
+          "type": "single",
+          "prompt": "11. Why would an app save data to local storage (DataStore or a database) instead of just keeping it in memory?",
+          "options": [
+            { "id": "a", "text": "Because in-memory variables are erased when the app process is killed or the device restarts; persisted data survives so the user does not lose their work or settings." },
+            { "id": "b", "text": "Because Android does not allow apps to use variables." },
+            { "id": "c", "text": "Because saving to disk makes the UI render faster." },
+            { "id": "d", "text": "There is no reason — in-memory data is permanent on Android." }
+          ],
+          "correct": ["a"],
+          "explanation": "Anything held only in memory (a variable, a ViewModel) is gone when the process is killed by the system or the device reboots. Local persistence writes data to disk so it survives. The required term-project feature checklist demands real local persistence — small key/value preferences via DataStore, or structured/relational data via Room (which sits on top of SQLite)."
+        },
+        {
+          "id": "q12-datastore-vs-room",
+          "type": "single",
+          "prompt": "12. You need to remember a single boolean user setting (\"dark mode on/off\"). Which local-storage tool is the most natural fit?",
+          "options": [
+            { "id": "a", "text": "A full Room/SQLite relational database with multiple tables." },
+            { "id": "b", "text": "DataStore (key–value preferences) — ideal for small, simple values like flags and settings." },
+            { "id": "c", "text": "A remote cloud server, since booleans cannot be stored on the device." },
+            { "id": "d", "text": "A hard-coded constant in the source code." }
+          ],
+          "correct": ["b"],
+          "explanation": "DataStore (Preferences DataStore) is purpose-built for small key–value data such as settings and feature flags, and it is the modern replacement for SharedPreferences. Room/SQLite is the right choice when you have structured, queryable, relational data (many records, relationships, searching/sorting) — overkill for a single boolean. We cover both in Week 3 (Session 9)."
+        },
+        {
+          "id": "q13-sql-select",
+          "type": "short",
+          "prompt": "13. SQL fundamentals: which single SQL keyword (verb) do you use to READ/retrieve rows from a database table? (one word)",
+          "correct": ["SELECT", "select"],
+          "explanation": "SELECT retrieves rows, e.g. SELECT * FROM tasks WHERE done = 0. The other core verbs are INSERT (add rows), UPDATE (change rows), and DELETE (remove rows). Room generates this SQL for you from annotated @Query/@Insert/@Update/@Delete functions, but it helps to recognize the underlying SQLite that Room sits on top of."
+        },
+        {
+          "id": "q14-architecture",
+          "type": "single",
+          "prompt": "14. The term project requires 'clean architecture (ViewModel + repository).' Why separate UI, ViewModel, and repository layers instead of putting everything in one Composable?",
+          "options": [
+            { "id": "a", "text": "It is just a style preference with no real benefit." },
+            { "id": "b", "text": "To separate concerns: the UI shows state, the ViewModel holds/derives UI state and survives config changes, and the repository owns data access (network + local). This makes the app testable, maintainable, and resilient to lifecycle events." },
+            { "id": "c", "text": "Because Compose refuses to compile a Composable longer than 10 lines." },
+            { "id": "d", "text": "To make the app run on a background thread automatically." }
+          ],
+          "correct": ["b"],
+          "explanation": "Separation of concerns is the goal. The Composable layer renders state and forwards events. The ViewModel holds UI state (and survives configuration changes like rotation) and contains presentation logic. The repository is the single source of truth for data, hiding whether it came from the network or local storage. This recommended architecture keeps each layer small, swappable, and testable — and it is an explicit project requirement (CLO 3)."
+        },
+        {
+          "id": "q15-what-is-rest-json",
+          "type": "single",
+          "prompt": "15. Your app fetches data from a web API 'over REST, returning JSON.' What is JSON?",
+          "options": [
+            { "id": "a", "text": "A programming language for Android." },
+            { "id": "b", "text": "A lightweight, human-readable text format for structured data using key–value pairs and arrays, commonly returned by web APIs." },
+            { "id": "c", "text": "A type of database table." },
+            { "id": "d", "text": "An image compression format." }
+          ],
+          "correct": ["b"],
+          "explanation": "JSON (JavaScript Object Notation) is a plain-text format for structured data, e.g. {\"name\": \"Ada\", \"id\": 42, \"tags\": [\"dev\",\"math\"]}. Most REST APIs return JSON. In the app you deserialize that JSON into Kotlin data classes (commonly with a library like kotlinx.serialization or Moshi via Retrofit) so you can work with strongly-typed objects."
+        },
+        {
+          "id": "q16-http-get",
+          "type": "single",
+          "prompt": "16. Which HTTP method is normally used to RETRIEVE/read data from a server (e.g., load a list of items), without changing anything on the server?",
+          "options": [
+            { "id": "a", "text": "POST" },
+            { "id": "b", "text": "DELETE" },
+            { "id": "c", "text": "GET" },
+            { "id": "d", "text": "PUT" }
+          ],
+          "correct": ["c"],
+          "explanation": "GET retrieves data and is meant to be read-only (safe / idempotent). POST creates a new resource, PUT updates/replaces a resource, and DELETE removes one. A successful response typically carries HTTP status 200 (OK); 404 means not found and 500 means server error. You will issue GET requests when your app loads data from its web API in Week 3 (CLO 5 / CLO 6)."
+        },
+        {
+          "id": "q17-network-main-thread",
+          "type": "truefalse",
+          "prompt": "17. True or False: On Android you should perform network requests (and other slow work) OFF the main/UI thread — for example using Kotlin coroutines — so the user interface stays responsive and does not freeze or crash.",
+          "correct": true,
+          "explanation": "True. The main thread (a.k.a. UI thread) must stay free to draw the UI and handle input. Long or blocking work — network calls, disk/database access — must run off it. Android actually throws a NetworkOnMainThreadException if you try to network on the main thread. In modern Kotlin/Android we use coroutines (suspend functions launched in the right scope and dispatcher) to do this work asynchronously without freezing the app. This is a core Week-3 skill (CLO 6)."
+        },
+        {
+          "id": "q18-navigation",
+          "type": "single",
+          "prompt": "18. Your term project must have at least two screens with a way to move between them (for example, a list screen that opens a detail screen). In a modern Jetpack Compose app, what handles moving between screens?",
+          "options": [
+            { "id": "a", "text": "You cannot have more than one screen in a Compose app." },
+            { "id": "b", "text": "A navigation component (Navigation-Compose: a NavController + NavHost mapping routes to composables) coordinates which screen is shown and passes arguments between them." },
+            { "id": "c", "text": "You restart the whole app every time the user changes screens." },
+            { "id": "d", "text": "Each screen must be a completely separate installed app." }
+          ],
+          "correct": ["b"],
+          "explanation": "Multi-screen apps need navigation. In Compose the common approach is Navigation-Compose: a NavController plus a NavHost that maps string routes (e.g. \"list\", \"detail/{id}\") to @Composable destinations, and you navigate with navController.navigate(route). It replaces the older startActivity/Intent-per-screen style for in-app screen flow. Your term project explicitly requires ≥2 screens with navigation between them (CLO 2 / CLO 3) — we build it in Week 2."
+        },
+        {
+          "id": "q19-runtime-permission",
+          "type": "single",
+          "prompt": "19. An app wants the device's GPS location. It already declares ACCESS_FINE_LOCATION in the AndroidManifest. Is that enough to start reading location on a modern Android version?",
+          "options": [
+            { "id": "a", "text": "Yes — declaring the permission in the manifest is all you ever need." },
+            { "id": "b", "text": "No — location is a 'dangerous' permission, so on Android 6.0+ you must ALSO ask the user to grant it at runtime (a permission prompt) and handle a denial gracefully." },
+            { "id": "c", "text": "No — Android does not allow apps to read location at all." },
+            { "id": "d", "text": "Yes, but only if the app is installed from a USB cable instead of the Play Store." }
+          ],
+          "correct": ["b"],
+          "explanation": "For 'dangerous' permissions like location, the manifest entry is necessary but NOT sufficient. On Android 6.0 (API 23) and later you must request the permission at runtime — the user sees a system prompt and can allow or deny — and your app must keep working if they deny. In Compose you typically trigger this with the Activity Result permission contract (rememberLauncherForActivityResult). This is a CLO 5 integration skill that pairs with the networking work in Week 3."
+        }
+      ]
+    }
+    </script>
+</main>
+<!-- ====================== FOOTER ====================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Pre-Test (Diagnostic Baseline) ·
+        <span class="muted">Administered Session 1 · Compare against the Session 12 Post-Test</span>
+</div>
+<div class="muted">
+        Keiser University · B.S. Software Engineering · 3.0 credit hours ·
+        <a href="../index.html">Course Hub</a> · <a href="../sessions/session-01.html">Session 1 →</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+</body>
+</html>

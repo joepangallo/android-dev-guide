@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>COP4667 Key-Terms Flashcards</title>
+<meta content="COP4667 Android Development — a course-wide deck of 72 key-term flashcards covering the Android ecosystem &amp; Studio, Kotlin, the Activity lifecycle &amp; intents, Jetpack Compose UI, state, lists &amp; Material 3, navigation &amp; app architecture, data persistence, and networking. Filter by topic, shuffle, and mark cards as 'Got it' for spaced self-study. Built for student review and instructor warm-ups." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: var(--fs-xs); font-weight: 800; color: var(--green-dark); margin: 0 0 .35em; }
+    [data-theme="dark"] .eyebrow { color: var(--green); }
+    .lead { font-size: var(--fs-lg); color: var(--muted); }
+    .section-anchor { scroll-margin-top: 76px; }
+
+    /* Tag-filter button row that loads different decks */
+    .deckbar { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0 0; }
+    .deckbar__btn {
+      appearance: none; cursor: pointer; font: inherit;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 13px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--surface);
+      color: var(--ink); font-size: var(--fs-sm); font-weight: 650;
+      transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
+    }
+    .deckbar__btn:hover { border-color: var(--green); background: var(--surface-2); }
+    .deckbar__btn:active { transform: translateY(1px); }
+    .deckbar__btn[aria-pressed="true"] {
+      background: color-mix(in srgb, var(--green) 18%, var(--surface));
+      border-color: var(--green); color: var(--green-dark);
+    }
+    [data-theme="dark"] .deckbar__btn[aria-pressed="true"] { color: var(--green); }
+    .deckbar__count {
+      display: inline-grid; place-items: center; min-width: 22px; height: 20px;
+      padding: 0 6px; border-radius: 999px; font-family: var(--font-mono);
+      font-size: 11px; font-weight: 800;
+      background: var(--surface-2); color: var(--muted); border: 1px solid var(--line);
+    }
+    .deckbar__btn[aria-pressed="true"] .deckbar__count {
+      background: var(--green-dark); color: var(--teal); border-color: transparent;
+    }
+
+    /* Bigger, more readable flashcard faces for term/definition study */
+    #deck-mount .flip-card { max-width: 640px; }
+    #deck-mount .flip-card__inner { min-height: 250px; }
+    #deck-mount .flip-card__front > div:first-of-type { font-size: var(--fs-xl); }
+    #deck-mount .flip-card__back { font-size: var(--fs-md); }
+    #deck-mount .flip-card__back code,
+    #deck-mount .flip-card__front code {
+      background: rgba(255,255,255,.12); border: none; color: inherit;
+      padding: .08em .35em; border-radius: 5px; white-space: normal;
+    }
+
+    .legend-dot { display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:6px; }
+    .term-table { width:100%; border-collapse: collapse; font-size: var(--fs-sm); }
+    .term-table th, .term-table td { text-align:left; padding: var(--space-2) var(--space-3); border-bottom:1px solid var(--line); vertical-align: top; }
+    .term-table th { color: var(--teal-2); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing:.04em; }
+    [data-theme="dark"] .term-table th { color: var(--green); }
+    .term-table tr:last-child td { border-bottom: none; }
+    .keys-hint { font-size: var(--fs-xs); color: var(--muted); margin-top: var(--space-3); }
+    .keys-hint kbd { margin: 0 1px; }
+  </style>
+</head>
+<body>
+<!-- ====================== TOP NAV ====================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 teaching guide home" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▶</span>
+<span>COP4667
+          <small>Android Development</small>
+</span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a aria-current="page" class="active" href="flashcards.html">Flashcards</a>
+<a href="pre-test.html">Pre-Test</a>
+<a href="quiz-1.html">Quiz 1</a>
+<a href="post-test.html">Post-Test</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">🖥️ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ====================== HERO ====================== -->
+<section aria-labelledby="hero-title" class="hero slide section-anchor" id="top">
+<p class="eyebrow" style="color:#9BE8C5;">Study tool · All 12 sessions</p>
+<h1 class="hero-title" id="hero-title">Key-Terms Flashcards</h1>
+<p class="hero-sub">One deck for the whole course. Front of card = a term or concept; flip it for a concise, exam-ready definition. Filter by topic, shuffle, and mark cards "Got it" to focus on what you don't know yet. Great for solo review.</p>
+<div class="hero-meta">
+<span class="pill pill--green">72 cards · 9 topics</span>
+<span class="pill"><span class="clo-tag">CLO 1</span></span>
+<span class="pill"><span class="clo-tag">CLO 2</span></span>
+<span class="pill"><span class="clo-tag">CLO 3</span></span>
+<span class="pill"><span class="clo-tag">CLO 4</span></span>
+<span class="pill"><span class="clo-tag">CLO 5</span></span>
+<span class="pill"><span class="clo-tag">CLO 6</span></span>
+</div>
+</section>
+<!-- ====================== HOW TO USE ====================== -->
+<section aria-labelledby="h-how" class="slide section-anchor">
+<h2 id="h-how">How to use this deck</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<p class="card__title">For students (self-study)</p>
+<ol>
+<li>Pick a <strong>topic</strong> with the buttons below, or stay on <em>All topics</em>.</li>
+<li>Read the <strong>front</strong>, say the definition out loud, then click the card to <strong>flip</strong> and check yourself.</li>
+<li>Hit <strong>✓ Got it</strong> to retire a card you know, or <strong>↻ Review again</strong> to keep it in rotation and move on.</li>
+<li>Use <strong>🔀 Shuffle</strong> so you don't memorize the order, and <strong>Reset deck</strong> to start the topic over.</li>
+<li>When the deck empties ("Deck complete!"), you've mastered that topic — switch topics and repeat.</li>
+</ol>
+<p class="keys-hint">Tip: click the card to focus it, then use <kbd>←</kbd> / <kbd>→</kbd> to move between cards.</p>
+</div>
+<div class="card card--teal">
+<p class="card__title">What's inside</p>
+<p class="muted" style="margin-top:0;">Vocabulary is grouped by the same arc we teach in class:</p>
+<table aria-label="Topics covered in the deck" class="term-table">
+<thead><tr><th>Topic</th><th>Maps to</th></tr></thead>
+<tbody>
+<tr><td>Ecosystem &amp; Studio</td><td>Wk 1 · CLO 1</td></tr>
+<tr><td>Kotlin</td><td>Wk 1 · CLO 3</td></tr>
+<tr><td>Lifecycle &amp; Intents</td><td>Wk 1–2 · CLO 1, 3</td></tr>
+<tr><td>Compose UI</td><td>Wk 1–2 · CLO 2, 3</td></tr>
+<tr><td>State</td><td>Wk 2 · CLO 2, 3</td></tr>
+<tr><td>Lists &amp; Material</td><td>Wk 2 · CLO 2</td></tr>
+<tr><td>Navigation &amp; Architecture</td><td>Wk 2–3 · CLO 2, 3</td></tr>
+<tr><td>Persistence</td><td>Wk 3 · CLO 4</td></tr>
+<tr><td>Networking</td><td>Wk 3–4 · CLO 5, 6</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- ====================== THE DECK ====================== -->
+<section aria-labelledby="h-deck" class="slide section-anchor">
+<h2 id="h-deck">The deck</h2>
+<div class="card">
+<p class="card__title">Choose a topic</p>
+<p class="muted" style="margin-top:0;">Each button loads a filtered deck. The card count is shown on each chip. Your "Got it" progress resets when you switch topics or press <em>Reset deck</em>.</p>
+<div aria-label="Filter flashcards by topic" class="deckbar" id="deckbar" role="group"></div>
+<!-- Flashcards engine mounts here. Page JS calls TG.flashcards() with a filtered deck. -->
+<div aria-live="polite" class="mt" id="deck-mount"></div>
+<p class="keys-hint no-print">
+          Controls: <strong>click card</strong> = flip · <kbd>←</kbd>/<kbd>→</kbd> = prev/next ·
+          <strong>✓ Got it</strong> = retire card · <strong>↻ Review again</strong> = keep &amp; advance ·
+          <strong>🔀 Shuffle</strong> · <strong>Reset deck</strong> = restore current topic.
+        </p>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Study smart</span>
+<p>Don't just recognize the answer — <em>produce</em> it. Cover the back, state the definition aloud, then flip. Retrieval practice (pulling the answer from memory) sticks far better than re-reading. Cards you keep missing? Use <strong>Review again</strong> so they resurface.</p>
+</div>
+</div>
+</section>
+<!-- ====================== EMBED IT IN YOUR OWN PAGE ====================== -->
+<section aria-labelledby="h-embed" class="slide section-anchor">
+<h2 id="h-embed">Want these cards in your own study page?</h2>
+<p class="muted">The whole deck is just JSON consumed by the shared <code>TG.flashcards</code> engine. To build your own mini-deck, drop a script block and a mount point on any page that links <code>assets/app.js</code>:</p>
+<div class="codeblock" data-lang="HTML">
+<span class="codeblock__lang">HTML</span>
+<pre><code>&lt;!-- 1) The data: an array of { front, back, tag? } --&gt;
+&lt;script type="application/json" id="my-cards"&gt;
+[
+  { "front": "Composable function",
+    "back": "A Kotlin function annotated with @Composable that describes a piece of UI.",
+    "tag": "Compose UI" },
+  { "front": "remember { }",
+    "back": "Caches a value across recompositions so it is not recreated every frame.",
+    "tag": "State" }
+]
+&lt;/script&gt;
+
+&lt;!-- 2) The mount point: the engine auto-inits on this attribute --&gt;
+&lt;div data-flashcards="my-cards"&gt;&lt;/div&gt;</code></pre>
+</div>
+<p class="muted">Or mount it manually from your own JavaScript (this is exactly what the topic-filter buttons on this page do):</p>
+<div class="codeblock" data-lang="JavaScript">
+<span class="codeblock__lang">JavaScript</span>
+<pre><code>// Filter the full deck to one tag, then (re)mount into #deck-mount.
+const all = JSON.parse(document.getElementById("all-cards").textContent);
+const stateCards = all.filter(c =&gt; c.tag === "State");
+
+// TG.flashcards(mountSelectorOrEl, cardsArrayOrScriptId)
+TG.flashcards("#deck-mount", stateCards);</code></pre>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">No build step</span>
+<p>Everything here is hand-written HTML/CSS/vanilla JS and works by double-clicking the file (<code>file://</code>). No CDN, no framework, no internet required.</p>
+</div>
+</div>
+</section>
+<!-- ============ ALL CARDS DATA (consumed by page JS) ============ -->
+<!-- 72 cards across 9 topics. front = term, back = concise definition. -->
+<script id="all-cards" type="application/json">
+[
+  { "tag": "Ecosystem & Studio", "front": "Android (the platform)", "back": "An open-source, Linux-based mobile operating system maintained by Google as AOSP (Android Open Source Project), running on phones, tablets, watches, TVs, and cars. Apps are typically distributed through the Google Play Store." },
+  { "tag": "Ecosystem & Studio", "front": "Android Studio", "back": "The official IntelliJ-based IDE for Android development. Bundles the code editor, the Android SDK tools, the Gradle build system, the emulator/Device Manager, Logcat, the Layout/Compose preview, and the profilers." },
+  { "tag": "Ecosystem & Studio", "front": "Android SDK", "back": "The Software Development Kit: the platform libraries, build tools, and command-line utilities you compile against. The SDK Manager lets you install specific API levels and tool versions." },
+  { "tag": "Ecosystem & Studio", "front": "API level", "back": "An integer that identifies a version of the Android platform API (e.g. API 36 = Android 16). You set minSdk (oldest supported), targetSdk (the version you tested against), and compileSdk (the API you build with)." },
+  { "tag": "Ecosystem & Studio", "front": "Gradle", "back": "Android's build automation tool. It compiles code, processes resources, runs tasks, and produces the installable app. Configured per-module in build.gradle(.kts) files; dependencies are declared in the dependencies { } block." },
+  { "tag": "Ecosystem & Studio", "front": "AVD / Emulator", "back": "An Android Virtual Device is a configured virtual phone (API level, screen, RAM) created in the Device Manager. The Emulator runs that AVD so you can test apps without physical hardware." },
+  { "tag": "Ecosystem & Studio", "front": "Logcat", "back": "Android Studio's real-time log viewer. It shows system and app log messages (from Log.d/Log.e, etc.), stack traces, and crash reports — your primary debugging window for what the running app is doing." },
+  { "tag": "Ecosystem & Studio", "front": "AndroidManifest.xml", "back": "The required declaration file at the app's root. It names the package, declares components (activities, services), requests permissions, and sets the launcher activity and app metadata the system reads before running any code." },
+  { "tag": "Ecosystem & Studio", "front": "APK vs AAB", "back": "APK (Android Package) is the installable file delivered to a device. AAB (Android App Bundle) is the upload format for Play; Google generates device-optimized APKs from it. You build APKs locally for testing, AABs for release." },
+  { "tag": "Ecosystem & Studio", "front": "res/ resources", "back": "The folder for non-code assets: layouts, strings.xml, colors, drawables, mipmaps (launcher icons), and themes. Resources are referenced by ID (R.string.app_name) and can have configuration variants (e.g. values-night)." },
+
+  { "tag": "Kotlin", "front": "val vs var", "back": "val declares a read-only (immutable) reference assigned once; var declares a mutable reference you can reassign. Prefer val by default — it makes code safer and easier to reason about." },
+  { "tag": "Kotlin", "front": "Null safety (? and !!)", "back": "Kotlin distinguishes nullable types (String?) from non-null (String) at compile time. Use ?. (safe call), ?: (Elvis/default), and let { }. Avoid !! — it forces a value and throws NullPointerException if it is null." },
+  { "tag": "Kotlin", "front": "data class", "back": "A class declared with the data keyword. The compiler auto-generates equals(), hashCode(), toString(), copy(), and componentN() functions from the constructor properties — ideal for model/UI-state holders." },
+  { "tag": "Kotlin", "front": "Function type & lambda", "back": "Kotlin treats functions as values. A function type looks like (Int) -> String; a lambda is the literal { x -> \"$x\" }. Trailing lambdas can move outside the parentheses — the basis of Compose's content blocks." },
+  { "tag": "Kotlin", "front": "Extension function", "back": "A function defined outside a class that adds behavior to it without inheritance, e.g. fun String.shout() = uppercase(). Called like a member: \"hi\".shout(). Used heavily across the Android/Compose APIs." },
+  { "tag": "Kotlin", "front": "when expression", "back": "Kotlin's powerful switch. As an expression it returns a value and the compiler can require it be exhaustive (especially over sealed types/enums), so every case is handled — great for mapping UI states." },
+  { "tag": "Kotlin", "front": "Coroutine / suspend", "back": "A coroutine is a lightweight, cancellable unit of asynchronous work. A suspend function can pause without blocking a thread; you launch coroutines in a CoroutineScope (e.g. viewModelScope) to run network or database work off the main thread." },
+  { "tag": "Kotlin", "front": "Scope functions (let/apply/run/also/with)", "back": "Standard-library helpers that run a block on an object. apply/also return the object (configuration); let/run/with return the lambda result. e.g. user?.let { render(it) } runs only when user is non-null." },
+  { "tag": "Kotlin", "front": "sealed class / interface", "back": "A restricted type hierarchy whose subclasses are all known at compile time. Combined with when, it models a closed set of states (e.g. Loading / Success / Error) exhaustively and safely." },
+  { "tag": "Kotlin", "front": "Higher-order function", "back": "A function that takes another function as a parameter or returns one. Examples: list.map { it * 2 }, list.filter { it > 0 }. Compose slots (content: @Composable () -> Unit) rely on this." },
+
+  { "tag": "Lifecycle & Intents", "front": "Activity", "back": "An app component that represents a single, focused screen/entry point the user interacts with. A Compose app usually has one Activity (MainActivity) that hosts the Compose UI via setContent { }." },
+  { "tag": "Lifecycle & Intents", "front": "Activity lifecycle", "back": "The sequence of system callbacks an Activity moves through: onCreate → onStart → onResume (foreground) → onPause → onStop → onDestroy. You override them to set up and release resources at the right time." },
+  { "tag": "Lifecycle & Intents", "front": "onCreate()", "back": "The first lifecycle callback, called once when the Activity is created. Where you call setContent { } (Compose) and do one-time initialization. It receives a savedInstanceState Bundle for restoring prior state." },
+  { "tag": "Lifecycle & Intents", "front": "Configuration change", "back": "A runtime change such as rotation, dark mode, or locale that by default destroys and recreates the Activity. UI state must be preserved (rememberSaveable / ViewModel) so the user doesn't lose data on rotate." },
+  { "tag": "Lifecycle & Intents", "front": "Intent", "back": "A messaging object used to request an action from a component — start an Activity, deliver data, or trigger the system. Explicit intents name a target class; implicit intents declare an action the system resolves." },
+  { "tag": "Lifecycle & Intents", "front": "Explicit vs implicit Intent", "back": "Explicit: Intent(this, DetailActivity::class.java) targets a specific component in your app. Implicit: Intent(ACTION_VIEW, uri) describes what you want done and lets the system pick an app (browser, dialer, maps)." },
+  { "tag": "Lifecycle & Intents", "front": "Context", "back": "A handle to the app environment used to access resources, start activities, get system services, and create views. Activity is a Context; in Compose you often get one via LocalContext.current." },
+  { "tag": "Lifecycle & Intents", "front": "Bundle / savedInstanceState", "back": "A key-value container for small amounts of UI state. The system passes it to onCreate to restore transient state after process death or recreation. In Compose, rememberSaveable writes into this mechanism." },
+  { "tag": "Lifecycle & Intents", "front": "Lifecycle-aware component", "back": "A component (like ViewModel or a LifecycleObserver) that responds to lifecycle states so work starts/stops at the correct time, preventing leaks and crashes from doing work after a screen is gone." },
+
+  { "tag": "Compose UI", "front": "Jetpack Compose", "back": "Android's modern, declarative UI toolkit. You describe the UI as Kotlin functions of the current state; when state changes, Compose redraws what's needed. It replaces XML layouts as the recommended approach." },
+  { "tag": "Compose UI", "front": "@Composable", "back": "The annotation marking a function that emits UI. Composables can call other composables, must run inside a Compose context, and are re-invoked (recomposed) when the state they read changes." },
+  { "tag": "Compose UI", "front": "Recomposition", "back": "Compose re-running composable functions to update the UI when their inputs (state) change. It is smart and selective — only the parts that read the changed state recompose. Composables must be side-effect-free to recompose safely." },
+  { "tag": "Compose UI", "front": "Declarative vs imperative UI", "back": "Declarative (Compose): describe what the UI should look like for a given state and let the framework update it. Imperative (old Views): manually find widgets and mutate them (textView.text = ...). Declarative reduces UI/state bugs." },
+  { "tag": "Compose UI", "front": "Modifier", "back": "An ordered chain that decorates or configures a composable — size, padding, background, click, etc. Modifiers apply outside-in, so order matters: Modifier.padding(8.dp).background(Blue) reserves the padding first, so Blue fills only the inner area (8dp transparent margin around a blue box); .background(Blue).padding(8.dp) paints everything blue and then insets the content." },
+  { "tag": "Compose UI", "front": "Column / Row / Box", "back": "The core layout composables. Column stacks children vertically, Row places them horizontally, and Box overlays children (z-stack). Arrangement and Alignment parameters position the children." },
+  { "tag": "Compose UI", "front": "@Preview", "back": "An annotation that renders a composable in Android Studio's design pane without running the app on a device. You can preview multiple states/configurations to iterate on UI quickly." },
+  { "tag": "Compose UI", "front": "setContent { }", "back": "The Activity extension (in onCreate) that hosts Compose. Everything inside the lambda is your composable UI tree; it bridges the Activity world to the Compose world." },
+  { "tag": "Compose UI", "front": "Slot API", "back": "A Compose design pattern where a composable accepts a @Composable lambda as a parameter (a 'slot') so callers supply the content. Scaffold's topBar and content, or a Button's label, are slots." },
+  { "tag": "Compose UI", "front": "dp vs sp", "back": "dp (density-independent pixels) sizes layout so elements look consistent across screen densities. sp (scale-independent pixels) sizes text and also respects the user's font-size accessibility setting — always use sp for text." },
+
+  { "tag": "State", "front": "State (in Compose)", "back": "Any value that can change over time and that the UI reads. When observable state changes, Compose recomposes the composables that read it. UI = f(state)." },
+  { "tag": "State", "front": "mutableStateOf", "back": "Creates an observable state holder. Reading its .value inside a composable subscribes that composable to changes; writing .value triggers recomposition. Usually used with by delegation. For a primitive Int counter prefer mutableIntStateOf(0) (and mutableLongStateOf / mutableDoubleStateOf) — same behavior without autoboxing the value." },
+  { "tag": "State", "front": "remember { }", "back": "Stores a value across recompositions so it isn't recreated every time the function runs. remember { mutableStateOf(0) } keeps the same state object between recompositions (but not across configuration changes)." },
+  { "tag": "State", "front": "rememberSaveable { }", "back": "Like remember, but also survives configuration changes and process death by saving into the saved-instance-state Bundle. Use it for UI state the user shouldn't lose on rotation (e.g. text typed in a field)." },
+  { "tag": "State", "front": "State hoisting", "back": "Moving state up to a caller and passing the value down plus an onValueChange event up. It makes composables stateless, reusable, and testable. Pattern: value: T, onValueChange: (T) -> Unit." },
+  { "tag": "State", "front": "Stateful vs stateless composable", "back": "A stateful composable holds its own remember-ed state; a stateless one receives state and event callbacks as parameters. Hoisting state turns a stateful composable into a stateless one for reuse." },
+  { "tag": "State", "front": "Single source of truth", "back": "The principle that each piece of state has exactly one owner; everything else reads from it. In Compose+architecture this is usually the ViewModel's exposed UI state, preventing inconsistent duplicate copies." },
+  { "tag": "State", "front": "Unidirectional data flow (UDF)", "back": "State flows down from owner to UI; events flow up from UI to owner. The UI never mutates state directly — it sends events; the owner updates state, which flows back down. This makes data flow predictable." },
+
+  { "tag": "Lists & Material", "front": "LazyColumn / LazyRow", "back": "Scrollable list composables that only compose and lay out the items currently visible (and a small buffer), so they handle large/long lists efficiently — Compose's equivalent of RecyclerView." },
+  { "tag": "Lists & Material", "front": "items() in a LazyList", "back": "The DSL inside a LazyColumn/LazyRow that emits one composable per data element: items(list) { item -> ItemCard(item) }. Providing a stable key { } helps Compose track items across changes." },
+  { "tag": "Lists & Material", "front": "Material Design 3", "back": "Google's current design system (a.k.a. Material You). Compose's androidx.compose.material3 library provides themed components — Scaffold, TopAppBar, Card, Button — plus dynamic color and a typographic/shape scale." },
+  { "tag": "Lists & Material", "front": "MaterialTheme", "back": "The composable that supplies colorScheme, typography, and shapes to everything inside it. Child components read MaterialTheme.colorScheme.primary, etc., so theming is centralized and consistent." },
+  { "tag": "Lists & Material", "front": "Scaffold", "back": "A Material 3 layout composable that arranges standard app structure — topBar, bottomBar, floatingActionButton, snackbarHost — and hands you a contentPadding to apply so content isn't hidden behind the bars." },
+
+  { "tag": "Navigation & Architecture", "front": "Navigation Compose", "back": "The androidx.navigation:navigation-compose library for moving between screens (destinations) in a Compose app. A NavHost maps routes to composables; a NavController performs navigation." },
+  { "tag": "Navigation & Architecture", "front": "NavController / NavHost", "back": "NavController is the object that drives navigation (navigate(route), popBackStack()). NavHost is the container that declares the navigation graph and swaps in the composable for the current destination." },
+  { "tag": "Navigation & Architecture", "front": "ViewModel", "back": "An architecture-component class that holds and exposes UI-related state and survives configuration changes. It keeps logic out of composables and runs coroutines in viewModelScope. Obtain one with viewModel()." },
+  { "tag": "Navigation & Architecture", "front": "Repository pattern", "back": "A class that mediates between the ViewModel and data sources (network, database, DataStore). It centralizes data access and decides where data comes from, so the ViewModel doesn't know the source details." },
+  { "tag": "Navigation & Architecture", "front": "UI / Data layer (app architecture)", "back": "Recommended layering: a UI layer (Compose + ViewModel holding UI state) and a Data layer (repositories + data sources). The UI observes state; the data layer owns the truth. Keeps the app testable and maintainable." },
+  { "tag": "Navigation & Architecture", "front": "StateFlow / collectAsStateWithLifecycle", "back": "StateFlow is an observable, always-has-a-value stream a ViewModel exposes as UI state. In Compose you read it with collectAsStateWithLifecycle() to turn the latest value into Compose state, safely tied to the lifecycle." },
+
+  { "tag": "Persistence", "front": "Data persistence", "back": "Storing data so it survives app restarts and process death. Android options include DataStore (key-value/typed preferences), Room/SQLite (structured records), and files — chosen by the shape and size of the data." },
+  { "tag": "Persistence", "front": "DataStore (Preferences)", "back": "Jetpack's modern replacement for SharedPreferences. It stores small key-value or typed data asynchronously using coroutines and Flow, avoiding the main-thread/blocking pitfalls of SharedPreferences." },
+  { "tag": "Persistence", "front": "Room", "back": "Jetpack's persistence library: an abstraction layer over SQLite. You define @Entity data classes, a @Dao with query methods, and a @Database, and Room generates the boilerplate with compile-time SQL verification." },
+  { "tag": "Persistence", "front": "@Entity / @Dao", "back": "In Room, @Entity marks a data class as a database table (each property = a column). @Dao (Data Access Object) is an interface of annotated methods (@Insert, @Query, @Delete) that read/write those rows." },
+  { "tag": "Persistence", "front": "SQLite", "back": "The lightweight, file-based relational database embedded in Android. You can use it directly with SQL, but Room is the recommended way to access it safely with less boilerplate." },
+  { "tag": "Persistence", "front": "SharedPreferences", "back": "The legacy key-value store for small primitive settings (booleans, ints, strings). Still seen in older code, but Google now recommends DataStore because SharedPreferences APIs can block the main thread." },
+
+  { "tag": "Networking", "front": "REST API", "back": "A web API style where a client makes HTTP requests to URL endpoints (resources) using verbs like GET and POST, and the server responds — usually with JSON. Most app-to-backend communication in this course is REST over HTTPS." },
+  { "tag": "Networking", "front": "HTTP methods", "back": "Verbs that state intent: GET (read), POST (create/submit), PUT/PATCH (update), DELETE (remove). Status codes report results (200 OK, 201 Created, 401 Unauthorized, 404 Not Found, 500 Server Error)." },
+  { "tag": "Networking", "front": "JSON", "back": "JavaScript Object Notation — the lightweight, human-readable text format ({ \"key\": value }) most REST APIs use for request/response bodies. It is parsed into Kotlin data classes for use in the app." },
+  { "tag": "Networking", "front": "Retrofit", "back": "A popular type-safe HTTP client for Android. You define an interface with annotated methods (@GET(\"users/{id}\")) and Retrofit generates the implementation, handling URL building and (with a converter) JSON parsing." },
+  { "tag": "Networking", "front": "Serialization (kotlinx.serialization / Moshi / Gson)", "back": "Converting between JSON text and Kotlin objects. A converter (e.g. kotlinx.serialization or Moshi) plugs into Retrofit to turn a response body into your @Serializable data class automatically." },
+  { "tag": "Networking", "front": "OkHttp / interceptor", "back": "OkHttp is the underlying HTTP engine Retrofit uses. An Interceptor sits in the request/response pipeline to add headers (auth tokens), log traffic, or retry — without changing your API interface." },
+  { "tag": "Networking", "front": "INTERNET permission", "back": "Network access requires <uses-permission android:name=\"android.permission.INTERNET\"/> in the manifest. It is a normal (install-time) permission — granted automatically — but the app cannot reach the network without declaring it." },
+  { "tag": "Networking", "front": "Main-safe / off-main-thread I/O", "back": "Network and database work must not run on the main (UI) thread or the app janks and may ANR (Application Not Responding). Run it in coroutines on a background dispatcher (e.g. Dispatchers.IO) launched from viewModelScope, then update state for the UI." }
+]
+    </script>
+</main>
+<!-- ====================== FOOTER ====================== -->
+<footer class="footer">
+<div class="wrap">
+<span><span class="footer__brand">COP4667 Android Development</span> · Key-Terms Flashcards · Keiser University, B.S. Software Engineering</span>
+<span class="muted">Built with Kotlin + Jetpack Compose &amp; the official <a href="https://developer.android.com/courses/android-basics-compose/course" rel="noopener" target="_blank">Android Basics with Compose</a> course. Teaching guide — <a href="../index.html">back to hub</a>.</span>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script>
+    /* ----------------------------------------------------------------------
+       Page-specific: topic-filter deck loader.
+       Reuses the shared TG.flashcards engine — we just feed it a filtered
+       array of cards and (re)mount into #deck-mount when a chip is clicked.
+       ---------------------------------------------------------------------- */
+    (function () {
+      "use strict";
+
+      function ready(fn) {
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", fn);
+        } else { fn(); }
+      }
+
+      ready(function () {
+        var dataNode = document.getElementById("all-cards");
+        var bar = document.getElementById("deckbar");
+        var mount = "#deck-mount";
+        if (!dataNode || !bar || !window.TG || !TG.flashcards) return;
+
+        var allCards;
+        try { allCards = JSON.parse(dataNode.textContent); }
+        catch (e) { console.error("flashcards: bad JSON", e); return; }
+
+        // Build the ordered list of topics from the data (preserves first-seen order).
+        var topics = [];
+        allCards.forEach(function (c) {
+          if (c.tag && topics.indexOf(c.tag) === -1) topics.push(c.tag);
+        });
+
+        // Build chips: "All topics" first, then one per topic.
+        var chips = [];
+
+        function makeChip(label, count, deck, isAll) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "deckbar__btn";
+          btn.setAttribute("aria-pressed", "false");
+          btn.setAttribute("data-deck", label);
+
+          var txt = document.createElement("span");
+          txt.textContent = isAll ? "All topics" : label;
+          var cnt = document.createElement("span");
+          cnt.className = "deckbar__count";
+          cnt.textContent = String(count);
+
+          btn.appendChild(txt);
+          btn.appendChild(cnt);
+
+          btn.addEventListener("click", function () { select(btn, deck); });
+          bar.appendChild(btn);
+          chips.push(btn);
+          return btn;
+        }
+
+        function select(activeBtn, deck) {
+          chips.forEach(function (b) {
+            b.setAttribute("aria-pressed", b === activeBtn ? "true" : "false");
+          });
+          // Re-mount the engine with the chosen deck. The engine clears the host.
+          TG.flashcards(mount, deck);
+        }
+
+        // "All topics" chip
+        var allChip = makeChip("__all__", allCards.length, allCards, true);
+
+        // One chip per topic
+        topics.forEach(function (t) {
+          var deck = allCards.filter(function (c) { return c.tag === t; });
+          makeChip(t, deck.length, deck, false);
+        });
+
+        // Default selection: All topics.
+        select(allChip, allCards);
+      });
+    })();
+  </script>
+</body>
+</html>

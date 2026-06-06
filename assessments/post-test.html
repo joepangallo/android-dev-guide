@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Post-Test: a comprehensive 24-question final assessment covering all six course outcomes (CLO 1–6). Built as a parallel of the Pre-Test across the same outcome bands so pre/post growth is comparable, with more code-reading and applied scenarios across Kotlin, Jetpack Compose, navigation/architecture, Room/DataStore, and Retrofit/coroutines/JSON/HTTP." name="description"/>
+<title>COP4667 Post-Test (Final, all CLOs)</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks only (chrome still uses contract classes) ---- */
+    .layout-2col { display:grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 980px){
+      .layout-2col { grid-template-columns: 250px 1fr; align-items:start; }
+      .layout-2col__aside { position:sticky; top:76px; }
+    }
+    .clo-map { width:100%; border-collapse:collapse; font-size: var(--fs-sm); }
+    .clo-map th, .clo-map td { text-align:left; padding: 8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+    .clo-map th { color: var(--teal-2); font-weight:750; }
+    [data-theme="dark"] .clo-map th { color:#7FD7EA; }
+    .clo-map tr:last-child td { border-bottom:none; }
+    .clo-map td:first-child { white-space:nowrap; font-family: var(--font-mono); font-weight:700; color: var(--teal-2); }
+    [data-theme="dark"] .clo-map td:first-child { color:#7FD7EA; }
+    .nutshell { font-style: italic; }
+    .legend-row { display:flex; flex-wrap:wrap; gap:var(--space-2); margin-top:var(--space-3); }
+    .how-grid { display:grid; grid-template-columns:1fr; gap:var(--space-3); }
+    @media (min-width:640px){ .how-grid { grid-template-columns:repeat(3,1fr); } }
+    .how-grid .step-mini {
+      background: var(--surface-2); border:1px solid var(--line); border-radius: var(--radius-sm);
+      padding: var(--space-3) var(--space-4);
+    }
+    .how-grid .step-mini strong { color: var(--teal-2); }
+    [data-theme="dark"] .how-grid .step-mini strong { color:#7FD7EA; }
+    .compare-table { width:100%; border-collapse:collapse; font-size: var(--fs-sm); }
+    .compare-table th, .compare-table td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; }
+    .compare-table th { color: var(--teal-2); font-weight:700; }
+    [data-theme="dark"] .compare-table th { color:#7FD7EA; }
+    .compare-table td:first-child { font-weight:600; }
+    .gain-calc {
+      background: var(--surface-2); border:1px solid var(--line);
+      border-radius: var(--radius); padding: var(--space-4);
+    }
+    .gain-calc__inputs { display:flex; flex-wrap:wrap; gap:var(--space-4); margin-top:var(--space-2); }
+    .gain-calc__field {
+      display:flex; flex-direction:column; gap:6px; font-weight:700;
+      font-size: var(--fs-sm); color: var(--teal-2);
+    }
+    [data-theme="dark"] .gain-calc__field { color:#7FD7EA; }
+    .gain-calc__field input {
+      width: 9ch; font: inherit; font-weight:600; color: var(--ink);
+      padding: 8px 10px; border:1px solid var(--line); border-radius: var(--radius-sm);
+      background: var(--surface);
+    }
+    .gain-calc__field input:focus-visible { outline:2px solid var(--green); outline-offset:1px; }
+    .gain-calc__out {
+      display:block; margin-top: var(--space-3); padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-sm); background: var(--surface);
+      border:1px solid var(--line); font-size: var(--fs-sm); color: var(--muted);
+    }
+    .gain-calc__out strong { color: var(--teal-2); font-size: var(--fs-md); }
+    [data-theme="dark"] .gain-calc__out strong { color:#7FD7EA; }
+    .gain-calc__out .gain-calc__verdict { color: var(--green-dark); font-weight:700; }
+    [data-theme="dark"] .gain-calc__out .gain-calc__verdict { color: var(--green); }
+  </style>
+</head>
+<body>
+<!-- ====================================================================
+       TOP NAVIGATION
+       ==================================================================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▲</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="../sessions/session-12.html">Session 12</a>
+<a aria-current="page" href="../assessments/post-test.html">Post-Test</a>
+<button aria-label="Toggle dark theme" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ====================================================================
+         HERO
+         ==================================================================== -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:var(--space-3)">
+<span class="pill pill--green">Post-Test</span>
+<span class="pill">Session 12 · Week 4</span>
+</div>
+<h1 class="hero-title" id="hero-title">Post-Test — Final, All CLOs</h1>
+<p class="hero-sub nutshell">A comprehensive 24-question end-of-course assessment that parallels the Session-1 Pre-Test across the same six outcome bands — deeper questions on every outcome, and a few applied topics (multi-screen navigation, runtime location permissions) the diagnostic only sampled lightly — so each student can measure exactly how far they have come from Day 1.</p>
+<div class="hero-meta">
+<span class="pill">📝 24 questions</span>
+<span class="pill">✅ 70% to pass</span>
+<span class="clo-tag">CLO 1</span>
+<span class="clo-tag">CLO 2</span>
+<span class="clo-tag">CLO 3</span>
+<span class="clo-tag">CLO 4</span>
+<span class="clo-tag">CLO 5</span>
+<span class="clo-tag">CLO 6</span>
+</div>
+</section>
+<div class="layout-2col">
+<!-- ============================ ASIDE ============================ -->
+<aside aria-label="On this page" class="layout-2col__aside no-print">
+<div class="card">
+<h2 class="card__title" style="font-size:var(--fs-md)">On this page</h2>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+<div class="card mt">
+<h2 class="card__title" style="font-size:var(--fs-md)">At a glance</h2>
+<div class="kpi-grid" style="grid-template-columns:1fr 1fr;margin:0">
+<div class="kpi"><span class="kpi__num">24</span><span class="kpi__label">Questions</span></div>
+<div class="kpi"><span class="kpi__num">6</span><span class="kpi__label">CLOs covered</span></div>
+<div class="kpi"><span class="kpi__num">70%</span><span class="kpi__label">Passing score</span></div>
+</div>
+</div>
+<div class="card mt no-print">
+<h2 class="card__title" style="font-size:var(--fs-md)">Suggested time</h2>
+<p class="muted" style="margin-top:var(--space-3)">Untimed.</p>
+</div>
+</aside>
+<!-- ============================ MAIN ============================ -->
+<div class="layout-2col__main">
+<!-- ================================================================
+           HOW TO USE
+           ================================================================ -->
+<section aria-labelledby="how-h" class="slide">
+<div class="card card--accent">
+<h2 class="card__title" id="how-h">How to use this</h2>
+<p>Answer every question, then press <strong>Submit answers</strong>. Each question is checked instantly with a ✓/× verdict, the correct option highlighted, and a full explanation that teaches the concept — so this doubles as a final study sheet. You can press <strong>↻ Retry quiz</strong> as many times as you like; nothing is reported back to anyone automatically.</p>
+<div class="how-grid mt">
+<div class="step-mini"><strong>1. Answer all 24.</strong> Mix of single-choice, multi-select, true/false, and short answer (typed, case-insensitive).</div>
+<div class="step-mini"><strong>2. Submit once.</strong> Answers are never revealed before you submit — treat it like the real thing.</div>
+<div class="step-mini"><strong>3. Read the explanations.</strong> Every item explains <em>why</em>, with current Kotlin / Jetpack Compose / Material 3 reasoning.</div>
+</div>
+<div class="callout callout--info mt">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Short-answer tip</span>
+              Short-answer questions accept a few equivalent spellings (e.g. <code>remember</code> vs <code>remember { }</code>). Type the keyword or short phrase the prompt asks for — capitalization does not matter.
+            </div>
+</div>
+</div>
+</section>
+<!-- ================================================================
+           COVERAGE MAP
+           ================================================================ -->
+<section aria-labelledby="map-h" class="slide">
+<div class="card">
+<h2 class="card__title" id="map-h">What this test covers (parallel to the Pre-Test)</h2>
+<p class="muted">24 questions distributed across all six outcomes. The Pre-Test sampled the same bands as a diagnostic; the Post-Test goes deeper on every outcome and additionally probes two applied skills the diagnostic only touched lightly — <strong>multi-screen navigation</strong> (Q24) and <strong>requesting location at runtime</strong> (Q18) — because by Week 4 you have built both.</p>
+<table aria-label="Coverage map of post-test questions by CLO" class="clo-map">
+<thead>
+<tr><th>CLO</th><th>Outcome</th><th>Post-Test items</th><th>Topics probed</th></tr>
+</thead>
+<tbody>
+<tr><td>CLO 1</td><td>Android essentials &amp; ecosystem</td><td>Q1, Q2, Q3, Q24</td><td>Android Studio/Gradle/AVD, the activity lifecycle, manifest &amp; permissions, where Compose fits</td></tr>
+<tr><td>CLO 2</td><td>UI with components, connected to code</td><td>Q4, Q5, Q6, Q7</td><td>Composables, state hoisting, <code>remember</code>/<code>mutableStateOf</code>, layout (Column/Row/Modifier), Material 3</td></tr>
+<tr><td>CLO 3</td><td>Build apps in Kotlin</td><td>Q8, Q9, Q10, Q11, Q12</td><td>Kotlin null-safety, <code>val</code>/<code>var</code>, data classes, lambdas/higher-order fns, <code>when</code>, collections</td></tr>
+<tr><td>CLO 4</td><td>Local storage / database</td><td>Q13, Q14, Q15, Q16</td><td>DataStore vs Room, Room entity/DAO/database, Flow from DAO, suspend writes off the main thread</td></tr>
+<tr><td>CLO 5</td><td>Integrate APIs (location, cloud)</td><td>Q17, Q18, Q19</td><td>Retrofit + JSON parsing, runtime permissions for location, repository as the API boundary</td></tr>
+<tr><td>CLO 6</td><td>Network protocols / backend</td><td>Q20, Q21, Q22, Q23</td><td>HTTP verbs &amp; status codes, HTTPS, coroutines/Dispatchers off the main thread, REST</td></tr>
+</tbody>
+</table>
+<div class="legend-row">
+<span class="badge">Single choice</span>
+<span class="badge">Multi-select</span>
+<span class="badge">True / False</span>
+<span class="badge">Short answer</span>
+<span class="tag">Code-reading included</span>
+</div>
+</div>
+</section>
+<!-- ================================================================
+           CODE WARM-UP (reference; copyable)
+           ================================================================ -->
+<section aria-labelledby="code-h" class="slide">
+<div class="card">
+<h2 class="card__title" id="code-h">Reference: patterns the questions reason about</h2>
+<p class="muted">These are the canonical current-Android patterns the test draws on. Read them once before you start; several questions ask you to predict or correct behavior in code like this.</p>
+<h3 data-toc-skip>State-driven Compose with hoisted state <span class="clo-tag">CLO 2</span></h3>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun Counter() {
+    // Survives recomposition; lost on configuration change unless saved.
+    var count by remember { mutableStateOf(0) }
+
+    // The UI is a function of state. Changing state triggers recomposition.
+    Column(
+        modifier = Modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = "Count: $count", style = MaterialTheme.typography.headlineSmall)
+        Button(onClick = { count++ }) {   // event flows up, state flows down
+            Text("Increment")
+        }
+    }
+}</code></pre></div>
+<h3 data-toc-skip>Room: entity, DAO returning a Flow, suspend write <span class="clo-tag">CLO 4</span></h3>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Entity(tableName = "notes")
+data class Note(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val title: String,
+    val done: Boolean = false
+)
+
+@Dao
+interface NoteDao {
+    // Observable read: emits a new list whenever the table changes.
+    @Query("SELECT * FROM notes ORDER BY id DESC")
+    fun observeAll(): Flow&lt;List&lt;Note&gt;&gt;
+
+    // Writes must be suspend so Room runs them off the main thread.
+    @Insert suspend fun insert(note: Note)
+    @Delete suspend fun delete(note: Note)
+}</code></pre></div>
+<h3 data-toc-skip>Retrofit + coroutines: networking off the main thread <span class="clo-tag">CLO 5</span><span class="clo-tag">CLO 6</span></h3>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// 1) Model that matches the JSON the API returns.
+data class Weather(val city: String, val tempC: Double)
+
+// 2) Retrofit service: suspend fun = runs on a background dispatcher.
+interface WeatherApi {
+    @GET("weather")
+    suspend fun getWeather(@Query("city") city: String): Weather
+}
+
+// 3) Repository is the single boundary the ViewModel talks to.
+class WeatherRepository(private val api: WeatherApi) {
+    suspend fun load(city: String): Weather = api.getWeather(city)
+}
+
+// 4) ViewModel launches in viewModelScope and exposes state.
+class WeatherViewModel(private val repo: WeatherRepository) : ViewModel() {
+    var uiState by mutableStateOf&lt;String&gt;("Loading…")
+        private set
+
+    fun refresh(city: String) {
+        viewModelScope.launch {
+            uiState = try {
+                val w = repo.load(city)   // suspends, does not block the UI thread
+                "${'$'}{w.city}: ${'$'}{w.tempC}°C"
+            } catch (e: Exception) {
+                "Error: ${'$'}{e.message}"
+            }
+        }
+    }
+}</code></pre></div>
+<h3 data-toc-skip>Navigation between two screens (Navigation-Compose) <span class="clo-tag">CLO 2</span><span class="clo-tag">CLO 3</span></h3>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun AppNav() {
+    val navController = rememberNavController()
+    NavHost(navController = navController, startDestination = "list") {
+        composable("list") {
+            ListScreen(onItemClick = { id -&gt; navController.navigate("detail/$id") })
+        }
+        composable("detail/{id}") { backStackEntry -&gt;
+            val id = backStackEntry.arguments?.getString("id")
+            DetailScreen(id = id)
+        }
+    }
+}</code></pre></div>
+<div class="callout callout--tip mt">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">One-line architecture map</span>
+<strong>UI (Compose) → ViewModel (state + viewModelScope) → Repository → (Room / DataStore for local, Retrofit for network).</strong> Several questions test whether you know which layer owns which job.
+            </div>
+</div>
+</div>
+</section>
+<!-- ================================================================
+           THE QUIZ
+           ================================================================ -->
+<section aria-labelledby="quiz-h" class="slide">
+<h2 id="quiz-h">The Post-Test</h2>
+<div class="callout callout--warn no-print">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Answer everything before submitting</span>
+            Unanswered single/true-false items are counted as incorrect. There is no penalty for retrying afterward.
+          </div>
+</div>
+<!-- Quiz mount point -->
+<div data-quiz="quizData" id="postTest"></div>
+</section>
+<!-- ================================================================
+           AFTER YOU SUBMIT
+           ================================================================ -->
+<section aria-labelledby="after-h" class="slide">
+<div class="card">
+<h2 class="card__title" id="after-h">After you submit — comparing to your Pre-Test</h2>
+<p>Write your two numbers down and compute your growth — use the calculator below, or work it by hand with the formulas in the table. This is the single most useful artifact from the whole course for your own learning.</p>
+<table aria-label="How to compare pre and post test scores" class="compare-table">
+<thead><tr><th>Metric</th><th>How to compute</th><th>Why it matters</th></tr></thead>
+<tbody>
+<tr><td>Raw gain</td><td><code>Post% − Pre%</code></td><td>The headline number — how many more points you scored after the course.</td></tr>
+<tr><td>Normalized gain (g)</td><td><code>(Post% − Pre%) / (100% − Pre%)</code></td><td>Fair comparison: rewards closing the gap even if you started high. 0.3–0.7 is a strong short-course result.</td></tr>
+<tr><td>Weakest CLO band</td><td>Lowest cluster of red × marks above</td><td>Exactly where to spend post-course study time before your next interview or portfolio build.</td></tr>
+</tbody>
+</table>
+<!-- Interactive growth calculator (no-print; the table above is the print/JS-off fallback) -->
+<div class="gain-calc no-print mt" role="group" aria-labelledby="gain-calc-h">
+<p class="card__title" id="gain-calc-h" style="font-size:var(--fs-md)">Compute your growth</p>
+<div class="gain-calc__inputs">
+<label class="gain-calc__field" for="gain-pre">Pre-Test %
+<input id="gain-pre" inputmode="numeric" max="100" min="0" placeholder="e.g. 45" step="1" type="number"/>
+</label>
+<label class="gain-calc__field" for="gain-post">Post-Test %
+<input id="gain-post" inputmode="numeric" max="100" min="0" placeholder="e.g. 88" step="1" type="number"/>
+</label>
+</div>
+<output aria-live="polite" class="gain-calc__out" for="gain-pre gain-post" id="gain-out">Enter both scores (0–100) to see your raw and normalized gain.</output>
+</div>
+<div class="callout callout--clo mt">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">CLO self-check</span>
+              If you can read every code block on this page, predict its behavior, and say which architecture layer each piece belongs to, you have hit CLO 1–6. Anything still fuzzy is your next study target.
+            </div>
+</div>
+</div>
+</section>
+</div><!-- /main col -->
+</div><!-- /layout-2col -->
+</main>
+<!-- ====================================================================
+       QUIZ DATA
+       ==================================================================== -->
+<script id="quizData" type="application/json">
+  {
+    "title": "COP4667 Post-Test — All CLOs (24 questions)",
+    "intro": "Comprehensive end-of-course assessment. 70% to pass. Read each prompt carefully; explanations appear after you submit.",
+    "passingScore": 0.7,
+    "shuffle": false,
+    "questions": [
+      {
+        "id": "q1",
+        "type": "single",
+        "prompt": "CLO 1 — Which statement best describes Jetpack Compose in the modern Android ecosystem?",
+        "options": [
+          { "id": "a", "text": "An XML layout designer that ships with Android Studio" },
+          { "id": "b", "text": "Android's modern, declarative UI toolkit where the UI is built in Kotlin as composable functions" },
+          { "id": "c", "text": "A replacement for the Kotlin language" },
+          { "id": "d", "text": "A backend framework for REST APIs" }
+        ],
+        "correct": ["b"],
+        "explanation": "Jetpack Compose is Android's recommended declarative UI toolkit. You describe the UI as @Composable functions written in Kotlin, and Compose re-renders (recomposes) when state changes. It replaces the older imperative View/XML system — not Kotlin itself, and it has nothing to do with backends."
+      },
+      {
+        "id": "q2",
+        "type": "single",
+        "prompt": "CLO 1 — A user rotates the device while your Activity is on screen. By default, which lifecycle sequence does the Activity go through?",
+        "options": [
+          { "id": "a", "text": "Nothing happens; rotation never affects an Activity" },
+          { "id": "b", "text": "onPause → onStop → onDestroy → onCreate → onStart → onResume (it is recreated)" },
+          { "id": "c", "text": "onResume → onResume (it just resumes again)" },
+          { "id": "d", "text": "onCreate is called once and never again for the app's life" }
+        ],
+        "correct": ["b"],
+        "explanation": "A configuration change such as rotation destroys and recreates the Activity by default, so it runs through onPause → onStop → onDestroy and then onCreate → onStart → onResume. This is exactly why transient UI state must be saved (rememberSaveable, ViewModel, or onSaveInstanceState) — it is the #1 source of 'my data disappeared when I rotated' bugs."
+      },
+      {
+        "id": "q3",
+        "type": "multi",
+        "prompt": "CLO 1 — Which of the following are true about the Android manifest (AndroidManifest.xml)? Select ALL that apply.",
+        "options": [
+          { "id": "a", "text": "It declares app components such as activities" },
+          { "id": "b", "text": "It is where permissions like INTERNET or location access are declared" },
+          { "id": "c", "text": "It is written in Kotlin and compiled like the rest of your code" },
+          { "id": "d", "text": "Dangerous (runtime) permissions still require an explicit request at runtime, even though they are declared here" }
+        ],
+        "correct": ["a", "b", "d"],
+        "explanation": "The manifest is an XML file (not Kotlin) that declares components (activities, services), required permissions, and app metadata. Declaring a dangerous permission (e.g. ACCESS_FINE_LOCATION) in the manifest is necessary but NOT sufficient: on Android 6.0+ you must also request it at runtime and handle the user's grant/deny. So a, b, and d are true; c is false."
+      },
+      {
+        "id": "q4",
+        "type": "single",
+        "prompt": "CLO 2 — In the Counter example, what is the role of `remember { mutableStateOf(0) }`?",
+        "options": [
+          { "id": "a", "text": "It permanently saves the value to disk" },
+          { "id": "b", "text": "It creates observable state that survives recomposition and triggers recomposition when changed" },
+          { "id": "c", "text": "It makes the variable a compile-time constant" },
+          { "id": "d", "text": "It runs the lambda on a background thread" }
+        ],
+        "correct": ["b"],
+        "explanation": "mutableStateOf(0) creates an observable state holder; remember keeps it across recompositions (without remember, it would be reset to 0 on every recomposition). When you write count++, Compose observes the change and recomposes the parts of the UI that read count. It does NOT persist to disk (that needs DataStore/Room) and does NOT survive configuration changes by itself — use rememberSaveable or a ViewModel for that."
+      },
+      {
+        "id": "q5",
+        "type": "single",
+        "prompt": "CLO 2 — Which definition correctly describes 'state hoisting' in Compose?",
+        "options": [
+          { "id": "a", "text": "Moving state up to a caller and passing the value down plus an event lambda up, making the composable stateless and reusable" },
+          { "id": "b", "text": "Storing all state in global variables" },
+          { "id": "c", "text": "Caching network responses in memory" },
+          { "id": "d", "text": "Running composables on a background thread" }
+        ],
+        "correct": ["a"],
+        "explanation": "State hoisting is the unidirectional-data-flow pattern: a composable receives its value as a parameter (state flows DOWN) and reports changes via a callback like onValueChange (events flow UP). The composable itself becomes stateless, which makes it reusable, testable, and easy to preview. The hoisted state lives in the caller (often a ViewModel)."
+      },
+      {
+        "id": "q6",
+        "type": "short",
+        "prompt": "CLO 2 — In Compose, what is the parameter (used by almost every composable) that lets a caller pass in sizing, padding, click behavior, and other layout/decoration instructions? Type the one-word name.",
+        "correct": ["modifier", "Modifier", "the modifier"],
+        "explanation": "The Modifier is the standard mechanism for decorating or augmenting a composable: Modifier.padding(16.dp).fillMaxWidth().clickable { }. By convention you expose a `modifier: Modifier = Modifier` parameter (first optional parameter) so callers can customize layout from the outside — another piece of the reusable-composable pattern."
+      },
+      {
+        "id": "q7",
+        "type": "single",
+        "prompt": "CLO 2 — You need to stack three Text composables vertically with 8.dp between them. Which is correct, current Material 3 / Compose code?",
+        "options": [
+          { "id": "a", "text": "Row(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(...); Text(...); Text(...) }" },
+          { "id": "b", "text": "Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(...); Text(...); Text(...) }" },
+          { "id": "c", "text": "LinearLayout(orientation = VERTICAL) { ... }" },
+          { "id": "d", "text": "Stack { Text(...); Text(...); Text(...) }" }
+        ],
+        "correct": ["b"],
+        "explanation": "Column lays children out vertically; its verticalArrangement = Arrangement.spacedBy(8.dp) inserts 8.dp between each child. Row is horizontal (and uses horizontalArrangement). LinearLayout is the old View system, not Compose. 'Stack' is not a Compose layout — the overlapping layout is Box."
+      },
+      {
+        "id": "q8",
+        "type": "single",
+        "prompt": "CLO 3 — Read this Kotlin:  val name: String? = null;  println(name?.length).  What is printed?",
+        "options": [
+          { "id": "a", "text": "It throws a NullPointerException" },
+          { "id": "b", "text": "0" },
+          { "id": "c", "text": "null" },
+          { "id": "d", "text": "It will not compile" }
+        ],
+        "correct": ["c"],
+        "explanation": "The safe-call operator ?. short-circuits: if name is null, name?.length evaluates to null instead of throwing. So println receives null and prints 'null'. This is Kotlin's headline null-safety feature — the type String? signals 'maybe null' and the compiler forces you to handle it (?., ?:, or !!)."
+      },
+      {
+        "id": "q9",
+        "type": "single",
+        "prompt": "CLO 3 — Read this:  val a: Int? = null;  val b = a ?: 5;  println(b).  What is printed, and what is the ?: operator called?",
+        "options": [
+          { "id": "a", "text": "null — it is the safe-call operator" },
+          { "id": "b", "text": "5 — it is the Elvis operator (provides a default when the left side is null)" },
+          { "id": "c", "text": "0 — it is the not-null assertion" },
+          { "id": "d", "text": "It will not compile because a is null" }
+        ],
+        "correct": ["b"],
+        "explanation": "?: is the Elvis operator: it returns the left operand if it is non-null, otherwise the right operand. Since a is null, b becomes 5. (The safe call is ?., and the not-null assertion is !! which would have thrown here.)"
+      },
+      {
+        "id": "q10",
+        "type": "single",
+        "prompt": "CLO 3 — Which line declares a read-only (cannot be reassigned) variable in Kotlin?",
+        "options": [
+          { "id": "a", "text": "var count = 0" },
+          { "id": "b", "text": "val count = 0" },
+          { "id": "c", "text": "let count = 0" },
+          { "id": "d", "text": "const count = 0" }
+        ],
+        "correct": ["b"],
+        "explanation": "val declares a read-only reference (it cannot be reassigned after initialization), whereas var is mutable. Prefer val by default — it makes code easier to reason about. 'let' is a scope function, not a declaration keyword; 'const' must be combined with val (const val) and only for compile-time constants."
+      },
+      {
+        "id": "q11",
+        "type": "single",
+        "prompt": "CLO 3 — Read this:  val nums = listOf(1, 2, 3, 4);  val r = nums.filter { it % 2 == 0 }.map { it * 10 }.  What is r?",
+        "options": [
+          { "id": "a", "text": "[10, 20, 30, 40]" },
+          { "id": "b", "text": "[20, 40]" },
+          { "id": "c", "text": "[2, 4]" },
+          { "id": "d", "text": "[1, 3]" }
+        ],
+        "correct": ["b"],
+        "explanation": "filter { it % 2 == 0 } keeps the even numbers → [2, 4]; map { it * 10 } transforms each → [20, 40]. `it` is the implicit single lambda parameter. These higher-order collection functions (filter/map/reduce) are everywhere in idiomatic Kotlin and replace most manual for-loops."
+      },
+      {
+        "id": "q12",
+        "type": "single",
+        "prompt": "CLO 3 — You write `data class User(val name: String, val age: Int)`. Compared with a plain class, what does the `data` modifier generate for you?",
+        "options": [
+          { "id": "a", "text": "Network code to fetch the user from a server" },
+          { "id": "b", "text": "equals()/hashCode(), toString(), copy(), and componentN() destructuring functions based on the properties" },
+          { "id": "c", "text": "A Room database table automatically" },
+          { "id": "d", "text": "Nothing — data is only a comment" }
+        ],
+        "correct": ["b"],
+        "explanation": "A data class auto-generates equals()/hashCode() (value equality based on the declared properties), a readable toString(), copy() (for immutable updates like user.copy(age = 31)), and componentN() functions enabling destructuring (val (n, a) = user). This is why data classes are the go-to for models and UI state. (@Entity is needed to make it a Room table — that's separate.)"
+      },
+      {
+        "id": "q13",
+        "type": "single",
+        "prompt": "CLO 4 — Your app needs to remember a single user setting: a Boolean 'dark mode enabled'. Which local-storage option is the most appropriate, lightest-weight choice?",
+        "options": [
+          { "id": "a", "text": "Room database with an entity and DAO" },
+          { "id": "b", "text": "Preferences DataStore (a key-value store)" },
+          { "id": "c", "text": "A global var in an Activity" },
+          { "id": "d", "text": "A remote REST API" }
+        ],
+        "correct": ["b"],
+        "explanation": "For a few simple key-value settings, Preferences DataStore is the modern, recommended choice (it replaces SharedPreferences, is async/Flow-based, and is type-safe-ish via keys). Room is appropriate for structured/relational data with many rows. A global var is lost when the process dies, and a REST API is for remote data — wrong tool for a local toggle."
+      },
+      {
+        "id": "q14",
+        "type": "single",
+        "prompt": "CLO 4 — In the Room example, the DAO read is `fun observeAll(): Flow<List<Note>>`. Why return a Flow instead of a plain `List<Note>`?",
+        "options": [
+          { "id": "a", "text": "Flow is required by Kotlin syntax for any query" },
+          { "id": "b", "text": "So the UI automatically receives a new list every time the underlying table changes — an observable, reactive read" },
+          { "id": "c", "text": "Because Flow makes the query run faster" },
+          { "id": "d", "text": "Because a List cannot hold Room entities" }
+        ],
+        "correct": ["b"],
+        "explanation": "When a Room @Query returns a Flow, Room emits a fresh result every time the queried tables change. The ViewModel collects that Flow and exposes it as state, so the Compose UI updates automatically after any insert/update/delete — no manual refresh. A one-shot suspend fun returning List<Note> would only give the value at call time."
+      },
+      {
+        "id": "q15",
+        "type": "single",
+        "prompt": "CLO 4 — Why are the Room write functions (`@Insert suspend fun insert(...)`, `@Delete suspend fun delete(...)`) marked `suspend`?",
+        "options": [
+          { "id": "a", "text": "To make them run automatically every second" },
+          { "id": "b", "text": "So they execute off the main/UI thread (in a coroutine) and never block the UI, since disk I/O is slow" },
+          { "id": "c", "text": "Because suspend encrypts the data" },
+          { "id": "d", "text": "It is optional decoration with no effect" }
+        ],
+        "correct": ["b"],
+        "explanation": "Database I/O is a blocking, potentially slow operation. Marking the write functions suspend forces callers to invoke them from a coroutine (e.g. viewModelScope.launch), and Room runs them on a background dispatcher. This keeps the main thread free, preventing jank and ANRs (Application Not Responding). Doing disk or network work on the main thread is a core Android anti-pattern."
+      },
+      {
+        "id": "q16",
+        "type": "multi",
+        "prompt": "CLO 4 — Which three pieces make up a minimal Room setup? Select the THREE Room building blocks.",
+        "options": [
+          { "id": "a", "text": "A class annotated @Entity (the table)" },
+          { "id": "b", "text": "An interface annotated @Dao (the queries)" },
+          { "id": "c", "text": "An abstract class annotated @Database (the database holder)" },
+          { "id": "d", "text": "A @Composable function (the UI)" }
+        ],
+        "correct": ["a", "b", "c"],
+        "explanation": "Room has three core components: @Entity classes that map to tables, @Dao interfaces that define the queries/inserts, and an abstract @Database class (extending RoomDatabase) that ties entities + DAOs together and is built via Room.databaseBuilder(...). A @Composable is UI — useful in the app, but not part of Room itself."
+      },
+      {
+        "id": "q17",
+        "type": "single",
+        "prompt": "CLO 5 — In the Retrofit example, `interface WeatherApi { @GET(\"weather\") suspend fun getWeather(@Query(\"city\") city: String): Weather }`. What does Retrofit do with this interface at runtime?",
+        "options": [
+          { "id": "a", "text": "Nothing; you must implement the interface by hand" },
+          { "id": "b", "text": "It generates an implementation that builds the HTTP GET request, calls the network, and parses the JSON response into a Weather object" },
+          { "id": "c", "text": "It stores the Weather object in a Room database" },
+          { "id": "d", "text": "It renders the weather on screen" }
+        ],
+        "correct": ["b"],
+        "explanation": "Retrofit takes your annotated interface and generates the networking implementation: @GET(\"weather\") + @Query(\"city\") builds the URL (…/weather?city=…), executes the HTTP call, and (with a converter like Moshi/Gson/kotlinx-serialization) deserializes the JSON body into your Weather data class. The suspend keyword means it runs on a background dispatcher and integrates with coroutines."
+      },
+      {
+        "id": "q18",
+        "type": "single",
+        "prompt": "CLO 5 — Your app reads the device's current GPS location. Beyond declaring ACCESS_FINE_LOCATION in the manifest, what else is required on a modern Android version?",
+        "options": [
+          { "id": "a", "text": "Nothing — the manifest declaration grants it automatically" },
+          { "id": "b", "text": "You must request the permission at runtime and handle the user granting or denying it" },
+          { "id": "c", "text": "You must publish to Google Play first" },
+          { "id": "d", "text": "You must disable the internet permission" }
+        ],
+        "correct": ["b"],
+        "explanation": "Location is a 'dangerous' runtime permission. On Android 6.0+ the manifest entry is necessary but you must also prompt the user at runtime (e.g. with the ActivityResult permission contract / rememberLauncherForActivityResult) and gracefully handle a denial. The app cannot access fine location until the user actually grants it."
+      },
+      {
+        "id": "q19",
+        "type": "single",
+        "prompt": "CLO 5 — In the recommended architecture, which layer should the ViewModel call to fetch data from a web API, and why?",
+        "options": [
+          { "id": "a", "text": "The Composable directly, because the UI knows what it needs" },
+          { "id": "b", "text": "A Repository, which hides the data source (Retrofit, Room) behind a clean interface so the ViewModel does not depend on networking details" },
+          { "id": "c", "text": "The Android manifest" },
+          { "id": "d", "text": "The Activity's onCreate method" }
+        ],
+        "correct": ["b"],
+        "explanation": "Clean architecture puts a Repository between the ViewModel and the data sources. The ViewModel asks the repository for data; the repository decides whether it comes from the network (Retrofit), the cache, or local storage (Room/DataStore). This decoupling makes the ViewModel testable (you can fake the repository) and lets you swap data sources without touching UI logic — exactly the project's required 'ViewModel + repository' pattern."
+      },
+      {
+        "id": "q20",
+        "type": "single",
+        "prompt": "CLO 6 — Which HTTP method is the conventional, idempotent choice for RETRIEVING a resource without modifying server state?",
+        "options": [
+          { "id": "a", "text": "POST" },
+          { "id": "b", "text": "DELETE" },
+          { "id": "c", "text": "GET" },
+          { "id": "d", "text": "PATCH" }
+        ],
+        "correct": ["c"],
+        "explanation": "GET retrieves a resource and should not change server state (it is 'safe' and idempotent). POST creates/submits data, PUT/PATCH update, and DELETE removes. Choosing the right verb is core REST design — for example, your Retrofit @GET(\"weather\") correctly uses GET because it only reads."
+      },
+      {
+        "id": "q21",
+        "type": "single",
+        "prompt": "CLO 6 — Your API call returns HTTP status 404. What does that indicate?",
+        "options": [
+          { "id": "a", "text": "Success — the resource was created" },
+          { "id": "b", "text": "The requested resource was not found on the server" },
+          { "id": "c", "text": "The server had an internal error" },
+          { "id": "d", "text": "The request was redirected" }
+        ],
+        "correct": ["b"],
+        "explanation": "404 Not Found means the server could not find the requested resource (often a wrong path/ID). Quick map: 2xx = success (200 OK, 201 Created), 3xx = redirect, 4xx = client error (400 Bad Request, 401 Unauthorized, 404 Not Found), 5xx = server error (500 Internal Server Error). Your app should handle non-2xx responses gracefully instead of crashing."
+      },
+      {
+        "id": "q22",
+        "type": "truefalse",
+        "prompt": "CLO 6 — True or False: It is correct to perform a blocking network request directly on the main (UI) thread as long as the response is small.",
+        "correct": false,
+        "explanation": "False. Network I/O must never run on the main thread, regardless of size — it can block the UI and trigger an ANR, and Android throws NetworkOnMainThreadException for raw network calls on the main thread. The correct pattern is a suspend function launched in a coroutine (e.g. viewModelScope.launch) so it runs on a background dispatcher like Dispatchers.IO."
+      },
+      {
+        "id": "q23",
+        "type": "short",
+        "prompt": "CLO 6 — A coroutine builder used inside a ViewModel automatically cancels its work when the ViewModel is cleared, so you don't leak background work. Name this scope (the property you call .launch on).",
+        "correct": ["viewModelScope", "viewModelscope", "viewModelScope.launch"],
+        "explanation": "viewModelScope is a built-in CoroutineScope tied to the ViewModel's lifecycle. Work launched with viewModelScope.launch { } is automatically cancelled when the ViewModel is cleared (e.g. the screen is permanently gone), preventing leaked coroutines and wasted network calls. It defaults to Dispatchers.Main but suspend functions inside it (Retrofit, Room) switch to background dispatchers."
+      },
+      {
+        "id": "q24",
+        "type": "multi",
+        "prompt": "CLO 1 / synthesis — The course project requires a 'real' app. Which of the following are part of the REQUIRED feature checklist? Select ALL that apply.",
+        "options": [
+          { "id": "a", "text": "At least two screens with navigation between them" },
+          { "id": "b", "text": "Jetpack Compose UI that is driven by state" },
+          { "id": "c", "text": "Local persistence with DataStore or Room/SQLite" },
+          { "id": "d", "text": "Data from a web API fetched over the network, with a ViewModel + repository architecture" }
+        ],
+        "correct": ["a", "b", "c", "d"],
+        "explanation": "All four are required: (a) ≥2 screens with navigation, (b) state-driven Compose UI, (c) local persistence (DataStore or Room/SQLite), and (d) network data over an API plus clean architecture (ViewModel + repository). This single checklist exercises CLO 2 (UI), CLO 3 (Kotlin), CLO 4 (local data), CLO 5 (APIs), and CLO 6 (networking) — which is exactly why the project ties the whole course together."
+      }
+    ]
+  }
+  </script>
+<!-- ====================================================================
+       FOOTER
+       ==================================================================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span>
+<div class="muted">Keiser University · B.S. Software Engineering · Post-Test (Final, all CLOs)</div>
+</div>
+<div class="row no-print">
+<a href="../index.html">Course Hub</a>
+<a href="../sessions/session-12.html">Session 12</a>
+<a href="../sessions/session-01.html">Session 1 (Pre-Test)</a>
+</div>
+<div class="muted">Built with Kotlin + Jetpack Compose (Material 3) · Official Android Developer docs</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<!-- Pre/Post growth calculator: raw gain + Hake normalized gain (g). Vanilla JS, no engine deps. -->
+<script>
+  (function () {
+    var pre = document.getElementById("gain-pre");
+    var post = document.getElementById("gain-post");
+    var out = document.getElementById("gain-out");
+    if (!pre || !post || !out) return;
+
+    function clamp(n) { return Math.max(0, Math.min(100, n)); }
+
+    function render() {
+      var preVal = pre.value.trim();
+      var postVal = post.value.trim();
+      if (preVal === "" || postVal === "") {
+        out.textContent = "Enter both scores (0–100) to see your raw and normalized gain.";
+        return;
+      }
+      var p = clamp(parseFloat(preVal));
+      var q = clamp(parseFloat(postVal));
+      if (isNaN(p) || isNaN(q)) {
+        out.textContent = "Enter both scores as numbers between 0 and 100.";
+        return;
+      }
+      var raw = q - p;
+      var rawStr = (raw >= 0 ? "+" : "") + Math.round(raw) + " pts";
+      var gStr, verdict;
+      if (p >= 100) {
+        // Can't normalize a perfect pre-score (would divide by zero).
+        gStr = "n/a (you already scored 100% going in)";
+        verdict = raw >= 0 ? "Maxed out — nothing left to gain." : "";
+      } else {
+        var g = (q - p) / (100 - p);
+        gStr = g.toFixed(2);
+        if (g >= 0.7) verdict = "Excellent — high normalized gain.";
+        else if (g >= 0.3) verdict = "Strong short-course result (0.3–0.7).";
+        else if (g >= 0) verdict = "Some growth — revisit your weakest CLO band above.";
+        else verdict = "Lower than the diagnostic — review the explanations, then retry.";
+      }
+      out.innerHTML =
+        "Raw gain: <strong>" + rawStr + "</strong> &nbsp;·&nbsp; Normalized gain (g): <strong>" + gStr + "</strong>" +
+        (verdict ? "<br><span class=\"gain-calc__verdict\">" + verdict + "</span>" : "");
+    }
+
+    pre.addEventListener("input", render);
+    post.addEventListener("input", render);
+  })();
+</script>
+</body>
+</html>

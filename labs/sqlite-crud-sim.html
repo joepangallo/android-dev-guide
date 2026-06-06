@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — SQLite / Room CRUD Simulator. An interactive, in-browser tasks table you Create / Read / Update / Delete, with the exact Room @Entity / @Dao / @Database Kotlin and the underlying SQL shown live for each action. Supports CLO 4 (data persistence), Session 9." name="description"/>
+<title>SQLite / Room CRUD Simulator · COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .lead { font-size: var(--fs-lg); color: var(--muted); max-width: 72ch; }
+    .anchor-h { scroll-margin-top: 84px; }
+
+    /* Layout: simulator on the left, synced code on the right */
+    .sim-layout { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 1000px) { .sim-layout { grid-template-columns: 1.05fr .95fr; align-items: start; } }
+
+    /* Two-column doc layout (content + sticky TOC) */
+    .doc-layout { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 980px) { .doc-layout { grid-template-columns: 1fr 240px; } }
+    .toc-card { position: sticky; top: 76px; }
+
+    /* ---- The CRUD form ---- */
+    .crud-form { display: grid; gap: var(--space-3); }
+    .crud-form .field { display: grid; gap: 4px; }
+    .crud-form label { font-weight: 700; font-size: var(--fs-sm); }
+    .crud-form input[type="text"] {
+      width: 100%; padding: 10px 12px; font: inherit;
+      background: var(--surface); color: var(--ink);
+      border: 1px solid var(--line); border-radius: var(--radius-sm);
+    }
+    .crud-form input[type="text"]:focus-visible { border-color: var(--green); }
+    .switch-row { display: flex; align-items: center; gap: 10px; }
+    .switch-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--green-dark); }
+    .form-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: 4px; }
+    .editing-banner {
+      font-size: var(--fs-sm); font-weight: 700; color: var(--accent);
+      display: none; align-items: center; gap: 6px;
+    }
+    .editing .editing-banner { display: flex; }
+
+    /* ---- The "device" tasks table ---- */
+    .device-frame {
+      border: 1px solid var(--line); border-radius: var(--radius);
+      background: var(--surface-2); padding: var(--space-3);
+      box-shadow: inset 0 1px 0 rgba(7,48,66,.04);
+    }
+    .device-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--space-3); padding: 6px 10px 10px;
+    }
+    .device-bar h3 { margin: 0; font-size: var(--fs-md); }
+    .row-count { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted); font-weight: 700; }
+    .device-counts { display: flex; align-items: center; gap: 8px; }
+    .remaining-badge {
+      font-size: var(--fs-xs); font-weight: 800; padding: 2px 9px; border-radius: 999px;
+      background: var(--teal); color: #DDF6F2; white-space: nowrap;
+    }
+    .remaining-badge.all-done { background: color-mix(in srgb, var(--green) 22%, transparent); color: var(--teal); }
+    [data-theme="dark"] .remaining-badge.all-done { background: var(--green); color: var(--teal); }
+    .search-row { display: flex; align-items: center; gap: 8px; padding: 0 10px 8px; }
+    .search-row input {
+      flex: 1; min-width: 0; padding: 7px 11px; font: inherit; font-size: var(--fs-sm);
+      background: var(--surface); color: var(--ink);
+      border: 1px solid var(--line); border-radius: var(--radius-sm);
+    }
+    .search-row input:focus-visible { border-color: var(--green); outline: none; }
+
+    table.tasks { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius-sm); overflow: hidden; }
+    table.tasks th, table.tasks td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; }
+    table.tasks th { background: var(--teal); color: #DDF6F2; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .04em; }
+    table.tasks tr:last-child td { border-bottom: none; }
+    table.tasks tbody tr.is-done td.t-title { color: var(--muted); text-decoration: line-through; }
+    table.tasks tbody tr:hover { background: color-mix(in srgb, var(--green) 7%, var(--surface)); }
+    .t-id { font-family: var(--font-mono); color: var(--teal-2); font-weight: 700; width: 1%; white-space: nowrap; }
+    [data-theme="dark"] .t-id { color: var(--green); }
+    .t-done { width: 1%; white-space: nowrap; text-align: center; }
+    .t-actions { width: 1%; white-space: nowrap; }
+    .t-actions .btn { margin-left: 4px; }
+    .done-chip {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px;
+      border-radius: 999px; font-size: var(--fs-xs); font-weight: 800;
+    }
+    .done-chip.yes { background: color-mix(in srgb, var(--green) 22%, transparent); color: var(--teal); }
+    .done-chip.no  { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+    /* Dark theme: solid green chip + dark text keeps the ~"done" signal at AA contrast */
+    [data-theme="dark"] .done-chip.yes { background: var(--green); color: var(--teal); }
+    .empty-row td { text-align: center; color: var(--muted); font-style: italic; padding: var(--space-5); }
+    tr.row-flash { animation: rowflash 1.1s ease; }
+    @keyframes rowflash { 0% { background: color-mix(in srgb, var(--green) 38%, var(--surface)); } 100% { background: transparent; } }
+
+    /* SQL log */
+    .sql-log {
+      max-height: 230px; overflow-y: auto;
+      background: var(--code-bg); color: var(--code-ink);
+      border-radius: var(--radius-sm); padding: var(--space-3);
+      font-family: var(--font-mono); font-size: var(--fs-xs); line-height: 1.55;
+    }
+    .sql-log:empty::before { content: "— no statements yet — run a CRUD action —"; color: #6f8f87; }
+    .sql-log .log-line { padding: 2px 0; border-bottom: 1px dashed rgba(255,255,255,.08); white-space: pre-wrap; word-break: break-word; }
+    .sql-log .log-line:last-child { border-bottom: none; }
+    .sql-log .op { font-weight: 800; }
+    .sql-log .op-create { color: #6BE3A1; }
+    .sql-log .op-read   { color: #7FD7EA; }
+    .sql-log .op-update { color: #FFD166; }
+    .sql-log .op-delete { color: #FF8A8E; }
+
+    .syncpill { display:inline-flex; align-items:center; gap:6px; font-size: var(--fs-xs); font-weight:700; color: var(--muted); }
+    .syncpill .dot { width:8px; height:8px; border-radius:50%; background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 30%, transparent); }
+
+    table.cmp { width:100%; border-collapse: collapse; margin: var(--space-4) 0; font-size: var(--fs-sm); }
+    table.cmp th, table.cmp td { border:1px solid var(--line); padding:9px 11px; text-align:left; vertical-align: top; }
+    table.cmp th { background: var(--surface-2); font-weight:700; }
+    table.cmp caption { caption-side: bottom; color: var(--muted); font-size: var(--fs-xs); margin-top: 6px; text-align: left; }
+
+    .legend-row { display:flex; flex-wrap:wrap; gap:8px; margin: var(--space-3) 0; }
+    .mini-note { font-size: var(--fs-sm); color: var(--muted); }
+    .pre-note { font-size: var(--fs-xs); color: var(--muted); margin: 2px 0 0; font-family: var(--font-mono); }
+  </style>
+</head>
+<body>
+<!-- ============================ TOP NAV ============================ -->
+<header>
+<div class="topbar">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">A</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="../sessions/session-09.html">Session 9 (Local Data)</a>
+<a aria-current="page" class="active" href="sqlite-crud-sim.html">CRUD Sim</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ============================ HERO ============================ -->
+<section aria-labelledby="hero-title" class="hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:12px;">
+<span class="pill pill--green">Interactive Lab Tool</span>
+<span class="pill">Session 9 · Week 3</span>
+<span class="pill">Unit 6 — Data persistence</span>
+</div>
+<h1 class="hero-title" id="hero-title">SQLite / Room CRUD Simulator</h1>
+<p class="hero-sub">
+        A live, in-browser <code>tasks</code> table you can <strong>Create</strong>, <strong>Read</strong>,
+        <strong>Update</strong>, and <strong>Delete</strong> — with the exact Room
+        <code>@Entity</code> / <code>@Dao</code> / <code>@Database</code> Kotlin and the underlying
+        SQL shown live for every action. Your data is saved to <code>localStorage</code>, so it survives a
+        page reload exactly the way Room/SQLite survives an app restart on a device.
+      </p>
+<div class="hero-meta">
+<span class="pill pill--accent">🎯 CLO 4 — Local storage &amp; databases</span>
+<span class="pill">Kotlin · Jetpack Compose · Material 3</span>
+<span class="pill">Room · SQLite · DataStore</span>
+</div>
+</section>
+<div class="doc-layout">
+<div>
+<!-- ===================== HOW TO USE ===================== -->
+<section aria-labelledby="how-h" class="card card--accent slide">
+<h2 class="card__title anchor-h" id="how-h">🧭 How to use this tool</h2>
+<p class="lead">
+            This simulator mirrors a real Room-backed screen. The widget on the left is a fake on-device
+            <code>tasks</code> table; the panel on the right shows the <strong>generated SQL</strong> Room runs under
+            the hood, and the tabs below it show the <strong>Kotlin you would actually write</strong>.
+          </p>
+<ol>
+<li><strong>Create</strong> — type a title, optionally tick "done", and press <em>Insert</em>. A new row appears with an auto-incremented <code>id</code>.</li>
+<li><strong>Read</strong> — the table <em>is</em> the read. Press <em>Refresh (SELECT *)</em> to re-emit the query and watch it log; toggle "show done only" to see a filtered <code>WHERE</code>; type in <em>🔎 search title</em> to run a <code>LIKE '%…%'</code>; the <strong>"N left"</strong> badge is a live <code>SELECT COUNT(*) … WHERE is_done = 0</code> that updates on every change.</li>
+<li><strong>Update</strong> — press <em>Edit</em> on any row, change the title or the done flag, then <em>Save changes</em> (an <code>UPDATE … WHERE id = ?</code>).</li>
+<li><strong>Delete</strong> — press <em>Delete</em> on a row (<code>DELETE … WHERE id = ?</code>), or <em>Clear all</em> to wipe the table.</li>
+</ol>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Reload to prove persistence</span>
+<p>After adding a few rows, refresh this browser tab. The rows come back. That is the same
+              promise Room makes: data written to the SQLite file outlives the process. Use the
+              <strong>Reset DB</strong> button to drop back to the seed data at any time.</p>
+</div>
+</div>
+</section>
+<!-- ===================== THE SIMULATOR ===================== -->
+<section aria-labelledby="sim-h" class="slide">
+<h2 class="anchor-h" id="sim-h">🧪 The CRUD simulator</h2>
+<div class="sim-layout">
+<!-- LEFT: form + device table -->
+<div class="col" style="gap: var(--space-5);">
+<div class="card card--teal">
+<div class="card__title">
+<span id="form-title">➕ Create a task</span>
+<span class="editing-banner" id="editing-banner">✎ Editing id <span id="editing-id"></span></span>
+</div>
+<form autocomplete="off" class="crud-form" id="crud-form">
+<div class="field">
+<label for="task-title">Title <span class="muted">(NOT NULL)</span></label>
+<input id="task-title" maxlength="80" name="title" placeholder="e.g. Finish Unit 6 reading" required="" type="text"/>
+<p class="pre-note" id="title-hint">column: title TEXT NOT NULL</p>
+</div>
+<div class="field">
+<div class="switch-row">
+<input id="task-done" name="done" type="checkbox"/>
+<label for="task-done" style="margin:0;">Done <span class="muted">(INTEGER 0/1)</span></label>
+</div>
+<p class="pre-note">column: is_done INTEGER NOT NULL DEFAULT 0</p>
+</div>
+<div class="form-actions">
+<button class="btn" id="submit-btn" type="submit">Insert row</button>
+<button class="btn btn--ghost" hidden="" id="cancel-edit" type="button">Cancel edit</button>
+</div>
+</form>
+</div>
+<div aria-labelledby="device-h" class="device-frame">
+<div class="device-bar">
+<h3 id="device-h">📱 tasks <span class="muted" style="font-weight:600;">(on-device table)</span></h3>
+<span class="device-counts">
+<span class="remaining-badge" id="remaining-badge" title="Live SELECT COUNT(*) FROM tasks WHERE is_done = 0">0 left</span>
+<span class="row-count" id="row-count">0 rows</span>
+</span>
+</div>
+<div class="search-row">
+<label class="muted" for="task-search" style="font-weight:700;font-size:var(--fs-xs);">🔎 search title</label>
+<input autocomplete="off" id="task-search" placeholder="type to run a LIKE query…" type="text"/>
+</div>
+<div style="overflow-x:auto;">
+<table class="tasks" id="tasks-table">
+<thead>
+<tr>
+<th class="t-id">id</th>
+<th>title</th>
+<th class="t-done">is_done</th>
+<th class="t-actions">actions</th>
+</tr>
+</thead>
+<tbody id="tasks-body"><!-- rows injected by JS --></tbody>
+</table>
+</div>
+<div class="form-actions" style="margin-top: var(--space-3);">
+<button class="btn btn--sm" id="refresh-btn" type="button">↻ Refresh (SELECT *)</button>
+<button aria-pressed="false" class="btn btn--ghost btn--sm" id="filter-btn" type="button">Show done only</button>
+<button class="btn btn--ghost btn--sm" id="clear-btn" type="button">🗑 Clear all</button>
+<button class="btn btn--ghost btn--sm" id="reset-btn" type="button">⟲ Reset DB</button>
+</div>
+<p class="mini-note" style="margin-top: var(--space-3);">
+<span class="syncpill"><span aria-hidden="true" class="dot"></span> Live-synced</span>
+                  — every button updates the SQL log and the matching code tab on the right.
+                </p>
+</div>
+</div>
+<!-- RIGHT: synced SQL + code -->
+<div class="col" style="gap: var(--space-5);">
+<div class="card">
+<div class="card__title">
+<span>🗄 Generated SQL log</span>
+<button class="btn btn--ghost btn--sm" id="clear-log" style="margin-left:auto;" type="button">Clear log</button>
+</div>
+<p class="mini-note" style="margin-top:0;">The statements Room compiles from your DAO and runs on the SQLite database. Newest at the bottom.</p>
+<div aria-label="Generated SQL statements" aria-live="polite" class="sql-log" id="sql-log" role="log"></div>
+</div>
+<div class="card">
+<div class="card__title"><span>🧩 The Kotlin behind this action</span></div>
+<p class="mini-note" style="margin-top:0;">This panel follows whatever you just did. Use the tabs to compare all four operations.</p>
+<div aria-label="CRUD Kotlin by operation" class="tabs" role="tablist">
+<button class="tab" data-tab="k-create" id="ktab-create" type="button">Create</button>
+<button class="tab" data-tab="k-read" type="button">Read</button>
+<button class="tab" data-tab="k-update" type="button">Update</button>
+<button class="tab" data-tab="k-delete" type="button">Delete</button>
+</div>
+<div class="tabpanel" data-tabpanel="k-create">
+<div class="codeblock"><span class="codeblock__lang">Kotlin · DAO + ViewModel</span><pre><code>// DAO — Room turns this into INSERT INTO tasks(...) VALUES (...)
+@Insert(onConflict = OnConflictStrategy.IGNORE)
+suspend fun insert(task: TaskEntity): Long   // returns the new rowId / id
+
+// Repository
+suspend fun addTask(title: String, done: Boolean) =
+    taskDao.insert(TaskEntity(title = title, isDone = done))
+
+// ViewModel — call from a coroutine; never block the UI thread
+fun onAddClicked(title: String, done: Boolean) {
+    viewModelScope.launch {
+        repository.addTask(title.trim(), done)
+    }   // the Flow from getAll() re-emits automatically -&gt; list updates
+}</code></pre></div>
+<p class="mini-note"><code>id</code> is <code>autoGenerate = true</code>, so you pass <code>0</code> (the default) and SQLite assigns the next value. <code>insert</code> returns the new row id as a <code>Long</code>.</p>
+</div>
+<div class="tabpanel" data-tabpanel="k-read">
+<div class="codeblock"><span class="codeblock__lang">Kotlin · DAO + ViewModel</span><pre><code>// DAO — observe the whole table as a stream
+@Query("SELECT * FROM tasks ORDER BY id ASC")
+fun getAll(): Flow&lt;List&lt;TaskEntity&gt;&gt;
+
+// Filtered read (the "Show done only" toggle)
+@Query("SELECT * FROM tasks WHERE is_done = 1 ORDER BY id ASC")
+fun getCompleted(): Flow&lt;List&lt;TaskEntity&gt;&gt;
+
+// ViewModel — turn the Flow into Compose-friendly UI state
+val uiState: StateFlow&lt;List&lt;TaskEntity&gt;&gt; =
+    repository.getAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())</code></pre></div>
+<p class="mini-note">Because <code>getAll()</code> returns a <code>Flow</code>, Room <strong>re-runs the query and pushes a new list</strong> whenever the <code>tasks</code> table changes — no manual refresh needed. The "Refresh" button here is just to make the SELECT visible.</p>
+</div>
+<div class="tabpanel" data-tabpanel="k-update">
+<div class="codeblock"><span class="codeblock__lang">Kotlin · DAO + ViewModel</span><pre><code>// DAO — @Update matches on the entity's @PrimaryKey (id)
+@Update
+suspend fun update(task: TaskEntity)
+
+// Or a targeted partial update without loading the row first:
+@Query("UPDATE tasks SET is_done = :done WHERE id = :id")
+suspend fun setDone(id: Int, done: Boolean)
+
+// ViewModel
+fun onSaveEdit(task: TaskEntity) {
+    viewModelScope.launch { repository.update(task) }
+}</code></pre></div>
+<p class="mini-note"><code>@Update</code> uses the entity's primary key to build <code>UPDATE tasks SET ... WHERE id = ?</code>. For a single column, a custom <code>@Query</code> is leaner.</p>
+</div>
+<div class="tabpanel" data-tabpanel="k-delete">
+<div class="codeblock"><span class="codeblock__lang">Kotlin · DAO + ViewModel</span><pre><code>// DAO — delete by entity (matched on primary key)...
+@Delete
+suspend fun delete(task: TaskEntity)
+
+// ...or delete by id, or wipe the table:
+@Query("DELETE FROM tasks WHERE id = :id")
+suspend fun deleteById(id: Int)
+
+@Query("DELETE FROM tasks")
+suspend fun clearAll()
+
+// ViewModel
+fun onDelete(task: TaskEntity) {
+    viewModelScope.launch { repository.delete(task) }
+}</code></pre></div>
+<p class="mini-note">Same pattern: a <code>suspend</code> DAO function, called inside <code>viewModelScope.launch</code>, and the observing <code>Flow</code> updates the list automatically.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ===================== ROOM SCHEMA ===================== -->
+<section aria-labelledby="schema-h" class="slide">
+<h2 class="anchor-h" id="schema-h">🏗 The three Room building blocks</h2>
+<p>
+            Room is an <strong>abstraction layer over SQLite</strong>. You describe your data in plain Kotlin
+            with three annotations and Room generates the boilerplate (cursor handling, SQL compilation, type
+            mapping). Below is the full, runnable definition behind the simulator's <code>tasks</code> table.
+          </p>
+<div class="grid grid-3">
+<div class="card card--accent">
+<h3 class="card__title" style="font-size:var(--fs-md);">① @Entity = a table</h3>
+<p class="mini-note">One Kotlin class ⇄ one SQL table. Each <code>val</code> is a column; the type maps to <code>INTEGER</code>/<code>TEXT</code>/<code>REAL</code>/<code>BLOB</code>.</p>
+</div>
+<div class="card card--teal">
+<h3 class="card__title" style="font-size:var(--fs-md);">② @Dao = the queries</h3>
+<p class="mini-note">An interface of data-access methods. <code>@Insert</code>/<code>@Update</code>/<code>@Delete</code> are generated; <code>@Query</code> lets you write SQL Room verifies at compile time.</p>
+</div>
+<div class="card card--amber">
+<h3 class="card__title" style="font-size:var(--fs-md);">③ @Database = the file</h3>
+<p class="mini-note">Ties entities + DAOs to one SQLite file (<code>.db</code>). Usually a single instance for the whole app.</p>
+</div>
+</div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · TaskEntity.kt — @Entity</span><pre><code>import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "tasks")
+data class TaskEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+
+    @ColumnInfo(name = "title")
+    val title: String,
+
+    // SQLite has no boolean type; Room stores Boolean as INTEGER 0/1
+    @ColumnInfo(name = "is_done")
+    val isDone: Boolean = false
+)
+// Generated table:
+//   CREATE TABLE tasks (
+//     id      INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+//     title   TEXT NOT NULL,
+//     is_done INTEGER NOT NULL DEFAULT 0
+//   );</code></pre></div>
+<h4 class="anchor-h" id="dao-defined">First: what a <code>@Dao</code> actually is</h4>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p>A <code>@Dao</code> (Data Access Object) is an <strong>interface of data-access methods</strong> — you only declare the method <em>signatures</em> and tag each with <code>@Query</code>, <code>@Insert</code>, <code>@Update</code>, or <code>@Delete</code>; Room's KSP processor writes the actual SQL-running implementation for you at <em>build</em> time.</p>
+</div>
+</div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · TaskDao.kt — @Dao</span><pre><code>import androidx.room.*
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface TaskDao {
+
+    // READ — a Flow re-emits whenever the table changes (observable)
+    @Query("SELECT * FROM tasks ORDER BY id ASC")
+    fun getAll(): Flow&lt;List&lt;TaskEntity&gt;&gt;
+
+    // READ one (suspend = one-shot, runs off the main thread)
+    @Query("SELECT * FROM tasks WHERE id = :id")
+    suspend fun getById(id: Int): TaskEntity?
+
+    // CREATE
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(task: TaskEntity): Long
+
+    // UPDATE (matched on @PrimaryKey)
+    @Update
+    suspend fun update(task: TaskEntity)
+
+    // DELETE
+    @Delete
+    suspend fun delete(task: TaskEntity)
+
+    @Query("DELETE FROM tasks")
+    suspend fun clearAll()
+}</code></pre></div>
+<h4 class="anchor-h" id="dao-walkthrough">Reading the DAO, line by line</h4>
+<ul>
+<li><strong><code>@Dao interface TaskDao { … }</code></strong> — it's an <code>interface</code>, not a class. You write <em>no method bodies</em>; the <code>@Dao</code> tag tells Room's code generator to produce a hidden <code>TaskDao_Impl</code> class that contains all the cursor handling and SQL execution. You never see or write that file.</li>
+<li><strong><code>@Query("SELECT * FROM tasks ORDER BY id ASC")</code></strong> — the SQL string is <strong>validated at compile time</strong>. Misspell <code>tasks</code> as <code>tassks</code>, or select a column that doesn't exist, and the <em>build fails</em> with a clear error — it never compiles into the app, so it can't crash a user at runtime.</li>
+<li><strong><code>fun getAll(): Flow&lt;List&lt;TaskEntity&gt;&gt;</code></strong> — an <em>observable</em> read. Returning a <code>Flow</code> tells Room to re-run this query and emit a fresh list <strong>every time the <code>tasks</code> table changes</strong>. No <code>suspend</code> needed: you collect the stream, you don't call it once.</li>
+<li><strong><code>@Query("SELECT * FROM tasks WHERE id = :id") suspend fun getById(id: Int): TaskEntity?</code></strong> — a <em>one-shot</em> read. <code>:id</code> binds the Kotlin parameter into the SQL (Room checks the name matches). <code>suspend</code> means it runs once, off the main thread, and returns a single value.</li>
+<li><strong><code>@Insert</code> / <code>@Update</code> / <code>@Delete … suspend fun …</code></strong> — the three write verbs. You don't write their SQL at all; Room derives <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code> from the entity's columns and primary key. They're <code>suspend</code> because a write is a one-shot action that must not block the UI thread.</li>
+</ul>
+<p class="mini-note">The split is the whole point: <strong>reads you want to <em>watch</em> return <code>Flow</code></strong>; <strong>one-shot reads and all writes are <code>suspend</code></strong>.</p>
+<p>Stripped of everything else, that's just two method shapes on one interface:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · the two DAO shapes, isolated</span><pre><code>@Dao
+interface NoteDao {
+    // observable read — re-emits on every table change:
+    @Query("SELECT * FROM notes")
+    fun watchAll(): Flow&lt;List&lt;Note&gt;&gt;
+
+    // one-shot write — runs once, off the main thread:
+    @Insert
+    suspend fun add(note: Note)
+}</code></pre></div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p>You are <strong>not</strong> writing the code that runs the SQL, and you're <strong>not</strong> implementing the interface — Room/KSP generates both at build time. And unlike a raw <code>db.rawQuery("SELCT * …")</code> string (which only blows up when that line executes on a device), a <code>@Query</code> string is <strong>checked when you compile</strong>: a typo'd table or column is a build error you catch immediately, not a runtime crash a user hits.</p>
+</div>
+</div>
+<h4 class="anchor-h" id="db-singleton-defined">First: why the database is a thread-safe singleton</h4>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p>This is the <strong>thread-safe singleton</strong> idiom — the same double-checked-locking pattern from <a href="../sessions/session-09.html">Session 9</a> — that guarantees the whole app builds and shares <em>exactly one</em> <code>AppDatabase</code>, because opening a database is expensive and two instances on the same file cause conflicts.</p>
+</div>
+</div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · AppDatabase.kt — @Database (singleton)</span><pre><code>import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+
+@Database(entities = [TaskEntity::class], version = 1, exportSchema = false)
+abstract class AppDatabase : RoomDatabase() {
+
+    abstract fun taskDao(): TaskDao
+
+    companion object {
+        @Volatile private var INSTANCE: AppDatabase? = null
+
+        fun getDatabase(context: Context): AppDatabase =
+            INSTANCE ?: synchronized(this) {
+                INSTANCE ?: Room.databaseBuilder(   // double-check inside the lock
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "app_database.db"      // &lt;-- the SQLite file on disk
+                )
+                    // For class demos only; real apps add a Migration instead:
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
+            }
+    }
+}</code></pre></div>
+<h4 class="anchor-h" id="db-singleton-walkthrough">The <code>getDatabase</code> idiom, chunk by chunk</h4>
+<ul>
+<li><strong><code>@Volatile private var INSTANCE: AppDatabase? = null</code></strong> — the one cached instance. <code>@Volatile</code> means every thread sees writes to <code>INSTANCE</code> immediately (no per-CPU cached copy), so a database one thread just built is visible to all the others.</li>
+<li><strong><code>INSTANCE ?: synchronized(this) { … }</code></strong> — the elvis operator <code>?:</code> returns the cached <code>INSTANCE</code> if it's already non-null, skipping the lock entirely. This is the fast path that runs almost every time after the first call.</li>
+<li><strong><code>synchronized(this) { … }</code></strong> — only reached when <code>INSTANCE</code> is still null. The lock lets <strong>just one thread at a time</strong> enter and build, so two threads racing on first launch can't each create a database.</li>
+<li><strong>(the second read of <code>INSTANCE</code> inside the lock)</strong> — this is the <em>double-check</em>: a thread that was waiting at the lock re-reads <code>INSTANCE</code> after acquiring it, in case the thread ahead of it already built the database while it waited.</li>
+<li><strong><code>Room.databaseBuilder(…).build()</code></strong> — actually opens the SQLite file and returns the <code>AppDatabase</code>. You call this builder; you never call the <code>AppDatabase</code> constructor yourself (it's <code>abstract</code> — Room supplies the implementation).</li>
+<li><strong><code>.also { INSTANCE = it }</code></strong> — caches the freshly built database into <code>INSTANCE</code> <em>and</em> returns that same object, so every later call takes the fast path above.</li>
+</ul>
+<p class="mini-note">Same five moves as the Session 9 singleton: <code>@Volatile</code> for visibility → elvis returns the cache → <code>synchronized</code> lets one thread build → inner re-check is the double-check → <code>.also</code> caches and returns.</p>
+<p>The pattern is independent of Room — here it is guarding any expensive object:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · double-checked locking, isolated</span><pre><code>@Volatile private var INSTANCE: Engine? = null
+
+fun get(): Engine =
+    INSTANCE ?: synchronized(this) {     // fast path returns the cache
+        INSTANCE ?: buildExpensiveEngine() // one thread builds…
+            .also { INSTANCE = it }        // …caches + returns it
+    }</code></pre></div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p>You <strong>never call <code>AppDatabase()</code> directly</strong> — <code>build()</code> is the only way in, and you funnel every caller through <code>getDatabase()</code> so they share the one instance. The inner <code>INSTANCE ?:</code> looks redundant next to the outer one, but it isn't: the outer check runs <em>without</em> the lock (fast), the inner check runs <em>with</em> it (safe). Drop either and you either lose thread-safety or pay the lock cost on every single call.</p>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Bump the version when the schema changes</span>
+<p>Add or rename a column and you <strong>must</strong> increase <code>version</code> and supply a
+              <code>Migration</code>, or Room throws <code>IllegalStateException: Room cannot verify the data
+              integrity</code>. <code>fallbackToDestructiveMigration()</code> just drops and recreates the table —
+              fine for a classroom demo, <strong>data loss</strong> in production.</p>
+</div>
+</div>
+</section>
+<!-- ===================== GRADLE / SETUP ===================== -->
+<section aria-labelledby="setup-h" class="slide">
+<h2 class="anchor-h" id="setup-h">⚙️ Project setup (KSP + dependencies)</h2>
+<p>Room uses an annotation processor to generate the implementation of your DAO and database. Current
+          Android projects use <strong>KSP</strong> (Kotlin Symbol Processing), not the older <code>kapt</code>.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin DSL · build.gradle.kts (module)</span><pre><code>plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    // KSP version = &lt;Kotlin version&gt;-&lt;KSP release&gt;. The prefix MUST match your Kotlin.
+    id("com.google.devtools.ksp") version "2.2.20-2.0.2"   // Room's code generator
+}
+
+dependencies {
+    val roomVersion = "2.8.4"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")   // coroutines + Flow support
+    ksp("androidx.room:room-compiler:$roomVersion")         // generates DAO/DB impl
+
+    // Compose + lifecycle (for collectAsStateWithLifecycle, viewModelScope)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
+}</code></pre></div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🔢</span>
+<div class="callout__body">
+<span class="callout__label">The one version rule that trips everyone up</span>
+<p>The KSP plugin version is <strong>two parts glued together</strong>: your Kotlin version, then KSP's own
+              release. With <strong>Kotlin 2.2.20</strong> you must use a KSP whose prefix is <code>2.2.20-…</code>
+              (here <code>2.2.20-2.0.2</code>). Bump Kotlin and forget to bump KSP and the build fails with
+              <em>"ksp-X was compiled against a different Kotlin version"</em>. Room itself (<code>2.8.x</code>)
+              tracks Kotlin separately — keep it current, but it does not have to match the Kotlin number.</p>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Why suspend / Flow?</span>
+<p>Database I/O is slow and <strong>must not run on the main thread</strong> — doing so freezes the UI
+              and can crash with <code>IllegalStateException: Cannot access database on the main thread</code>.
+              Marking DAO writes <code>suspend</code> lets Room run them on a background dispatcher from a coroutine;
+              marking reads as <code>Flow</code> gives you an <em>observable</em> query that auto-updates Compose.</p>
+</div>
+</div>
+</section>
+<!-- ===================== COMPOSE WIRING ===================== -->
+<section aria-labelledby="compose-h" class="slide">
+<h2 class="anchor-h" id="compose-h">🧱 Wiring it into Compose (clean architecture)</h2>
+<p>This is the layering the course project requires: <strong>UI → ViewModel → Repository → DAO → SQLite</strong>.
+          Compose never touches the database directly; it only reads state and sends events up.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · TaskRepository.kt</span><pre><code>class TaskRepository(private val dao: TaskDao) {
+    fun observeTasks(): Flow&lt;List&lt;TaskEntity&gt;&gt; = dao.getAll()
+    suspend fun add(title: String, done: Boolean) =
+        dao.insert(TaskEntity(title = title, isDone = done))
+    suspend fun update(task: TaskEntity) = dao.update(task)
+    suspend fun delete(task: TaskEntity) = dao.delete(task)
+    suspend fun clear() = dao.clearAll()
+}</code></pre></div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · TaskViewModel.kt</span><pre><code>class TaskViewModel(private val repo: TaskRepository) : ViewModel() {
+
+    val tasks: StateFlow&lt;List&lt;TaskEntity&gt;&gt; =
+        repo.observeTasks()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun add(title: String, done: Boolean) = viewModelScope.launch {
+        if (title.isNotBlank()) repo.add(title.trim(), done)
+    }
+    fun toggleDone(task: TaskEntity) = viewModelScope.launch {
+        repo.update(task.copy(isDone = !task.isDone))
+    }
+    fun delete(task: TaskEntity) = viewModelScope.launch { repo.delete(task) }
+}</code></pre></div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · TaskListScreen.kt — Compose UI driven by state</span><pre><code>@Composable
+fun TaskListScreen(viewModel: TaskViewModel) {
+    // Lifecycle-aware collection — stops collecting when the screen is in background
+    val tasks by viewModel.tasks.collectAsStateWithLifecycle()
+    var input by rememberSaveable { mutableStateOf("") }
+
+    Column(Modifier.fillMaxSize().padding(16.dp)) {
+        Row {
+            OutlinedTextField(
+                value = input,
+                onValueChange = { input = it },
+                label = { Text("New task") },
+                modifier = Modifier.weight(1f)
+            )
+            Button(onClick = { viewModel.add(input, done = false); input = "" }) {
+                Text("Add")
+            }
+        }
+        LazyColumn {
+            items(tasks, key = { it.id }) { task -&gt;
+                ListItem(
+                    headlineContent = { Text(task.title) },
+                    leadingContent = {
+                        Checkbox(
+                            checked = task.isDone,
+                            onCheckedChange = { viewModel.toggleDone(task) }
+                        )
+                    },
+                    trailingContent = {
+                        IconButton(onClick = { viewModel.delete(task) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        }
+                    }
+                )
+            }
+        }
+    }
+}</code></pre></div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">The whole loop, in one sentence</span>
+<p>User taps Add → ViewModel launches a coroutine → Repository calls the suspend DAO insert →
+              SQLite changes → the <code>Flow</code> re-emits → <code>collectAsStateWithLifecycle</code> updates
+              <code>tasks</code> → Compose recomposes the <code>LazyColumn</code>. <strong>You write zero refresh code.</strong></p>
+</div>
+</div>
+</section>
+<!-- ===================== SQL CHEAT SHEET (tabs) ===================== -->
+<section aria-labelledby="sql-h" class="slide">
+<h2 class="anchor-h" id="sql-h">📋 SQL ⇄ Room cheat sheet</h2>
+<p>Every Room action maps to one of the four classic SQL verbs. Memorize the mapping; the simulator's log uses these exact forms.</p>
+<div aria-label="SQL by operation" class="tabs" role="tablist">
+<button class="tab" data-tab="sql-create" type="button">CREATE / INSERT</button>
+<button class="tab" data-tab="sql-read" type="button">READ / SELECT</button>
+<button class="tab" data-tab="sql-update" type="button">UPDATE</button>
+<button class="tab" data-tab="sql-delete" type="button">DELETE</button>
+</div>
+<div class="tabpanel" data-tabpanel="sql-create">
+<div class="codeblock"><span class="codeblock__lang">SQL · what @Insert runs</span><pre><code>-- One-time: Room creates the table from your @Entity
+CREATE TABLE IF NOT EXISTS tasks (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    title   TEXT NOT NULL,
+    is_done INTEGER NOT NULL DEFAULT 0
+);
+
+-- Each insert (id omitted -&gt; AUTOINCREMENT assigns it):
+INSERT INTO tasks (title, is_done) VALUES ('Finish Unit 6 reading', 0);</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="sql-read">
+<div class="codeblock"><span class="codeblock__lang">SQL · what @Query SELECT runs</span><pre><code>-- Read everything (the default list):
+SELECT * FROM tasks ORDER BY id ASC;
+
+-- Read only completed (the "Show done only" filter):
+SELECT * FROM tasks WHERE is_done = 1 ORDER BY id ASC;
+
+-- Read a single row by id:
+SELECT * FROM tasks WHERE id = 3;</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="sql-update">
+<div class="codeblock"><span class="codeblock__lang">SQL · what @Update / @Query runs</span><pre><code>-- Full row update (what @Update generates, keyed on PK):
+UPDATE tasks SET title = 'Submit milestone', is_done = 1 WHERE id = 2;
+
+-- Targeted single-column update (custom @Query):
+UPDATE tasks SET is_done = 1 WHERE id = 2;</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="sql-delete">
+<div class="codeblock"><span class="codeblock__lang">SQL · what @Delete / @Query runs</span><pre><code>-- Delete one row (what @Delete generates, keyed on PK):
+DELETE FROM tasks WHERE id = 4;
+
+-- Wipe the whole table (custom @Query clearAll()):
+DELETE FROM tasks;</code></pre></div>
+</div>
+</section>
+<!-- ===================== DATASTORE vs ROOM ===================== -->
+<section aria-labelledby="vs-h" class="slide">
+<h2 class="anchor-h" id="vs-h">⚖️ DataStore (key-value) vs Room (structured)</h2>
+<p>Both are official persistence APIs, but they solve different problems. Choosing wrong is the most
+          common Session 9 mistake — picking the right tool is itself a CLO 4 learning goal.</p>
+<table class="cmp">
+<caption>Rule of thumb: a handful of settings → DataStore. A growing collection of records you query/sort/filter → Room.</caption>
+<thead>
+<tr><th style="width:24%;">Concern</th><th>Preferences DataStore</th><th>Room (over SQLite)</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Shape of data</strong></td><td>Key → value pairs (flat)</td><td>Rows in typed tables with relationships</td></tr>
+<tr><td><strong>Best for</strong></td><td>Settings, flags, last-screen, onboarding-seen, theme, tokens</td><td>Lists/collections: tasks, notes, contacts, cached API results</td></tr>
+<tr><td><strong>Querying</strong></td><td>Read the whole value by key — no filtering/sorting</td><td>Full SQL: <code>WHERE</code>, <code>ORDER BY</code>, <code>JOIN</code>, aggregates</td></tr>
+<tr><td><strong>API style</strong></td><td><code>Flow</code> + <code>suspend</code> edit; no schema</td><td><code>@Entity</code>/<code>@Dao</code>/<code>@Database</code>; compile-checked SQL</td></tr>
+<tr><td><strong>Replaces</strong></td><td><code>SharedPreferences</code> (async, type-safe, no <code>apply()</code> pitfalls)</td><td>Raw <code>SQLiteOpenHelper</code> + cursors</td></tr>
+<tr><td><strong>Scale</strong></td><td>Small (a few dozen keys)</td><td>Thousands+ of rows, indexed</td></tr>
+</tbody>
+</table>
+<div class="grid grid-2">
+<div class="card">
+<h3 class="card__title" style="font-size:var(--fs-md);">Preferences DataStore — a single setting</h3>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · DataStore</span><pre><code>// One DataStore per process, defined at top level:
+val Context.settings by preferencesDataStore(name = "settings")
+
+object Keys { val DARK = booleanPreferencesKey("dark_mode") }
+
+// READ as a Flow:
+val darkFlow: Flow&lt;Boolean&gt; =
+    context.settings.data.map { it[Keys.DARK] ?: false }
+
+// WRITE (suspend, transactional):
+suspend fun setDark(on: Boolean) {
+    context.settings.edit { it[Keys.DARK] = on }
+}</code></pre></div>
+</div>
+<div class="card">
+<h3 class="card__title" style="font-size:var(--fs-md);">Room — a collection of records</h3>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · Room (recap)</span><pre><code>// Many typed rows, queried with SQL:
+@Query("SELECT * FROM tasks WHERE is_done = 0 ORDER BY id")
+fun pending(): Flow&lt;List&lt;TaskEntity&gt;&gt;
+
+@Insert suspend fun insert(t: TaskEntity): Long
+@Delete suspend fun delete(t: TaskEntity)
+
+// Use Room when you'd otherwise be hand-rolling
+// "store a list of objects" in SharedPreferences/JSON.</code></pre></div>
+</div>
+</div>
+</section>
+<!-- ===================== COMMON PITFALLS ===================== -->
+<section aria-labelledby="pit-h" class="slide">
+<h2 class="anchor-h" id="pit-h">🐞 Common pitfalls &amp; fixes</h2>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">"Cannot access database on the main thread"</button>
+<div class="accordion__body">
+<p>You called a <strong>non-suspend</strong> DAO method directly on the UI thread. Fix: make the DAO
+                function <code>suspend</code> (writes) or return <code>Flow</code> (reads), and call it from
+                <code>viewModelScope.launch { ... }</code>. Never use <code>.allowMainThreadQueries()</code> outside a quick test.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">"Room cannot verify the data integrity" on launch</button>
+<div class="accordion__body">
+<p>You changed the <code>@Entity</code> (added/renamed a column) without bumping <code>version</code> or
+                providing a <code>Migration</code>. Fix for class: bump <code>version</code> and add
+                <code>.fallbackToDestructiveMigration()</code>. Fix for production: write a real
+                <code>Migration(1, 2)</code> with the <code>ALTER TABLE</code> statements.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">The list doesn't update after insert/delete</button>
+<div class="accordion__body">
+<p>Your read query is <code>suspend</code> (one-shot) instead of returning <code>Flow</code>. A one-shot
+                query reads once and never updates. Change <code>suspend fun getAll(): List&lt;TaskEntity&gt;</code> to
+                <code>fun getAll(): Flow&lt;List&lt;TaskEntity&gt;&gt;</code> and collect it with
+                <code>collectAsStateWithLifecycle()</code>.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Storing a Boolean / Date — "Cannot figure out how to save this field"</button>
+<div class="accordion__body">
+<p>SQLite only has <code>INTEGER</code>, <code>TEXT</code>, <code>REAL</code>, <code>BLOB</code>.
+                <code>Boolean</code> works out of the box (stored as 0/1). For types like <code>LocalDate</code> or an
+                enum, add a <code>@TypeConverter</code> that maps to/from one of the four primitives (e.g. store a date
+                as an epoch <code>Long</code>).</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Two database instances / leaked connections</button>
+<div class="accordion__body">
+<p>Calling <code>Room.databaseBuilder(...).build()</code> in multiple places opens multiple files.
+                Use the <code>@Volatile</code> + <code>synchronized</code> singleton shown above so the whole app
+                shares one <code>AppDatabase</code>.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ===================== CHECK YOURSELF (quiz) ===================== -->
+<section aria-labelledby="quiz-h" class="slide">
+<h2 class="anchor-h" id="quiz-h">✅ Check yourself</h2>
+<p class="mini-note">A quick CLO 4 self-check. Nothing is revealed until you submit; you can retry.</p>
+<div data-quiz="crud-quiz" data-topic="data"></div>
+</section>
+<!-- ===================== FLASHCARDS ===================== -->
+<section aria-labelledby="fc-h" class="slide">
+<h2 class="anchor-h" id="fc-h">🃏 Vocabulary flashcards</h2>
+<p class="mini-note">Flip, then mark "Got it" to remove a card or "Review again" to keep cycling it.</p>
+<div data-flashcards="crud-cards"></div>
+</section>
+<!-- ===================== PRACTICE CHECKLIST ===================== -->
+<section aria-labelledby="task-h" class="slide">
+<h2 class="anchor-h" id="task-h">🛠 Hands-on practice checklist</h2>
+<p class="mini-note">Work through these against the simulator above (and then in Android Studio). Progress is saved on this device.</p>
+<ul class="checklist" data-persist="crud-practice">
+<li><label><input data-key="ck-insert" type="checkbox"/><span>Insert 3 tasks and read the logged <code>INSERT INTO tasks (...)</code> statements — note the auto-incremented id.</span></label></li>
+<li><label><input data-key="ck-like" type="checkbox"/><span>Type a title, search it, and read the generated <code>SELECT … WHERE title LIKE '%…%'</code> (the live search box).</span></label></li>
+<li><label><input data-key="ck-filter" type="checkbox"/><span>Toggle <em>Show done only</em> and confirm the log switches to <code>SELECT … WHERE is_done = 1</code>.</span></label></li>
+<li><label><input data-key="ck-count" type="checkbox"/><span>Watch the <strong>remaining badge</strong> change as you tick tasks done — that's the live <code>SELECT COUNT(*) … WHERE is_done = 0</code> Flow.</span></label></li>
+<li><label><input data-key="ck-update" type="checkbox"/><span>Edit a row and confirm the <code>UPDATE tasks SET … WHERE id = ?</code> log line.</span></label></li>
+<li><label><input data-key="ck-delete" type="checkbox"/><span>Delete one row, then <em>Clear all</em>, then <em>Reset DB</em> — read the matching <code>DELETE</code> statements.</span></label></li>
+<li><label><input data-key="ck-reload" type="checkbox"/><span><strong>Reload this browser tab</strong> to prove persistence (the rows come back, like Room surviving an app restart).</span></label></li>
+<li><label><input data-key="ck-inspector" type="checkbox"/><span>Recreate the <code>@Entity</code> / <code>@Dao</code> / <code>@Database</code> for <code>tasks</code> in Android Studio and open the <strong>App Inspection → Database Inspector</strong> to see the same table.</span></label></li>
+</ul>
+</section>
+<!-- ===================== OFFICIAL DOCS ===================== -->
+<section aria-labelledby="docs-h" class="card slide">
+<h2 class="card__title anchor-h" id="docs-h">📚 Official resources</h2>
+<ul>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-6" rel="noopener" target="_blank">Android Basics with Compose — Unit 6: Data persistence</a></li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/course" rel="noopener" target="_blank">Android Basics with Compose — full course</a></li>
+<li><a href="https://developer.android.com/training/data-storage/sqlite" rel="noopener" target="_blank">Save data using SQLite (developer.android.com)</a></li>
+<li><a href="https://developer.android.com/training/data-storage/room" rel="noopener" target="_blank">Save data in a local database using Room</a></li>
+<li><a href="https://developer.android.com/topic/libraries/architecture/datastore" rel="noopener" target="_blank">DataStore (Preferences &amp; Proto)</a></li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-4" rel="noopener" target="_blank">Unit 4 — Navigation &amp; app architecture (ViewModel + repository)</a></li>
+</ul>
+</section>
+</div>
+<!-- =================== STICKY TOC =================== -->
+<aside aria-label="On this page" class="card toc-card no-print">
+<h2 class="card__title" style="font-size:var(--fs-md);">On this page</h2>
+<nav aria-label="Section index" data-toc="main"></nav>
+</aside>
+</div>
+<!-- ===================== DRILLS (deliberate practice) ===================== -->
+<section aria-labelledby="drills-h" class="card slide" id="drills">
+<h2 class="card__title anchor-h" id="drills-h">🏋️ Drills — model it, debug it, reason about it</h2>
+<p class="lead">
+        The simulator builds your intuition. These drills turn it into <strong>skill</strong>: you write the
+        Room mapping yourself, predict the SQL before you peek, hunt a real DAO/threading bug, reason about
+        when a read should be a one-shot <code>suspend</code> versus an observable <code>Flow</code>, and write a
+        <code>@TypeConverter</code> to store a non-primitive type. Each runnable block has a tiny test harness — you've
+        got it when every case prints <code>✓ passed</code> and you see <code>ALL TESTS PASSED 🎉</code>. Mark each one
+        solved to feed your own mastery for this topic.
+      </p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Why pure-Kotlin harnesses?</span>
+<p>Room's annotation processor runs at <em>build time</em> in Android Studio, so the live runner can't
+            compile a real <code>@Dao</code> here. Instead each drill models the <strong>exact semantics</strong> Room
+            gives you — an auto-increment primary key, a row-keyed update, an observable read that re-emits — in plain
+            Kotlin. The mental model transfers 1:1 to the annotations you write in the IDE.</p>
+</div>
+</div>
+<!-- progress / streak surface -->
+<div class="kpi-grid" data-mastery-stats="" style="margin: var(--space-4) 0;"></div>
+<!-- ================= DRILL 1 — Room mapping + predict the SQL ================= -->
+<h3 class="anchor-h" id="drill-map">Drill 1 · Map a table to Room — then predict the SQL</h3>
+<p>You're given a plain-English spec for a new table. Before any code, decide the <code>@Entity</code> columns and
+        the <code>@Query</code> SQL in your head — then implement the in-memory DAO so the harness confirms your mapping.</p>
+<div class="card card--accent">
+<h4 class="card__title" style="font-size:var(--fs-md);">📋 The spec (a reminders app)</h4>
+<ul>
+<li>Table <code>reminders</code> with an auto-increment <code>id</code> (<code>Int</code>, primary key, starts at 1).</li>
+<li><code>label</code>: required text (<code>NOT NULL</code>).</li>
+<li><code>priority</code>: an <code>Int</code>, <code>0</code>–<code>2</code> (low/med/high), default <code>0</code>.</li>
+<li><code>is_archived</code>: a <code>Boolean</code> stored as <code>INTEGER 0/1</code>, default <code>false</code>.</li>
+<li>An "active list" read = all non-archived rows, highest <code>priority</code> first, then <code>id</code> ascending.</li>
+</ul>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">✍️</span>
+<div class="callout__body">
+<span class="callout__label">Predict first (retrieval, not recognition)</span>
+<p>On paper, write (1) the <code>@Entity</code> class with its <code>@ColumnInfo</code> names and
+            <code>@PrimaryKey(autoGenerate = true)</code>, and (2) the exact <code>SELECT … WHERE … ORDER BY …</code>
+            for the active list. <em>Then</em> open the panel below to check yourself — recalling beats re-reading.</p>
+</div>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">🔎 Reveal the target @Entity + the SQL it should generate</button>
+<div class="accordion__body"><div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · ReminderEntity.kt — the mapping you should have written</span><pre><code>@Entity(tableName = "reminders")
+data class ReminderEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+
+    @ColumnInfo(name = "label")
+    val label: String,
+
+    @ColumnInfo(name = "priority")
+    val priority: Int = 0,            // 0 = low, 1 = med, 2 = high
+
+    // SQLite has no boolean — Room stores it as INTEGER 0/1
+    @ColumnInfo(name = "is_archived")
+    val isArchived: Boolean = false
+)</code></pre></div>
+<div class="codeblock"><span class="codeblock__lang">SQL · the active-list @Query Room compiles</span><pre><code>-- @Query("SELECT * FROM reminders WHERE is_archived = 0 ORDER BY priority DESC, id ASC")
+SELECT * FROM reminders
+WHERE is_archived = 0
+ORDER BY priority DESC, id ASC;</code></pre></div>
+<p class="mini-note">Note <code>priority DESC</code> (highest first) <em>then</em> <code>id ASC</code> as the tie-breaker —
+                a stable order matters once you key a <code>LazyColumn</code> on <code>id</code>. The <code>Boolean</code>
+                compares against <code>0</code>, not <code>false</code>, because the on-disk type is <code>INTEGER</code>.</p>
+</div></div>
+</div>
+</div>
+<p>Now implement the model. Fill the <code>// YOUR CODE</code> region so <code>insert</code>, <code>archive</code>, and
+        the <code>activeList</code> read behave exactly like the Room mapping above.</p>
+<div class="codeblock" data-challenge="crud-room-mapping" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge — make every case green</div>
+<pre><code>// An in-memory stand-in for the `reminders` table + its DAO.
+data class Reminder(
+    val id: Int,
+    val label: String,
+    val priority: Int = 0,        // 0 low · 1 med · 2 high
+    val isArchived: Boolean = false
+)
+
+class ReminderDao {
+    private val rows = mutableListOf&lt;Reminder&gt;()
+    private var nextId = 1         // mirrors @PrimaryKey(autoGenerate = true)
+
+    // ---------- YOUR CODE ----------
+    fun insert(label: String, priority: Int = 0): Int {
+        // Create a Reminder with the next auto-increment id, store it, return the id.
+        TODO("implement insert")
+    }
+
+    fun archive(id: Int) {
+        // Set isArchived = true on the row with this id (copy, don't mutate in place).
+        TODO("implement archive")
+    }
+
+    fun activeList(): List&lt;Reminder&gt; {
+        // The @Query: non-archived rows, priority DESC, then id ASC.
+        TODO("implement activeList")
+    }
+    // ---------- END YOUR CODE ----------
+}
+
+fun main() {
+    var fails = 0
+    fun check(name: String, cond: Boolean, expected: Any?, got: Any?) {
+        if (cond) println("✓ passed: $name")
+        else { println("✗ FAILED: $name — expected $expected, got $got"); fails++ }
+    }
+
+    val dao = ReminderDao()
+    val a = dao.insert("Pay tuition", priority = 2)
+    val b = dao.insert("Read Unit 6")                 // default priority 0
+    val c = dao.insert("Email advisor", priority = 1)
+
+    check("ids auto-increment from 1", a == 1 &amp;&amp; b == 2 &amp;&amp; c == 3, "1,2,3", "$a,$b,$c")
+    check("default priority is 0", dao.activeList().first { it.id == b }.priority == 0, 0,
+        dao.activeList().first { it.id == b }.priority)
+
+    // active list ordering: priority DESC, then id ASC
+    check("active order = high→low priority, id tiebreak",
+        dao.activeList().map { it.id } == listOf(a, c, b), "[1, 3, 2]", dao.activeList().map { it.id })
+
+    // archiving hides a row from the active read (the WHERE is_archived = 0 clause)
+    dao.archive(a)
+    check("archived row leaves the active list",
+        dao.activeList().none { it.id == a }, true, dao.activeList().map { it.id })
+    check("remaining active order still correct",
+        dao.activeList().map { it.id } == listOf(c, b), "[3, 2]", dao.activeList().map { it.id })
+
+    if (fails == 0) println("\nALL TESTS PASSED 🎉")
+    else println("\n$fails case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div>
+<ul>
+<li><code>insert</code>: <code>val r = Reminder(nextId++, label, priority); rows += r; return r.id</code> — increment <em>after</em> reading the id, just like AUTOINCREMENT.</li>
+<li><code>archive</code>: find the index with <code>rows.indexOfFirst { it.id == id }</code>; if <code>&gt;= 0</code>, <code>rows[i] = rows[i].copy(isArchived = true)</code>. The <code>copy</code> mirrors <code>@Update</code> writing a new row image.</li>
+<li><code>activeList</code>: <code>rows.filter { !it.isArchived }.sortedWith(compareByDescending&lt;Reminder&gt; { it.priority }.thenBy { it.id })</code> — that <code>compareByDescending(...).thenBy(...)</code> is exactly <code>ORDER BY priority DESC, id ASC</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun insert(label: String, priority: Int): Int {
+    val r = Reminder(nextId++, label, priority)
+    rows += r
+    return r.id
+}
+
+fun archive(id: Int) {
+    val i = rows.indexOfFirst { it.id == id }
+    if (i &gt;= 0) rows[i] = rows[i].copy(isArchived = true)
+}
+
+fun activeList(): List&lt;Reminder&gt; =
+    rows.filter { !it.isArchived }
+        .sortedWith(compareByDescending&lt;Reminder&gt; { it.priority }.thenBy { it.id })</code></pre></div>
+<p class="mini-note">In real Room you'd never sort in Kotlin — you let SQLite do it with
+                <code>ORDER BY priority DESC, id ASC</code> inside the <code>@Query</code>, because the database is far
+                faster and can use an index. The Kotlin sort here just <em>proves you predicted the right order</em>.</p>
+</div></div>
+</div>
+</div>
+<!-- ================= DRILL 2 — Find the bug (DAO / threading) ================= -->
+<h3 class="anchor-h" id="drill-bug">Drill 2 · Find the bug — a DAO that crashes the app</h3>
+<p>This is real code a teammate wrote. It compiles. It also <strong>freezes the UI and then crashes</strong> the first
+        time the user adds a task, and the list <em>never</em> updates on its own. Read it, decide what's wrong, answer
+        the check, then study the corrected version.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · 🐞 buggy — what's wrong here?</span><pre><code>@Dao
+interface TaskDao {
+
+    // (A) read
+    @Query("SELECT * FROM tasks ORDER BY id ASC")
+    fun getAll(): List&lt;TaskEntity&gt;
+
+    // (B) write
+    @Insert
+    fun insert(task: TaskEntity)
+}
+
+class TaskViewModel(private val dao: TaskDao) : ViewModel() {
+
+    // (C) expose the list to Compose
+    val tasks: List&lt;TaskEntity&gt; = dao.getAll()
+
+    // (D) called from a button's onClick
+    fun add(title: String) {
+        dao.insert(TaskEntity(title = title))   // (E)
+    }
+}</code></pre></div>
+<p class="mini-note">Two defects compound: one causes a hard <strong>crash</strong>, the other means the screen
+        silently goes <strong>stale</strong>. Pick the single root cause that explains <em>both</em> symptoms.</p>
+<div data-quiz="crud-bug-quiz" data-topic="data"></div>
+<div class="callout callout--tip" style="margin-top: var(--space-4);">
+<span aria-hidden="true" class="callout__icon">✅</span>
+<div class="callout__body">
+<span class="callout__label">The fix</span>
+<p>Make writes <code>suspend</code> and launch them from <code>viewModelScope</code> (off the main thread),
+            and make the read return <code>Flow&lt;List&lt;…&gt;&gt;</code> so it re-emits after every change. The harness below
+            models exactly that contract — run it to see the corrected behavior pass.</p>
+</div>
+</div>
+<p>Predict the printed output, then Run to confirm the fixed design: the write is dispatched off the calling thread,
+        and the observable read sees the new row with no manual refresh.</p>
+<div class="codeblock" data-challenge="crud-fix-threading" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge — fix the DAO contract</div>
+<pre><code>import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+
+data class TaskRow(val id: Int, val title: String)
+
+/**
+ * Models the CORRECT Room contract:
+ *  - insert() is suspend + runs off the caller's thread (Dispatchers.Default here
+ *    stands in for Room's background executor)
+ *  - observeAll() returns a Flow that RE-EMITS after every insert (like Room's
+ *    invalidation tracker), so the UI never calls a manual refresh
+ */
+class TaskStore {
+    private val rows = mutableListOf&lt;TaskRow&gt;()
+    private var nextId = 1
+    private val state = MutableStateFlow&lt;List&lt;TaskRow&gt;&gt;(emptyList())
+
+    // The thread the LAST write actually ran on (set it inside insert, below).
+    // In real Room you never see this — but it proves the write left the caller's thread.
+    @Volatile var lastWriteThread: String = ""
+
+    fun observeAll(): Flow&lt;List&lt;TaskRow&gt;&gt; = state.asStateFlow()
+
+    // ---------- YOUR CODE ----------
+    suspend fun insert(title: String): Int {
+        // 1) Move off the caller's thread (writes never run on main):
+        //      withContext(Dispatchers.Default) { ... }
+        // 2) Inside that block, record where the write ran:
+        //      lastWriteThread = Thread.currentThread().name
+        // 3) Add the row with the next id.
+        // 4) Re-emit the new snapshot so observers update: state.value = rows.toList()
+        // 5) Return the new id.
+        TODO("implement a main-safe, reactive insert")
+    }
+    // ---------- END YOUR CODE ----------
+}
+
+fun main() = runBlocking {
+    var fails = 0
+    fun check(name: String, cond: Boolean, expected: Any?, got: Any?) {
+        if (cond) println("✓ passed: $name")
+        else { println("✗ FAILED: $name — expected $expected, got $got"); fails++ }
+    }
+
+    val store = TaskStore()
+    val seen = mutableListOf&lt;List&lt;TaskRow&gt;&gt;()
+    val job = launch { store.observeAll().collect { seen += it } }
+    yield()   // let the collector grab the initial empty emission
+
+    // This runBlocking thread is the stand-in for the UI / main thread.
+    val callingThread = Thread.currentThread().name
+    val id1 = store.insert("write tests")
+    val id2 = store.insert("ship it")
+
+    check("insert returns auto-increment ids", id1 == 1 &amp;&amp; id2 == 2, "1,2", "$id1,$id2")
+    check("the write ran OFF the calling (main) thread",
+        store.lastWriteThread.isNotEmpty() &amp;&amp; store.lastWriteThread != callingThread,
+        "a background thread (not $callingThread)", store.lastWriteThread)
+    check("read is reactive — last emission has both rows",
+        seen.last().map { it.title } == listOf("write tests", "ship it"),
+        "[write tests, ship it]", seen.last().map { it.title })
+    check("the Flow re-emitted (initial + 2 inserts = 3 snapshots)",
+        seen.size == 3, 3, seen.size)
+
+    job.cancel()
+    if (fails == 0) println("\nALL TESTS PASSED 🎉")
+    else println("\n$fails case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div>
+<ul>
+<li>Wrap the mutation in <code>withContext(Dispatchers.Default) { … }</code> so it can't block the caller's thread — this is the stand-in for "Room runs SQL on a background executor."</li>
+<li>As the first line inside that block, record where you are: <code>lastWriteThread = Thread.currentThread().name</code> — that's what the "off the calling thread" check reads.</li>
+<li>Then: <code>val r = TaskRow(nextId++, title); rows += r</code>.</li>
+<li>Push a fresh snapshot so the <code>Flow</code> re-emits: <code>state.value = rows.toList()</code>.</li>
+<li><code>return r.id</code> at the end (it's the last expression of the <code>withContext</code> block). Because <code>insert</code> is <code>suspend</code>, the caller must be in a coroutine — exactly why the real ViewModel uses <code>viewModelScope.launch</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>suspend fun insert(title: String): Int = withContext(Dispatchers.Default) {
+    lastWriteThread = Thread.currentThread().name   // proof: not the caller's thread
+    val r = TaskRow(nextId++, title)
+    rows += r
+    state.value = rows.toList()   // re-emit → every collector updates
+    r.id
+}</code></pre></div>
+<p class="mini-note">Map it back to Android: <code>withContext(Dispatchers.Default)</code> ⇄ Room dispatching the
+                write off the main thread (you get this free by marking the DAO function <code>suspend</code>);
+                <code>state.value = …</code> ⇄ Room's invalidation tracker re-running your <code>Flow</code> query.
+                In the buggy original, <code>getAll(): List</code> + a non-<code>suspend</code> <code>insert</code> broke
+                both halves at once.</p>
+</div></div>
+</div>
+</div>
+<!-- ================= DRILL 3 — Flow vs suspend reasoning ================= -->
+<h3 class="anchor-h" id="drill-flow">Drill 3 · <code>Flow</code> vs <code>suspend</code> — which read do you reach for?</h3>
+<p>Both are correct tools; choosing wrong is the most common Room mistake. The rule: a <strong>screen that must stay
+        live</strong> as the table changes needs an observable <code>Flow</code> read; a <strong>one-time fetch</strong>
+        (pre-fill an edit form, a quick existence check) is a one-shot <code>suspend</code> read. Reason through the
+        cases below, then prove it in code.</p>
+<table class="cmp">
+<caption>If the UI must react to later writes → <code>Flow</code>. If you need the value once, right now → <code>suspend</code>.</caption>
+<thead>
+<tr><th style="width:46%;">What the screen needs</th><th>Right read</th><th>Return type</th></tr>
+</thead>
+<tbody>
+<tr><td>The whole task list, always reflecting inserts/deletes</td><td><code>Flow</code> (observable)</td><td><code>Flow&lt;List&lt;TaskEntity&gt;&gt;</code></td></tr>
+<tr><td>Load one row to pre-fill an "edit task" form, then leave</td><td><code>suspend</code> (one-shot)</td><td><code>suspend fun getById(id): TaskEntity?</code></td></tr>
+<tr><td>A live "X items remaining" badge in the top bar</td><td><code>Flow</code> (observable)</td><td><code>Flow&lt;Int&gt;</code></td></tr>
+<tr><td>"Does a task with this title already exist?" before inserting</td><td><code>suspend</code> (one-shot)</td><td><code>suspend fun countByTitle(t): Int</code></td></tr>
+</tbody>
+</table>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">The classic symptom of the wrong choice</span>
+<p>If you use a one-shot <code>suspend fun getAll(): List</code> for the main list, the screen renders once and
+            then goes <strong>stale</strong>: you add a task, the row is genuinely in SQLite (you can see it in the
+            Database Inspector), but the <code>LazyColumn</code> won't change until you navigate away and back. A
+            <code>Flow</code> read fixes it because Room re-runs the query and pushes a new list on every write.</p>
+</div>
+</div>
+<p>Run this side-by-side model. A one-shot snapshot (<code>suspend</code>) is taken <em>before</em> a write and never
+        changes; an observable read (<code>Flow</code>) sees the write. Predict each printed line, then Run.</p>
+<div class="codeblock" data-run="kotlin"><div class="codeblock__lang">Kotlin · runnable — watch one-shot go stale, Flow stay live</div><pre><code>import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+
+fun main() = runBlocking {
+    val table = MutableStateFlow(listOf("a", "b"))   // the "tasks" table
+
+    // ONE-SHOT (suspend): read once, into a plain value — frozen forever.
+    val oneShot: List&lt;String&gt; = table.value
+    println("one-shot read at start: $oneShot")
+
+    // OBSERVABLE (Flow): collect emissions as the table changes.
+    val seen = mutableListOf&lt;List&lt;String&gt;&gt;()
+    val job = launch { table.collect { seen += it } }
+    yield()
+
+    // a write happens (INSERT):
+    table.value = table.value + "c"
+    yield()
+
+    println("one-shot AFTER insert (stale): $oneShot")          // still [a, b]
+    println("Flow AFTER insert (live):      ${seen.last()}")    // [a, b, c]
+    println("Flow emission count:           ${seen.size}")      // 2
+    job.cancel()
+}</code></pre></div>
+<p class="mini-note">The one-shot value is captured by reference to a snapshot — later writes can't touch it. The
+        <code>Flow</code> is wired to the source, so it re-emits. That difference <em>is</em>
+<code>suspend fun getAll(): List</code> vs <code>fun getAll(): Flow&lt;List&lt;…&gt;&gt;</code> in your DAO.</p>
+<h4 class="anchor-h" id="drill-flow-challenge">Now you — pick the right return type, in code</h4>
+<p>Implement a tiny DAO so the live list stays reactive while the existence check stays a one-shot. The harness
+        checks that your observable read re-emits and your one-shot read does not over-fire.</p>
+<div class="codeblock" data-challenge="crud-flow-vs-suspend" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge — make every case green</div>
+<pre><code>import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+
+data class Note(val id: Int, val title: String)
+
+class NoteDao {
+    private val rows = mutableListOf&lt;Note&gt;()
+    private var nextId = 1
+    private val live = MutableStateFlow&lt;List&lt;Note&gt;&gt;(emptyList())
+
+    suspend fun insert(title: String): Int {
+        val n = Note(nextId++, title)
+        rows += n
+        live.value = rows.toList()      // re-emit for observers
+        return n.id
+    }
+
+    // ---------- YOUR CODE ----------
+    // The live list a screen renders — must RE-EMIT after every insert.
+    fun observeAll(): Flow&lt;List&lt;Note&gt;&gt; {
+        TODO("return the observable stream (no new collection — expose the existing one)")
+    }
+
+    // A one-shot existence check before inserting a duplicate — reads ONCE, no stream.
+    suspend fun countByTitle(title: String): Int {
+        TODO("return how many current rows have this exact title")
+    }
+    // ---------- END YOUR CODE ----------
+}
+
+fun main() = runBlocking {
+    var fails = 0
+    fun check(name: String, cond: Boolean, expected: Any?, got: Any?) {
+        if (cond) println("✓ passed: $name")
+        else { println("✗ FAILED: $name — expected $expected, got $got"); fails++ }
+    }
+
+    val dao = NoteDao()
+    val seen = mutableListOf&lt;List&lt;Note&gt;&gt;()
+    val job = launch { dao.observeAll().collect { seen += it } }
+    yield()
+
+    check("one-shot count before any insert is 0", dao.countByTitle("buy milk") == 0, 0, dao.countByTitle("buy milk"))
+
+    dao.insert("buy milk")
+    dao.insert("call mom")
+    yield()
+
+    check("Flow re-emitted (initial + 2 inserts = 3)", seen.size == 3, 3, seen.size)
+    check("Flow's latest snapshot is live", seen.last().map { it.title } == listOf("buy milk", "call mom"),
+        "[buy milk, call mom]", seen.last().map { it.title })
+    check("one-shot count sees the inserted row", dao.countByTitle("buy milk") == 1, 1, dao.countByTitle("buy milk"))
+    check("one-shot count for a missing title is 0", dao.countByTitle("nope") == 0, 0, dao.countByTitle("nope"))
+
+    job.cancel()
+    if (fails == 0) println("\nALL TESTS PASSED 🎉")
+    else println("\n$fails case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div>
+<ul>
+<li><code>observeAll</code> must hand back the <em>existing</em> stream so collectors keep getting updates: <code>return live.asStateFlow()</code>. Building a brand-new <code>flowOf(rows)</code> would emit once and never react — the exact bug this drill targets.</li>
+<li><code>countByTitle</code> is a one-shot read: <code>return rows.count { it.title == title }</code>. No <code>Flow</code>, because the caller wants a single answer "right now," not a subscription.</li>
+<li>Rule of thumb: the list the screen renders → <code>Flow</code>; a value you check once before acting → <code>suspend</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun observeAll(): Flow&lt;List&lt;Note&gt;&gt; = live.asStateFlow()
+
+suspend fun countByTitle(title: String): Int = rows.count { it.title == title }</code></pre></div>
+<p class="mini-note">In Room these become <code>@Query("SELECT * FROM notes ORDER BY id") fun observeAll(): Flow&lt;List&lt;Note&gt;&gt;</code>
+                and <code>@Query("SELECT COUNT(*) FROM notes WHERE title = :title") suspend fun countByTitle(title: String): Int</code>.
+                Same decision, expressed in annotations: <code>Flow</code> for the screen, <code>suspend</code> for the one-shot.</p>
+</div></div>
+</div>
+</div>
+<!-- ================= DRILL 4 — @TypeConverter (store a non-primitive) ================= -->
+<h3 class="anchor-h" id="drill-converter">Drill 4 · Store a <code>LocalDate</code> — write the <code>@TypeConverter</code></h3>
+<p>SQLite has exactly four storage classes — <code>INTEGER</code>, <code>TEXT</code>, <code>REAL</code>, <code>BLOB</code>.
+        Try to put a <code>LocalDate</code> (or an enum) straight on an <code>@Entity</code> and Room stops the build with
+        <em>"Cannot figure out how to save this field into database."</em> The fix is a <strong>type converter</strong>: a
+        pair of functions that map your type to/from one of those four primitives. Here we'll store a date as the
+        <code>Long</code> count of days since 1970-01-01 (its <em>epoch day</em>).</p>
+<div class="card card--accent">
+<h4 class="card__title" style="font-size:var(--fs-md);">📋 The contract</h4>
+<ul>
+<li>A <code>dueDate: LocalDate?</code> column must round-trip through a <code>Long?</code> with <strong>no data loss</strong>.</li>
+<li><code>null</code> in → <code>null</code> out (an optional due date is legal).</li>
+<li>The converters are wired onto the database with <code>@TypeConverters(Converters::class)</code>; Room then calls them automatically for every read and write of that column.</li>
+</ul>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">🔎 Reveal how the converter is wired into Room</button>
+<div class="accordion__body"><div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · Converters.kt + the @Database wiring</span><pre><code>import androidx.room.TypeConverter
+import androidx.room.TypeConverters
+import java.time.LocalDate
+
+class Converters {
+    // LocalDate -&gt; the INTEGER column (epoch day)
+    @TypeConverter
+    fun toEpochDay(date: LocalDate?): Long? = date?.toEpochDay()
+
+    // the INTEGER column -&gt; LocalDate
+    @TypeConverter
+    fun fromEpochDay(value: Long?): LocalDate? = value?.let { LocalDate.ofEpochDay(it) }
+}
+
+@Database(entities = [TaskEntity::class], version = 2, exportSchema = false)
+@TypeConverters(Converters::class)      // &lt;-- register; Room calls them per read/write
+abstract class AppDatabase : RoomDatabase() { abstract fun taskDao(): TaskDao }
+
+// Now this compiles — the dueDate column is stored as INTEGER (epoch day):
+@Entity(tableName = "tasks")
+data class TaskEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val title: String,
+    @ColumnInfo(name = "due_date") val dueDate: LocalDate? = null   // needs the converter
+)</code></pre></div>
+<p class="mini-note">Adding a column changed the schema, so <code>version</code> went 1 → 2 (and you'd supply a
+                <code>Migration(1, 2)</code> in production). The converter pair is the only "extra" code; everything else
+                is the same <code>@Entity</code>/<code>@Dao</code> you already know.</p>
+</div></div>
+</div>
+</div>
+<p>Now implement the converter so the harness round-trips dates through <code>Long</code> with no loss — including
+        <code>null</code>.</p>
+<div class="codeblock" data-challenge="crud-type-converter" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge — make every case green</div>
+<pre><code>import java.time.LocalDate
+
+// Stand-in for Room's @TypeConverter pair. Room stores the Long in an INTEGER
+// column and calls these for you on every read/write — here we call them directly.
+class Converters {
+    // ---------- YOUR CODE ----------
+    fun toEpochDay(date: LocalDate?): Long? {
+        // LocalDate -&gt; days since 1970-01-01 (null stays null)
+        TODO("convert a LocalDate? to a Long? epoch day")
+    }
+
+    fun fromEpochDay(value: Long?): LocalDate? {
+        // Long? epoch day -&gt; LocalDate (null stays null)
+        TODO("convert a Long? epoch day back to a LocalDate?")
+    }
+    // ---------- END YOUR CODE ----------
+}
+
+fun main() {
+    var fails = 0
+    fun check(name: String, cond: Boolean, expected: Any?, got: Any?) {
+        if (cond) println("✓ passed: $name")
+        else { println("✗ FAILED: $name — expected $expected, got $got"); fails++ }
+    }
+
+    val c = Converters()
+
+    // 1970-01-01 is epoch day 0 by definition.
+    check("epoch day 0 == 1970-01-01", c.toEpochDay(LocalDate.of(1970, 1, 1)) == 0L,
+        0L, c.toEpochDay(LocalDate.of(1970, 1, 1)))
+
+    // A real date round-trips with no loss.
+    val due = LocalDate.of(2026, 3, 14)
+    val stored = c.toEpochDay(due)
+    check("write then read returns the same date", c.fromEpochDay(stored) == due, due, c.fromEpochDay(stored))
+
+    // null is a legal "no due date" on both sides.
+    check("null LocalDate stores as null", c.toEpochDay(null) == null, null, c.toEpochDay(null))
+    check("null Long reads back as null", c.fromEpochDay(null) == null, null, c.fromEpochDay(null))
+
+    // Every date in a range survives the round-trip (no off-by-one / overflow).
+    var start = LocalDate.of(2024, 1, 1)
+    var allOk = true
+    repeat(800) {
+        val back = c.fromEpochDay(c.toEpochDay(start))
+        if (back != start) allOk = false
+        start = start.plusDays(1)
+    }
+    check("800 consecutive dates round-trip losslessly", allOk, true, allOk)
+
+    if (fails == 0) println("\nALL TESTS PASSED 🎉")
+    else println("\n$fails case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div>
+<ul>
+<li><code>LocalDate</code> already does the math: <code>date?.toEpochDay()</code> gives the <code>Long</code>, and <code>LocalDate.ofEpochDay(value)</code> rebuilds it.</li>
+<li>Use the safe-call <code>?.</code> / <code>?.let { … }</code> so a <code>null</code> in produces a <code>null</code> out — Room passes <code>null</code> through your converter for a nullable column.</li>
+<li><code>toEpochDay()</code> is the lossless choice: it's a whole number of days, so there's no time-zone or hour drift to worry about (which is exactly why we don't store a <code>LocalDate</code> as a formatted <code>TEXT</code> string).</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun toEpochDay(date: LocalDate?): Long? = date?.toEpochDay()
+
+fun fromEpochDay(value: Long?): LocalDate? = value?.let { LocalDate.ofEpochDay(it) }</code></pre></div>
+<p class="mini-note">Same pattern works for an <code>enum</code> (store <code>name</code> as <code>TEXT</code>,
+                rebuild with <code>enumValueOf</code>) or a small list (store JSON as <code>TEXT</code>). Rule of thumb:
+                pick the <em>simplest lossless</em> primitive — a <code>Long</code> epoch day for a date, not a locale-formatted string.</p>
+</div></div>
+</div>
+</div>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">You've got these when…</span>
+<p>(1) every harness prints <code>ALL TESTS PASSED 🎉</code>; (2) you can write the <code>@Entity</code> and the
+            active-list <code>@Query</code> from the spec <em>without peeking</em>; (3) you can say in one breath why the
+            buggy DAO both crashes and goes stale; (4) you can pick <code>Flow</code> vs <code>suspend</code> for a
+            new screen on sight; and (5) you can write a <code>@TypeConverter</code> to persist a non-primitive like a
+            <code>LocalDate</code>. Mark each drill solved to advance your mastery for <em>local data</em>.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- ============================ FOOTER ============================ -->
+<footer class="footer">
+<div class="wrap">
+<span class="footer__brand">COP4667 Android Development</span>
+<span class="muted">Keiser University · B.S. Software Engineering · Interactive Teaching Guide</span>
+<span><a href="../index.html">↑ Back to course hub</a></span>
+</div>
+</footer>
+<!-- ============================ QUIZ DATA ============================ -->
+<script id="crud-quiz" type="application/json">
+  {
+    "title": "Room / SQLite CRUD — quick check",
+    "intro": "Six questions on persistence with Room. Aim for 70% to pass.",
+    "passingScore": 0.7,
+    "shuffle": false,
+    "questions": [
+      {
+        "id": "q1",
+        "type": "single",
+        "prompt": "Which Room annotation defines a database TABLE?",
+        "options": [
+          { "id": "a", "text": "@Dao" },
+          { "id": "b", "text": "@Entity" },
+          { "id": "c", "text": "@Database" },
+          { "id": "d", "text": "@Query" }
+        ],
+        "correct": ["b"],
+        "explanation": "@Entity on a data class maps that class to one SQLite table; each property becomes a column."
+      },
+      {
+        "id": "q2",
+        "type": "single",
+        "prompt": "A DAO READ that should automatically update the UI whenever the table changes should return…",
+        "options": [
+          { "id": "a", "text": "A suspend fun returning List<TaskEntity>" },
+          { "id": "b", "text": "Flow<List<TaskEntity>>" },
+          { "id": "c", "text": "A LiveData<Int> of the row count" },
+          { "id": "d", "text": "An Array<TaskEntity>" }
+        ],
+        "correct": ["b"],
+        "explanation": "A Flow is observable: Room re-runs the query and emits a new list on every change. A plain suspend function is a one-shot read."
+      },
+      {
+        "id": "q3",
+        "type": "truefalse",
+        "prompt": "DAO write functions (insert/update/delete) should be marked 'suspend' so they run off the main thread.",
+        "correct": true,
+        "explanation": "Yes. Database I/O on the main thread freezes the UI and crashes with 'Cannot access database on the main thread'. suspend lets Room dispatch the work to a background thread."
+      },
+      {
+        "id": "q4",
+        "type": "multi",
+        "prompt": "Which statements about DataStore vs Room are TRUE? (Select all that apply.)",
+        "options": [
+          { "id": "a", "text": "Preferences DataStore is best for a few key-value settings (like a dark-mode flag)." },
+          { "id": "b", "text": "Room is best for a queryable collection of records (like a task list)." },
+          { "id": "c", "text": "DataStore lets you run SQL WHERE / ORDER BY / JOIN queries." },
+          { "id": "d", "text": "Room is the modern replacement for hand-written SQLiteOpenHelper + cursors." }
+        ],
+        "correct": ["a", "b", "d"],
+        "explanation": "DataStore is flat key-value with no SQL querying (so c is false). Room is the structured, queryable database and replaces raw SQLiteOpenHelper."
+      },
+      {
+        "id": "q5",
+        "type": "short",
+        "prompt": "Fill in the SQL verb Room generates for @Insert (one word, e.g. SELECT):",
+        "correct": ["INSERT", "insert", "INSERT INTO"],
+        "explanation": "@Insert generates an INSERT INTO tasks (...) VALUES (...) statement."
+      },
+      {
+        "id": "q6",
+        "type": "single",
+        "prompt": "You added a new column to your @Entity and the app now crashes with 'Room cannot verify the data integrity'. What did you forget?",
+        "options": [
+          { "id": "a", "text": "To mark the DAO function suspend" },
+          { "id": "b", "text": "To bump the @Database version and provide a Migration (or fallbackToDestructiveMigration)" },
+          { "id": "c", "text": "To collect the Flow with collectAsStateWithLifecycle" },
+          { "id": "d", "text": "To add a @PrimaryKey" }
+        ],
+        "correct": ["b"],
+        "explanation": "Changing the schema requires a higher version number plus a migration path; otherwise Room refuses to open the existing database file."
+      }
+    ]
+  }
+  </script>
+<!-- ============================ FLASHCARD DATA ============================ -->
+<script id="crud-cards" type="application/json">
+  [
+    { "front": "@Entity", "back": "Marks a Kotlin data class as a SQLite table. Each property is a column; @PrimaryKey marks the id.", "tag": "Room" },
+    { "front": "@Dao", "back": "Data Access Object — an interface of query methods. Room generates the implementation. @Insert/@Update/@Delete + @Query.", "tag": "Room" },
+    { "front": "@Database", "back": "Abstract RoomDatabase class tying entities + DAOs to one SQLite file. Usually a @Volatile singleton.", "tag": "Room" },
+    { "front": "Why 'suspend' on DAO writes?", "back": "So inserts/updates/deletes run on a background thread from a coroutine and don't block (or crash) the UI thread.", "tag": "Coroutines" },
+    { "front": "Why 'Flow' on DAO reads?", "back": "Flow is observable: Room re-emits a fresh result whenever the table changes, so Compose auto-updates with no manual refresh.", "tag": "Coroutines" },
+    { "front": "CRUD → SQL", "back": "Create=INSERT, Read=SELECT, Update=UPDATE, Delete=DELETE. Room generates these from your annotations.", "tag": "SQL" },
+    { "front": "DataStore vs Room", "back": "DataStore = key-value settings (replaces SharedPreferences). Room = structured, queryable records (replaces raw SQLite).", "tag": "Choose" },
+    { "front": "KSP", "back": "Kotlin Symbol Processing — Room's annotation processor that generates the DAO/Database code. Replaces the older kapt.", "tag": "Setup" },
+    { "front": "How is a Boolean stored?", "back": "SQLite has no boolean type, so Room stores Boolean as INTEGER 0 (false) / 1 (true).", "tag": "SQLite" },
+    { "front": "The data flow loop", "back": "UI event → ViewModel coroutine → Repository → suspend DAO → SQLite → Flow re-emits → state updates → Compose recomposes.", "tag": "Architecture" }
+  ]
+  </script>
+<!-- ============================ DRILL 2 — BUG-FINDER QUIZ DATA ============================ -->
+<script id="crud-bug-quiz" type="application/json">
+  {
+    "title": "Find the root cause",
+    "intro": "The buggy DAO above both crashes on the first insert AND leaves the list stale. Pick the single answer that explains both, then check the rest.",
+    "passingScore": 0.75,
+    "shuffle": false,
+    "questions": [
+      {
+        "id": "bq1",
+        "type": "single",
+        "prompt": "What is the root cause of BOTH the crash and the stale list?",
+        "options": [
+          { "id": "a", "text": "The @Entity is missing a @PrimaryKey." },
+          { "id": "b", "text": "getAll() returns a one-shot List (so it never re-emits) AND insert() is not suspend (so it runs DB I/O on the main thread)." },
+          { "id": "c", "text": "tasks should be a var, not a val, in the ViewModel." },
+          { "id": "d", "text": "@Insert needs onConflict = OnConflictStrategy.REPLACE." }
+        ],
+        "correct": ["b"],
+        "explanation": "Two DAO contract defects compound: a non-suspend insert() runs on the calling (main) thread and crashes with 'Cannot access database on the main thread'; a List-returning getAll() is a one-shot read that never updates after a write, so the screen goes stale. Fix BOTH: suspend the write + return Flow from the read."
+      },
+      {
+        "id": "bq2",
+        "type": "single",
+        "prompt": "Which line throws 'IllegalStateException: Cannot access database on the main thread'?",
+        "options": [
+          { "id": "a", "text": "(C) val tasks = dao.getAll() — a synchronous DB read at ViewModel construction" },
+          { "id": "b", "text": "(A) the @Query annotation itself" },
+          { "id": "c", "text": "(D) the fun add signature" },
+          { "id": "d", "text": "Nothing throws — it only freezes" }
+        ],
+        "correct": ["a"],
+        "explanation": "Line (C) calls the non-suspend getAll() directly on the constructing thread (typically main), so Room blocks main-thread access. Line (E)'s non-suspend insert() does the same on the next user tap. The repair is suspend writes launched from viewModelScope and a Flow read collected with collectAsStateWithLifecycle()."
+      },
+      {
+        "id": "bq3",
+        "type": "truefalse",
+        "prompt": "Marking insert() as 'suspend' is enough on its own to make the on-screen list refresh after an insert.",
+        "correct": false,
+        "explanation": "No. suspend fixes the threading half (the crash), but the list only auto-updates if the READ is observable. getAll() must return Flow<List<TaskEntity>> (collected in the UI) — otherwise the read is still a frozen one-shot and the screen stays stale."
+      }
+    ]
+  }
+  </script>
+<!-- ============================ SHARED ASSETS ============================ -->
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+<!-- ============================ PAGE-SPECIFIC: CRUD SIMULATOR ============================ -->
+<script>
+  (function () {
+    "use strict";
+    var STORAGE_KEY = "tg:cop4667:crud-sim:tasks-v1";
+
+    // ----- Seed data (the "pre-populated" database) -----
+    function seed() {
+      return {
+        rows: [
+          { id: 1, title: "Read Unit 6 — Data persistence", isDone: true },
+          { id: 2, title: "Build the Room @Entity + @Dao", isDone: false },
+          { id: 3, title: "Wire the list into the ViewModel", isDone: false }
+        ],
+        nextId: 4
+      };
+    }
+
+    // ----- State (persisted to localStorage) -----
+    var db = load();
+    var editingId = null;     // null = create mode; number = editing that row
+    var filterDone = false;   // "show done only" toggle
+    var searchTerm = "";      // live LIKE filter on title
+
+    function load() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return seed();
+        var parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.rows)) return seed();
+        return parsed;
+      } catch (e) { return seed(); }
+    }
+    function save() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch (e) {}
+    }
+
+    // ----- DOM refs -----
+    var form        = document.getElementById("crud-form");
+    var titleInput  = document.getElementById("task-title");
+    var doneInput   = document.getElementById("task-done");
+    var submitBtn   = document.getElementById("submit-btn");
+    var cancelBtn   = document.getElementById("cancel-edit");
+    var formTitle   = document.getElementById("form-title");
+    var editingBan  = document.getElementById("editing-banner");
+    var editingIdEl = document.getElementById("editing-id");
+    var tbody       = document.getElementById("tasks-body");
+    var rowCount    = document.getElementById("row-count");
+    var remainingEl = document.getElementById("remaining-badge");
+    var searchInput = document.getElementById("task-search");
+    var logEl       = document.getElementById("sql-log");
+    var refreshBtn  = document.getElementById("refresh-btn");
+    var filterBtn   = document.getElementById("filter-btn");
+    var clearBtn    = document.getElementById("clear-btn");
+    var resetBtn    = document.getElementById("reset-btn");
+    var clearLogBtn = document.getElementById("clear-log");
+
+    if (!form || !tbody) return; // guard
+
+    // ----- Helpers -----
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    function sqlStr(s) { return "'" + String(s).replace(/'/g, "''") + "'"; }
+
+    // Log a SQL statement to the live log
+    function log(op, sql) {
+      var line = document.createElement("div");
+      line.className = "log-line";
+      var ts = new Date().toLocaleTimeString();
+      line.innerHTML = '<span class="op op-' + op + '">[' + op.toUpperCase() + ']</span> ' +
+                       escapeHtml(sql) + ' <span style="opacity:.45;">— ' + ts + '</span>';
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Switch the right-hand Kotlin tab to follow the action
+    function focusCodeTab(key) {
+      var btn = document.querySelector('.tab[data-tab="' + key + '"]');
+      if (btn) btn.click();
+    }
+
+    // ----- READ / render the table -----
+    function render(flashId) {
+      var rows = db.rows.slice().sort(function (a, b) { return a.id - b.id; });
+      var term = searchTerm.toLowerCase();
+      var visible = rows.filter(function (r) {
+        if (filterDone && !r.isDone) return false;
+        if (term && r.title.toLowerCase().indexOf(term) === -1) return false;  // SQL LIKE '%term%'
+        return true;
+      });
+
+      // Live "items remaining" badge — a SELECT COUNT(*) over the OBSERVED table (ignores filters)
+      var remaining = db.rows.reduce(function (n, r) { return n + (r.isDone ? 0 : 1); }, 0);
+      if (remainingEl) {
+        remainingEl.textContent = remaining + " left";
+        remainingEl.classList.toggle("all-done", db.rows.length > 0 && remaining === 0);
+        remainingEl.title = "Live SELECT COUNT(*) FROM tasks WHERE is_done = 0  →  " + remaining;
+      }
+
+      tbody.innerHTML = "";
+      if (!visible.length) {
+        var tr = document.createElement("tr");
+        tr.className = "empty-row";
+        tr.innerHTML = '<td colspan="4">' +
+          (term ? "No rows match the LIKE filter on title."
+                : filterDone ? "No completed tasks. (SELECT returned 0 rows for is_done = 1.)"
+                      : "Table is empty. Insert a task above to run your first INSERT.") + '</td>';
+        tbody.appendChild(tr);
+      } else {
+        visible.forEach(function (r) {
+          var tr = document.createElement("tr");
+          if (r.isDone) tr.className = "is-done";
+          if (flashId === r.id) tr.classList.add("row-flash");
+
+          var chip = r.isDone
+            ? '<span class="done-chip yes">1 ✓</span>'
+            : '<span class="done-chip no">0</span>';
+
+          tr.innerHTML =
+            '<td class="t-id">' + r.id + '</td>' +
+            '<td class="t-title">' + escapeHtml(r.title) + '</td>' +
+            '<td class="t-done">' + chip + '</td>' +
+            '<td class="t-actions">' +
+              '<button class="btn btn--ghost btn--sm" type="button" data-edit="' + r.id + '">Edit</button>' +
+              '<button class="btn btn--ghost btn--sm" type="button" data-del="' + r.id + '">Delete</button>' +
+            '</td>';
+          tbody.appendChild(tr);
+        });
+      }
+      rowCount.textContent = visible.length + (visible.length === 1 ? " row" : " rows") +
+        ((filterDone || searchTerm) ? " (filtered)" : "");
+    }
+
+    // ----- CREATE / UPDATE submit -----
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var title = titleInput.value.trim();
+      if (!title) { titleInput.focus(); return; }
+      var done = doneInput.checked;
+
+      if (editingId == null) {
+        // CREATE
+        var id = db.nextId++;
+        db.rows.push({ id: id, title: title, isDone: done });
+        save();
+        log("create", "INSERT INTO tasks (title, is_done) VALUES (" +
+          sqlStr(title) + ", " + (done ? 1 : 0) + ");  -- new id = " + id);
+        focusCodeTab("k-create");
+        render(id);
+        resetForm();
+      } else {
+        // UPDATE
+        var row = db.rows.filter(function (r) { return r.id === editingId; })[0];
+        if (row) {
+          row.title = title;
+          row.isDone = done;
+          save();
+          log("update", "UPDATE tasks SET title = " + sqlStr(title) +
+            ", is_done = " + (done ? 1 : 0) + " WHERE id = " + editingId + ";");
+          focusCodeTab("k-update");
+        }
+        var flash = editingId;
+        resetForm();
+        render(flash);
+      }
+    });
+
+    // ----- Enter edit mode -----
+    function enterEdit(id) {
+      var row = db.rows.filter(function (r) { return r.id === id; })[0];
+      if (!row) return;
+      editingId = id;
+      titleInput.value = row.title;
+      doneInput.checked = row.isDone;
+      formTitle.textContent = "✎ Update task";
+      submitBtn.textContent = "Save changes";
+      cancelBtn.hidden = false;
+      editingIdEl.textContent = id;
+      form.classList.add("editing");
+      log("read", "SELECT * FROM tasks WHERE id = " + id + ";  -- load row into the edit form");
+      focusCodeTab("k-update");
+      titleInput.focus();
+      form.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function resetForm() {
+      editingId = null;
+      form.reset();
+      formTitle.textContent = "➕ Create a task";
+      submitBtn.textContent = "Insert row";
+      cancelBtn.hidden = true;
+      form.classList.remove("editing");
+    }
+
+    cancelBtn.addEventListener("click", resetForm);
+
+    // ----- DELETE -----
+    function deleteRow(id) {
+      db.rows = db.rows.filter(function (r) { return r.id !== id; });
+      save();
+      log("delete", "DELETE FROM tasks WHERE id = " + id + ";");
+      focusCodeTab("k-delete");
+      if (editingId === id) resetForm();
+      render();
+    }
+
+    // Delegate Edit/Delete clicks
+    tbody.addEventListener("click", function (e) {
+      var t = e.target.closest("button");
+      if (!t) return;
+      if (t.hasAttribute("data-edit")) enterEdit(parseInt(t.getAttribute("data-edit"), 10));
+      else if (t.hasAttribute("data-del")) deleteRow(parseInt(t.getAttribute("data-del"), 10));
+    });
+
+    // ----- READ controls -----
+    refreshBtn.addEventListener("click", function () {
+      if (filterDone) {
+        log("read", "SELECT * FROM tasks WHERE is_done = 1 ORDER BY id ASC;");
+      } else {
+        log("read", "SELECT * FROM tasks ORDER BY id ASC;");
+      }
+      focusCodeTab("k-read");
+      render();
+    });
+
+    filterBtn.addEventListener("click", function () {
+      filterDone = !filterDone;
+      filterBtn.setAttribute("aria-pressed", filterDone ? "true" : "false");
+      filterBtn.textContent = filterDone ? "Show all rows" : "Show done only";
+      log("read", filterDone
+        ? "SELECT * FROM tasks WHERE is_done = 1 ORDER BY id ASC;  -- filter ON"
+        : "SELECT * FROM tasks ORDER BY id ASC;  -- filter OFF");
+      focusCodeTab("k-read");
+      render();
+    });
+
+    // ----- LIKE search (debounced so the log stays readable) -----
+    if (searchInput) {
+      var searchTimer = null;
+      searchInput.addEventListener("input", function () {
+        searchTerm = searchInput.value.trim();
+        render();                         // filter the table live on every keystroke
+        if (searchTimer) clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () {   // log the SQL once typing settles
+          if (searchTerm) {
+            var like = "'%" + searchTerm.replace(/'/g, "''") + "%'";
+            log("read", "SELECT * FROM tasks WHERE title LIKE " + like + " ORDER BY id ASC;");
+          } else {
+            log("read", "SELECT * FROM tasks ORDER BY id ASC;  -- search cleared");
+          }
+          focusCodeTab("k-read");
+        }, 350);
+      });
+    }
+
+    // ----- Destructive controls -----
+    clearBtn.addEventListener("click", function () {
+      if (!db.rows.length) return;
+      if (!window.confirm("Run DELETE FROM tasks; — remove ALL rows?")) return;
+      db.rows = [];
+      save();
+      log("delete", "DELETE FROM tasks;  -- clearAll()");
+      focusCodeTab("k-delete");
+      render();
+    });
+
+    resetBtn.addEventListener("click", function () {
+      if (!window.confirm("Reset the database to the seed data?")) return;
+      db = seed();
+      save();
+      filterDone = false;
+      filterBtn.setAttribute("aria-pressed", "false");
+      filterBtn.textContent = "Show done only";
+      searchTerm = "";
+      if (searchInput) searchInput.value = "";
+      resetForm();
+      log("create", "-- DB reset: table dropped & re-seeded with 3 rows");
+      focusCodeTab("k-read");
+      render();
+    });
+
+    clearLogBtn.addEventListener("click", function () { logEl.innerHTML = ""; });
+
+    // ----- Initial paint -----
+    // The tab engine (app.js) activates the first tab — Create — on its own once it
+    // initializes on DOMContentLoaded, so we don't force it here (this IIFE runs first).
+    render();
+    log("read", "SELECT * FROM tasks ORDER BY id ASC;  -- initial load");
+  })();
+  </script>
+</body>
+</html>

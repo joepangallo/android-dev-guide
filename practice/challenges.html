@@ -1,0 +1,2582 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Coding Challenge Arena — Auto-Checked Practice · COP4667</title>
+<meta content="COP4667 Android Development — the auto-checked Coding Challenge Arena. 37 runnable, instantly-checked Kotlin and Compose-logic challenges grouped by topic (Kotlin core, Compose UI, state, lists, navigation/ViewModel, DataStore/Room, networking/Retrofit). Each challenge has an editable solution region, a fun main() test harness that prints ✓/✗ and ALL TESTS PASSED 🎉, a collapsible Hint and Reference Solution, and feeds your personal mastery + streak. Deliberate practice with immediate feedback." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: var(--fs-xs); font-weight: 800; color: #9BE8C5; margin: 0 0 .35em; }
+    .arena-layout { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 1100px) {
+      .arena-layout { grid-template-columns: 232px 1fr; align-items: start; }
+      .arena-rail { position: sticky; top: 76px; }
+    }
+    .arena-rail .card { padding: var(--space-4); }
+    .section-anchor { scroll-margin-top: 84px; }
+
+    /* Topic section header with its own live "X/Y solved" pill */
+    .topic-head {
+      display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-3);
+      border-bottom: 2px solid var(--line); padding-bottom: var(--space-3); margin: var(--space-6) 0 var(--space-4);
+    }
+    .topic-head h2 { margin: 0; font-size: var(--fs-xl); }
+    .topic-head .clo-tag { vertical-align: middle; }
+    .topic-score {
+      margin-left: auto; font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 750;
+      display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+      padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+    }
+    .topic-score .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+    .topic-score.is-complete { border-color: var(--green); color: var(--teal); background: color-mix(in srgb, var(--green) 9%, var(--surface)); }
+    [data-theme="dark"] .topic-score.is-complete { color: var(--green); }
+    .topic-score.is-complete .dot { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 30%, transparent); }
+    .topic-score.is-progress .dot { background: var(--accent); }
+
+    /* Difficulty pill on each challenge */
+    .chal-meta { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin: var(--space-5) 0 var(--space-2); }
+    .chal-num { font-family: var(--font-mono); font-weight: 800; color: var(--muted); font-size: var(--fs-sm); }
+    .chal-title { font-size: var(--fs-lg); font-weight: 750; margin: 0; }
+    .diff { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); }
+    .diff--easy   { color: var(--teal); background: color-mix(in srgb, var(--green) 12%, var(--surface)); border-color: color-mix(in srgb, var(--green) 35%, var(--line)); }
+    .diff--medium { color: var(--accent);    background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+    .diff--hard   { color: var(--danger);    background: color-mix(in srgb, var(--danger) 10%, var(--surface)); border-color: color-mix(in srgb, var(--danger) 32%, var(--line)); }
+    [data-theme="dark"] .diff--easy { color: var(--green); }
+
+    .chal-prompt { color: var(--muted); margin: .35em 0 var(--space-3); }
+    .legend-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align: middle; }
+    .back-top { font-size: var(--fs-xs); }
+  </style>
+</head>
+<body>
+<!-- ====================== TOP NAV ====================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 teaching guide home" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▶</span>
+<span>COP4667
+          <small>Android Development</small>
+</span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="../labs/kotlin-cheatsheet.html">Cheatsheet</a>
+<a aria-current="page" class="active" href="challenges.html">Challenge Arena</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">🖥️ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ====================== HERO ====================== -->
+<section aria-labelledby="hero-title" class="hero slide section-anchor" id="top">
+<p class="eyebrow">Deliberate practice · Auto-checked · All 12 sessions</p>
+<h1 class="hero-title" id="hero-title">Coding Challenge Arena</h1>
+<p class="hero-sub">Thirty-seven <strong>runnable, instantly-checked</strong> Kotlin challenges, ordered easy → hard inside every topic you'll use on the job. Edit the <code>// YOUR CODE</code> region, press <strong>Run</strong>, and the test harness tells you exactly what's still failing — until you earn <strong>ALL TESTS PASSED 🎉</strong>. Every solve feeds your personal mastery and study streak below.</p>
+<div class="hero-meta">
+<span class="pill pill--green">Immediate feedback — no waiting on a grader</span>
+<span class="pill">📌 Pairs with every session + the Kotlin cheatsheet</span>
+<span class="pill"><span class="clo-tag">CLO 2</span></span>
+<span class="pill"><span class="clo-tag">CLO 3</span></span>
+<span class="pill pill--accent">Kotlin · Compose-logic · Material 3 mental models</span>
+</div>
+</section>
+<!-- ====================== HOW TO USE ====================== -->
+<section aria-labelledby="howto-title" class="slide section-anchor">
+<div class="card card--accent">
+<h2 class="card__title" id="howto-title">How the arena works <span class="clo-tag">CLO 3</span></h2>
+<div class="grid grid-2">
+<div>
+<p>This is <strong>deliberate practice</strong>: small, focused problems with a feedback loop measured in seconds, designed so each one builds a real skill — an edge case you'd otherwise miss, or the idiomatic Kotlin a senior engineer would actually write.</p>
+<ul>
+<li><strong>Edit only the <code>// YOUR CODE</code> region.</strong> The <code>fun main()</code> test harness below it is the grader — leave it alone.</li>
+<li><strong>Press Run.</strong> It compiles on JetBrains' server, runs the tests, and prints <code>✓ passed</code> / <code>✗ FAILED</code> per case. Green all the way down ends with <strong>ALL TESTS PASSED 🎉</strong>.</li>
+<li><strong>Stuck?</strong> Open the <em>💡 Hint</em> accordion first; the <em>✅ Reference solution</em> is there too, but try to beat it before you peek.</li>
+<li><strong>Mark it solved</strong> with the ✓ control under each challenge. That records mastery + bumps your streak. The per-topic <span class="muted">"X/Y solved"</span> pill and the strip at the top update live.</li>
+</ul>
+</div>
+<div>
+<p class="muted" style="margin-top:0;">Order matters: challenges climb from <span class="diff diff--easy">easy</span> → <span class="diff diff--medium">medium</span> → <span class="diff diff--hard">hard</span> within each topic so you always have a rung just above your current reach. Don't skip — the hard ones assume the muscle from the easy ones.</p>
+<div class="callout callout--info" style="margin-top:var(--space-3);">
+<span aria-hidden="true" class="callout__icon">🌐</span>
+<div class="callout__body">
+<span class="callout__label">Needs internet</span>
+<p>Running sends your code to JetBrains' public Kotlin compiler. Offline, each block falls back to copyable code — paste it into <a href="https://play.kotlinlang.org/" rel="noopener" target="_blank">Kotlin Playground ↗</a> or Android Studio's <kbd>Kotlin REPL</kbd>.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ====================== LIVE STAT STRIP ====================== -->
+<section aria-label="Your live progress" class="section-anchor">
+<div data-mastery-stats=""></div>
+<p class="muted" style="font-size:var(--fs-xs);margin-top:calc(-1 * var(--space-2));">
+<span class="legend-dot" style="background:var(--green);"></span>This is <strong>your</strong> self-directed progress (saved in this browser), never a course grade. Solve challenges and the numbers climb.
+</p>
+</section>
+<div class="arena-layout">
+<!-- ----- left rail: jump links + difficulty legend ----- -->
+<aside aria-label="Jump to a topic" class="arena-rail no-print">
+<div class="card">
+<p class="card__title">Topics</p>
+<ul class="tg-toc" style="list-style:none;padding:0;margin:0;display:grid;gap:2px;">
+<li><a href="#t-kotlin">1. Kotlin core</a></li>
+<li><a href="#t-compose">2. Compose UI</a></li>
+<li><a href="#t-state">3. State</a></li>
+<li><a href="#t-lists">4. Lists</a></li>
+<li><a href="#t-nav">5. Navigation / ViewModel</a></li>
+<li><a href="#t-data">6. DataStore / Room</a></li>
+<li><a href="#t-net">7. Networking / Retrofit</a></li>
+</ul>
+<hr/>
+<p class="muted" style="font-size:var(--fs-xs);margin:0 0 6px;">Difficulty</p>
+<div class="row" style="gap:6px;flex-wrap:wrap;">
+<span class="diff diff--easy">easy</span>
+<span class="diff diff--medium">medium</span>
+<span class="diff diff--hard">hard</span>
+</div>
+<hr/>
+<p class="muted" style="font-size:var(--fs-xs);margin:0;">Tip: solve in order. Each topic's <code>(N/M solved)</code> pill turns green when you clear it.</p>
+</div>
+</aside>
+<div class="arena-content">
+<!-- =================================================================
+     TOPIC 1 — KOTLIN CORE
+     ================================================================= -->
+<section aria-labelledby="t-kotlin-h" class="section-anchor" id="t-kotlin">
+<div class="topic-head">
+<h2 id="t-kotlin-h">1 · Kotlin core <span class="clo-tag">CLO 3</span></h2>
+<span class="topic-score" data-topic-score="kotlin" data-total="6"><span class="dot"></span><span data-role="label">0/6 solved</span></span>
+</div>
+<p class="muted">Null safety, <code>when</code>, data classes, collection pipelines, and the idioms that make Kotlin code short <em>and</em> correct. These underpin everything else in the arena.</p>
+<!-- K1 -->
+<div class="chal-meta"><span class="chal-num">K1</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Elvis &amp; safe-call: a tidy display name</h3></div>
+<p class="chal-prompt">Null safety is Kotlin's headline feature. Build a function that never throws on a null input and never returns a blank string.</p>
+<div class="codeblock" data-challenge="ch-kotlin-1" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Return a display name for a possibly-null, possibly-blank raw name.
+//   - if `raw` is null OR blank (after trimming) -&gt; "Guest"
+//   - otherwise -&gt; the trimmed name
+// Use the safe-call (?.) and Elvis (?:) operators — no `if` with `!= null`.
+
+fun displayName(raw: String?): String {
+    // YOUR CODE — start here
+    return ""
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: String, want: String) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected \"$want\", got \"$got\"") }
+    }
+    check("normal",      displayName("Ada"),     "Ada")
+    check("null",        displayName(null),      "Guest")
+    check("blank",       displayName("   "),     "Guest")
+    check("trims",       displayName("  Al  "),  "Al")
+    check("empty",       displayName(""),        "Guest")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>raw?.trim()</code> is <code>null</code> when <code>raw</code> is null — that's the safe call.</li>
+<li>A trimmed-but-empty string is still "blank"; <code>takeIf { it.isNotBlank() }</code> turns a blank string into <code>null</code> so Elvis can catch it.</li>
+<li>Chain it: <code>raw?.trim()?.takeIf { it.isNotBlank() } ?: "Guest"</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun displayName(raw: String?): String =
+    raw?.trim()?.takeIf { it.isNotBlank() } ?: "Guest"</code></pre>
+</div>
+<p class="muted">One expression, no <code>!!</code>, no nested null checks. <code>takeIf</code> is the idiom for "keep this value only if it passes a test, else null."</p>
+</div></div>
+</div>
+</div>
+<!-- K2 -->
+<div class="chal-meta"><span class="chal-num">K2</span><span class="diff diff--easy">easy</span><h3 class="chal-title"><code>when</code> as an expression: grade buckets</h3></div>
+<p class="chal-prompt">Kotlin's <code>when</code> replaces a switch and returns a value. Map a score to a letter using ranges — and handle out-of-range input defensively.</p>
+<div class="codeblock" data-challenge="ch-kotlin-2" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Return a letter grade for a 0..100 score using a `when` expression:
+//   90..100 -&gt; "A",  80..89 -&gt; "B",  70..79 -&gt; "C",  60..69 -&gt; "D",  else -&gt; "F"
+// BUT a score outside 0..100 is invalid -&gt; return "?" (negative or &gt; 100).
+
+fun grade(score: Int): String {
+    // YOUR CODE — start here
+    return ""
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: String, want: String) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected \"$want\", got \"$got\"") }
+    }
+    check("A high",   grade(100), "A")
+    check("A low",    grade(90),  "A")
+    check("B",        grade(85),  "B")
+    check("C edge",   grade(70),  "C")
+    check("F",        grade(12),  "F")
+    check("over",     grade(101), "?")
+    check("negative", grade(-1),  "?")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Guard the invalid range first: <code>score !in 0..100 -&gt; "?"</code> as the top branch of a subject-less <code>when { }</code>, or an early <code>if</code>.</li>
+<li>Then use <code>when (score) { in 90..100 -&gt; "A"; in 80..89 -&gt; "B"; … else -&gt; "F" }</code>.</li>
+<li>Ranges are inclusive on both ends, so <code>90..100</code> includes 90 and 100.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun grade(score: Int): String = when {
+    score !in 0..100 -&gt; "?"
+    score &gt;= 90       -&gt; "A"
+    score &gt;= 80       -&gt; "B"
+    score &gt;= 70       -&gt; "C"
+    score &gt;= 60       -&gt; "D"
+    else             -&gt; "F"
+}</code></pre>
+</div>
+<p class="muted">A subject-less <code>when</code> reads like a clean if/else-if chain and is exhaustive by virtue of <code>else</code>. Validating the range <em>before</em> bucketing is the defensive habit.</p>
+</div></div>
+</div>
+</div>
+<!-- K3 -->
+<div class="chal-meta"><span class="chal-num">K3</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Data class + <code>copy()</code>: immutable update</h3></div>
+<p class="chal-prompt">Immutable updates with <code>copy()</code> are the heartbeat of Compose state. Apply a "like" without mutating the original object.</p>
+<div class="codeblock" data-challenge="ch-kotlin-3" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class Post(val id: Int, val likes: Int, val likedByMe: Boolean)
+
+// Toggle a like on a Post WITHOUT mutating it (data classes here are immutable).
+//   - if likedByMe is false -&gt; return a copy with likedByMe=true  and likes+1
+//   - if likedByMe is true  -&gt; return a copy with likedByMe=false and likes-1
+// likes must never go below 0.
+
+fun toggleLike(post: Post): Post {
+    // YOUR CODE — start here
+    return post
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Post, want: Post) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val base = Post(1, 5, false)
+    val liked = toggleLike(base)
+    check("like adds",     liked,               Post(1, 6, true))
+    check("original kept", base,                Post(1, 5, false))   // no mutation
+    check("unlike sub",    toggleLike(liked),   Post(1, 5, false))
+    check("floor at 0",    toggleLike(Post(2, 0, true)), Post(2, 0, false))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>copy()</code> returns a new object with only the named fields changed — the receiver is untouched.</li>
+<li>Compute the next likes as <code>if (post.likedByMe) post.likes - 1 else post.likes + 1</code>, then clamp with <code>.coerceAtLeast(0)</code>.</li>
+<li>Flip the flag with <code>!post.likedByMe</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun toggleLike(post: Post): Post {
+    val delta = if (post.likedByMe) -1 else 1
+    return post.copy(
+        likedByMe = !post.likedByMe,
+        likes = (post.likes + delta).coerceAtLeast(0)
+    )
+}</code></pre>
+</div>
+<p class="muted">This is exactly how a Compose <code>UiState</code> is updated: never mutate, always <code>copy()</code> a new state. Recomposition is triggered by the new reference, not by an in-place change.</p>
+</div></div>
+</div>
+</div>
+<!-- K4 -->
+<div class="chal-meta"><span class="chal-num">K4</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Collection pipeline: top spenders</h3></div>
+<p class="chal-prompt">Real Android code transforms lists constantly. Chain <code>filter</code> → <code>sortedByDescending</code> → <code>map</code> to produce a leaderboard.</p>
+<div class="codeblock" data-challenge="ch-kotlin-4" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class Customer(val name: String, val spend: Int)
+
+// Return the names of the top spenders, as a List&lt;String&gt;:
+//   - keep only customers with spend &gt;= minSpend
+//   - sort by spend DESCENDING (highest first); ties keep input order
+//   - take at most `limit` of them
+//   - return just their names (uppercased)
+
+fun topSpenders(customers: List&lt;Customer&gt;, minSpend: Int, limit: Int): List&lt;String&gt; {
+    // YOUR CODE — start here
+    return emptyList()
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: List&lt;String&gt;, want: List&lt;String&gt;) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val data = listOf(
+        Customer("ada", 120), Customer("al", 40),
+        Customer("bo", 300),  Customer("cy", 120), Customer("di", 90)
+    )
+    check("top 2 over 100", topSpenders(data, 100, 2), listOf("BO", "ADA"))
+    check("limit cuts",     topSpenders(data, 0, 3),   listOf("BO", "ADA", "CY"))
+    check("filter empties", topSpenders(data, 999, 5), emptyList())
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Order the operations: <code>filter { it.spend &gt;= minSpend }</code> first to shrink the list.</li>
+<li><code>sortedByDescending { it.spend }</code> is a <em>stable</em> sort, so equal spends keep their original relative order (ada before cy).</li>
+<li>Then <code>take(limit)</code>, then <code>map { it.name.uppercase() }</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun topSpenders(customers: List&lt;Customer&gt;, minSpend: Int, limit: Int): List&lt;String&gt; =
+    customers
+        .filter { it.spend &gt;= minSpend }
+        .sortedByDescending { it.spend }
+        .take(limit)
+        .map { it.name.uppercase() }</code></pre>
+</div>
+<p class="muted">Filter before you sort (less work), and lean on Kotlin's <em>stable</em> sort for predictable tie-breaking. This reads top-to-bottom like a sentence — the whole point of a pipeline.</p>
+</div></div>
+</div>
+</div>
+<!-- K5 -->
+<div class="chal-meta"><span class="chal-num">K5</span><span class="diff diff--hard">hard</span><h3 class="chal-title"><code>groupBy</code> + <code>mapValues</code>: tally by category</h3></div>
+<p class="chal-prompt">Aggregation is where collection operators earn their keep. Turn a flat list of orders into per-category totals — sorted for a stable result.</p>
+<div class="codeblock" data-challenge="ch-kotlin-5" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class Order(val category: String, val amount: Int)
+
+// Return total amount per category as a Map&lt;String, Int&gt;,
+// with categories in ASCENDING alphabetical order (use a LinkedHashMap
+// so iteration order is preserved). Ignore categories that total 0 or less.
+
+fun totalsByCategory(orders: List&lt;Order&gt;): Map&lt;String, Int&gt; {
+    // YOUR CODE — start here
+    return emptyMap()
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Map&lt;String, Int&gt;, want: Map&lt;String, Int&gt;) {
+        // compare both content AND key order
+        val sameOrder = got.keys.toList() == want.keys.toList()
+        if (got == want &amp;&amp; sameOrder) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val data = listOf(
+        Order("food", 10), Order("toys", 5), Order("food", 7),
+        Order("books", 0), Order("toys", -5)   // toys nets 0 -&gt; dropped
+    )
+    check("totals+order", totalsByCategory(data),
+        linkedMapOf("food" to 17))
+    check("empty in/out", totalsByCategory(emptyList()), emptyMap())
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>groupBy { it.category }</code> gives <code>Map&lt;String, List&lt;Order&gt;&gt;</code>.</li>
+<li><code>mapValues { (_, list) -&gt; list.sumOf { it.amount } }</code> collapses each group to its total.</li>
+<li>Then <code>filterValues { it &gt; 0 }</code> drops the zero/negative totals, and <code>toSortedMap()</code> gives ascending key order in a map that preserves it.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun totalsByCategory(orders: List&lt;Order&gt;): Map&lt;String, Int&gt; =
+    orders
+        .groupBy { it.category }
+        .mapValues { (_, list) -&gt; list.sumOf { it.amount } }
+        .filterValues { it &gt; 0 }
+        .toSortedMap()</code></pre>
+</div>
+<p class="muted"><code>toSortedMap()</code> returns a <code>TreeMap</code> whose iteration order is the natural key order — exactly the deterministic shape you want before rendering or comparing.</p>
+</div></div>
+</div>
+</div>
+<!-- K6 -->
+<div class="chal-meta"><span class="chal-num">K6</span><span class="diff diff--hard">hard</span><h3 class="chal-title">Sealed result + a <code>fold</code> combinator: parse safely</h3></div>
+<p class="chal-prompt">Sealed types model "success or failure" without exceptions — the pattern you'll use for every network call. Build one, then write a <code>fold</code> that collapses it to a single value by handling both branches — the same shape as <code>kotlin.Result.fold</code>.</p>
+<div class="codeblock" data-challenge="ch-kotlin-6" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>sealed interface Parsed {
+    data class Ok(val value: Int) : Parsed
+    data class Err(val reason: String) : Parsed
+}
+
+// 1) parseQty: return Parsed.Ok(n) if `text` is a valid Int that is &gt;= 0,
+//    otherwise Parsed.Err with reason "not a number" or "negative".
+// 2) fold: a generic combinator that collapses a Parsed into one &lt;R&gt; value
+//    by running onOk for the Ok branch or onErr for the Err branch.
+//    (This is exactly the shape of kotlin.Result.fold.)
+// 3) describe is already written for you — it just calls your fold.
+
+fun parseQty(text: String): Parsed {
+    // YOUR CODE — start here
+    return Parsed.Err("todo")
+    // YOUR CODE — end
+}
+
+fun &lt;R&gt; Parsed.fold(onOk: (Int) -&gt; R, onErr: (String) -&gt; R): R {
+    // YOUR CODE — start here
+    error("not implemented")
+    // YOUR CODE — end
+}
+
+// describe is built ON TOP of fold — leave it alone.
+fun describe(p: Parsed): String =
+    p.fold(onOk = { "qty=$it" }, onErr = { "error: $it" })
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Any?, want: Any?) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("ok parse",   parseQty("7"),   Parsed.Ok(7))
+    check("not number", parseQty("ab"),  Parsed.Err("not a number"))
+    check("negative",   parseQty("-3"),  Parsed.Err("negative"))
+    check("fold ok",    Parsed.Ok(7).fold(onOk = { it * 2 }, onErr = { -1 }), 14)
+    check("fold err",   Parsed.Err("x").fold(onOk = { it * 2 }, onErr = { -1 }), -1)
+    check("describe ok",  describe(Parsed.Ok(7)),            "qty=7")
+    check("describe err", describe(Parsed.Err("boom")),      "error: boom")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>text.toIntOrNull()</code> returns <code>null</code> instead of throwing — perfect for the "not a number" branch.</li>
+<li>Order: null → <code>Err("not a number")</code>; negative → <code>Err("negative")</code>; else → <code>Ok(n)</code>.</li>
+<li><code>fold</code> is just an exhaustive <code>when (this)</code> that <em>calls</em> the matching lambda: <code>is Parsed.Ok -&gt; onOk(value)</code>, <code>is Parsed.Err -&gt; onErr(reason)</code>. The smart-cast hands you <code>value</code> / <code>reason</code>; no <code>else</code> needed.</li>
+<li>Notice the difference: a raw <code>when</code> <em>matches</em> the shape; <code>fold</code> <em>reduces</em> it to one value of your choosing — that's why <code>describe</code> can be a one-liner built on it.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun parseQty(text: String): Parsed {
+    val n = text.toIntOrNull() ?: return Parsed.Err("not a number")
+    return if (n &lt; 0) Parsed.Err("negative") else Parsed.Ok(n)
+}
+
+fun &lt;R&gt; Parsed.fold(onOk: (Int) -&gt; R, onErr: (String) -&gt; R): R = when (this) {
+    is Parsed.Ok  -&gt; onOk(value)
+    is Parsed.Err -&gt; onErr(reason)
+}
+
+// describe (given) collapses to a String; another caller could fold to a
+// Color, a UI state, anything — that's the power of the combinator.</code></pre>
+</div>
+<p class="muted">No exceptions, no nulls leaking out. <code>fold</code> is the functional twin of an exhaustive <code>when</code>: the <code>when</code> guarantees you handle <em>both</em> outcomes, and <code>fold</code> packages that guarantee as a reusable combinator that returns any type <code>R</code> you ask for. It mirrors <code>kotlin.Result.fold</code> exactly — the backbone of clean error handling in your ViewModels and repositories.</p>
+</div></div>
+</div>
+</div>
+<p class="back-top"><a href="#top">↑ back to top</a></p>
+</section>
+<!-- =================================================================
+     TOPIC 2 — COMPOSE UI
+     ================================================================= -->
+<section aria-labelledby="t-compose-h" class="section-anchor" id="t-compose">
+<div class="topic-head">
+<h2 id="t-compose-h">2 · Compose UI <span class="clo-tag">CLO 2</span></h2>
+<span class="topic-score" data-topic-score="compose-ui" data-total="5"><span class="dot"></span><span data-role="label">0/5 solved</span></span>
+</div>
+<p class="muted">Compose itself can't run on this in-browser JVM, so we drill the <em>pure logic</em> a senior dev factors out of a composable — modifier order, recomposition keys, formatting helpers. Same skill, checked instantly.</p>
+<!-- C1 -->
+<div class="chal-meta"><span class="chal-num">C1</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Modifier order: padding vs background</h3></div>
+<p class="chal-prompt">In Compose, modifiers apply in order. <code>.padding().background()</code> looks different from <code>.background().padding()</code>. Predict the painted size of the background box.</p>
+<div class="codeblock" data-challenge="ch-compose-1" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// A Box is `size` dp. Modifiers apply top-to-bottom; padding shrinks the area
+// available to everything AFTER it. Given the element size and a padding,
+// return the side length (dp) actually painted by a background, depending on
+// whether .background() comes BEFORE or AFTER .padding():
+//   - bgBeforePadding == true  -&gt; background fills the full size
+//   - bgBeforePadding == false -&gt; background is painted INSIDE the padding,
+//                                 i.e. size - 2*padding (never below 0)
+
+fun paintedBgSide(size: Int, padding: Int, bgBeforePadding: Boolean): Int {
+    // YOUR CODE — start here
+    return 0
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Int, want: Int) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("bg first fills",   paintedBgSide(100, 16, true),  100)
+    check("bg after insets",  paintedBgSide(100, 16, false), 68)
+    check("huge padding -&gt;0", paintedBgSide(20, 30, false),  0)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>If the background comes first, it ignores the later padding — full <code>size</code>.</li>
+<li>If padding comes first, the background only gets <code>size - 2*padding</code> (padding on both sides).</li>
+<li>Clamp the inset case with <code>.coerceAtLeast(0)</code> so over-padding doesn't go negative.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun paintedBgSide(size: Int, padding: Int, bgBeforePadding: Boolean): Int =
+    if (bgBeforePadding) size
+    else (size - 2 * padding).coerceAtLeast(0)</code></pre>
+</div>
+<p class="muted">This is the #1 Compose layout gotcha. <code>Modifier.background().padding()</code> paints a full box then insets the content; swap them and the colored area shrinks. The math here <em>is</em> the mental model.</p>
+</div></div>
+</div>
+</div>
+<!-- C2 -->
+<div class="chal-meta"><span class="chal-num">C2</span><span class="diff diff--easy">easy</span><h3 class="chal-title">State hoisting: who owns the value?</h3></div>
+<p class="chal-prompt">A hoisted composable is "stateless": it takes a value and an <code>onChange</code> callback. Model the parent's update logic that the callback drives.</p>
+<div class="codeblock" data-challenge="ch-compose-2" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// A hoisted Stepper(count, onCountChange) never stores state itself; the PARENT
+// owns `count` and decides what the next value is when the child reports a delta.
+// Implement the parent's reducer: given the current count and a delta (+1 / -1),
+// return the next count, clamped to the range [min, max] inclusive.
+
+fun nextCount(current: Int, delta: Int, min: Int, max: Int): Int {
+    // YOUR CODE — start here
+    return current
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Int, want: Int) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("increment",   nextCount(3, +1, 0, 10), 4)
+    check("decrement",   nextCount(3, -1, 0, 10), 2)
+    check("clamp high",  nextCount(10, +1, 0, 10), 10)
+    check("clamp low",   nextCount(0, -1, 0, 10), 0)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Add the delta, then clamp: <code>(current + delta).coerceIn(min, max)</code>.</li>
+<li><code>coerceIn(lo, hi)</code> does both the floor and ceiling in one call.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun nextCount(current: Int, delta: Int, min: Int, max: Int): Int =
+    (current + delta).coerceIn(min, max)</code></pre>
+</div>
+<p class="muted">The child composable just calls <code>onCountChange(current - 1)</code> or <code>+1</code>; the <em>parent</em> runs this reducer and feeds the new value back down. That single-source-of-truth flow is "state hoisting."</p>
+</div></div>
+</div>
+</div>
+<!-- C3 -->
+<div class="chal-meta"><span class="chal-num">C3</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Stable <code>key</code> for a <code>LazyColumn</code> item</h3></div>
+<p class="chal-prompt">Lists in Compose need a stable item <code>key</code> so recomposition and animations track the right row. Produce a unique, order-independent key for a row.</p>
+<div class="codeblock" data-challenge="ch-compose-3" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class Row(val id: Int?, val label: String)
+
+// LazyColumn(items, key = { rowKey(it) }) needs a STABLE, UNIQUE key per row.
+// Build rowKey:
+//   - if id is non-null -&gt; "id-$id"
+//   - if id is null      -&gt; fall back to "label-&lt;label lowercased, spaces -&gt; '-'&gt;"
+// A null id with a blank label is unusable -&gt; return "row-unknown".
+
+fun rowKey(row: Row): String {
+    // YOUR CODE — start here
+    return ""
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: String, want: String) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected \"$want\", got \"$got\"") }
+    }
+    check("by id",        rowKey(Row(42, "Tea")),     "id-42")
+    check("by label",     rowKey(Row(null, "Green Tea")), "label-green-tea")
+    check("blank+null",   rowKey(Row(null, "   ")),    "row-unknown")
+    check("id wins",      rowKey(Row(7, "   ")),       "id-7")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Handle the id first: <code>row.id?.let { return "id-$it" }</code>.</li>
+<li>For the label fallback, <code>trim()</code> then guard blank → <code>"row-unknown"</code>.</li>
+<li>Normalize: <code>label.lowercase().replace(" ", "-")</code>, prefixed with <code>"label-"</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun rowKey(row: Row): String {
+    row.id?.let { return "id-$it" }
+    val clean = row.label.trim()
+    if (clean.isBlank()) return "row-unknown"
+    return "label-" + clean.lowercase().replace(" ", "-")
+}</code></pre>
+</div>
+<p class="muted">Without a stable key, Compose falls back to positional identity: delete row 0 and every row below it re-keys, breaking item animations and scroll state. A real id is best; a derived key is the safety net.</p>
+</div></div>
+</div>
+</div>
+<!-- C4 -->
+<div class="chal-meta"><span class="chal-num">C4</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Recomposition skip: did state actually change?</h3></div>
+<p class="chal-prompt">Compose only recomposes when a state value changes by <code>equals</code>. Decide whether a state update should trigger a recomposition — the key to avoiding wasted work.</p>
+<div class="codeblock" data-challenge="ch-compose-4" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class UiState(val query: String, val loading: Boolean)
+
+// Compose schedules a recomposition only when the NEW state is NOT equal to the
+// old one (structural equality). Return true if assigning `next` to a
+// mutableStateOf currently holding `current` would cause a recomposition.
+// (Equal data-class values must NOT recompose.)
+
+fun willRecompose(current: UiState, next: UiState): Boolean {
+    // YOUR CODE — start here
+    return true
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Boolean, want: Boolean) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val s = UiState("tea", false)
+    check("identical -&gt; skip", willRecompose(s, UiState("tea", false)), false)
+    check("query changed",     willRecompose(s, UiState("teas", false)), true)
+    check("flag changed",      willRecompose(s, UiState("tea", true)),  true)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Recomposition happens when the values are <em>not</em> equal — so the answer is simply <code>current != next</code>.</li>
+<li>This only works because <code>UiState</code> is a <code>data class</code>: it has value-based <code>equals()</code>. A plain class compares by reference and would always look "changed."</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun willRecompose(current: UiState, next: UiState): Boolean =
+    current != next</code></pre>
+</div>
+<p class="muted">This is why UI state should be a <code>data class</code>: structural equality lets Compose skip recomposition when nothing meaningful changed. Use a plain class and you lose that "did it really change?" check — and recompose needlessly.</p>
+</div></div>
+</div>
+</div>
+<!-- C5 -->
+<div class="chal-meta"><span class="chal-num">C5</span><span class="diff diff--hard">hard</span><h3 class="chal-title">Format a row label (extracted from a composable)</h3></div>
+<p class="chal-prompt">The senior move: pull display logic <em>out</em> of the composable into a pure, testable function. Build the contact-row label with pluralization and validation.</p>
+<div class="codeblock" data-challenge="ch-compose-5" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// A composable should stay "dumb"; this helper decides the row text.
+// Build rowLabel(name, role, unread):
+//   - "$name · $role"                  when unread == 0
+//   - "$name · $role  (1 new)"         when unread == 1
+//   - "$name · $role  (N new)"         when unread &gt; 1
+//   - a blank name -&gt; "Unknown contact"
+// Trim name and role first. Treat a NEGATIVE unread as 0 (defensive).
+
+fun rowLabel(name: String, role: String, unread: Int): String {
+    // YOUR CODE — start here
+    return ""
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: String, want: String) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected \"$want\", got \"$got\"") }
+    }
+    check("no unread",   rowLabel("Ada", "Engineer", 0),        "Ada · Engineer")
+    check("one unread",  rowLabel("Ada", "Engineer", 1),        "Ada · Engineer  (1 new)")
+    check("many unread", rowLabel("Ada", "Engineer", 5),        "Ada · Engineer  (5 new)")
+    check("trims",       rowLabel("  Ada  ", " Engineer ", 0),  "Ada · Engineer")
+    check("blank name",  rowLabel("   ", "Engineer", 3),        "Unknown contact")
+    check("neg -&gt; none", rowLabel("Ada", "Engineer", -4),       "Ada · Engineer")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>trim()</code> both inputs into local vals; guard <code>n.isBlank()</code> → <code>"Unknown contact"</code> first.</li>
+<li>Coerce unread up: <code>val u = unread.coerceAtLeast(0)</code>.</li>
+<li>Base is <code>"$n · $r"</code>; a <code>when</code> on <code>u</code> appends <code>"  ($u new)"</code> unless <code>u == 0</code>. The 1-vs-N cases share one template.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun rowLabel(name: String, role: String, unread: Int): String {
+    val n = name.trim()
+    val r = role.trim()
+    if (n.isBlank()) return "Unknown contact"
+    val base = "$n · $r"
+    val u = unread.coerceAtLeast(0)
+    return if (u == 0) base else "$base  ($u new)"
+}</code></pre>
+</div>
+<p class="muted">Pure: no Compose, no state, no side effects — which is exactly why it's trivially testable. Composables call <code>Text(rowLabel(...))</code>; the brains live here where a harness can pin them down.</p>
+</div></div>
+</div>
+</div>
+<p class="back-top"><a href="#top">↑ back to top</a></p>
+</section>
+<!-- =================================================================
+     TOPIC 3 — STATE
+     ================================================================= -->
+<section aria-labelledby="t-state-h" class="section-anchor" id="t-state">
+<div class="topic-head">
+<h2 id="t-state-h">3 · State <span class="clo-tag">CLO 2</span></h2>
+<span class="topic-score" data-topic-score="state" data-total="6"><span class="dot"></span><span data-role="label">0/6 solved</span></span>
+</div>
+<p class="muted">Unidirectional data flow: events go up, state comes down. These drill the reducers that sit in your ViewModel — toggles, form validation, and immutable updates to a state object.</p>
+<!-- S1 -->
+<div class="chal-meta"><span class="chal-num">S1</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Toggle a boolean in state</h3></div>
+<p class="chal-prompt">The simplest reducer there is. Flip a flag inside an immutable state object using <code>copy()</code>.</p>
+<div class="codeblock" data-challenge="ch-state-1" data-run="kotlin" data-topic="state">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class SettingsState(val darkMode: Boolean, val notifications: Boolean)
+
+// Return a NEW state with darkMode flipped. Do not mutate the input.
+fun toggleDarkMode(state: SettingsState): SettingsState {
+    // YOUR CODE — start here
+    return state
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: SettingsState, want: SettingsState) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val s = SettingsState(darkMode = false, notifications = true)
+    check("flips on",       toggleDarkMode(s),  SettingsState(true, true))
+    check("keeps other",    toggleDarkMode(s).notifications.let { SettingsState(true, it) }, SettingsState(true, true))
+    check("original kept",  s,                  SettingsState(false, true))
+    check("flips back",     toggleDarkMode(toggleDarkMode(s)), s)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>state.copy(darkMode = !state.darkMode)</code> — that's the whole reducer.</li>
+<li><code>copy()</code> leaves <code>notifications</code> exactly as it was and never touches the original.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun toggleDarkMode(state: SettingsState): SettingsState =
+    state.copy(darkMode = !state.darkMode)</code></pre>
+</div>
+<p class="muted">In a ViewModel this becomes <code>_uiState.update { it.copy(darkMode = !it.darkMode) }</code>. The shape — copy, change one field, emit — is identical no matter how big the state grows.</p>
+</div></div>
+</div>
+</div>
+<!-- S2 -->
+<div class="chal-meta"><span class="chal-num">S2</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Derived state: the submit button's enabled flag</h3></div>
+<p class="chal-prompt">Don't store what you can compute. Derive whether a form can submit from the fields it already has.</p>
+<div class="codeblock" data-challenge="ch-state-2" data-run="kotlin" data-topic="state">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class LoginState(val email: String, val password: String, val submitting: Boolean)
+
+// Derive whether the Submit button should be ENABLED:
+//   - email must contain '@' and a '.' after it
+//   - password must be at least 6 chars
+//   - must NOT already be submitting
+// Return the derived Boolean (do not store it in the state).
+
+fun canSubmit(state: LoginState): Boolean {
+    // YOUR CODE — start here
+    return false
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Boolean, want: Boolean) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("valid",        canSubmit(LoginState("a@b.com", "secret", false)), true)
+    check("bad email",    canSubmit(LoginState("ab.com", "secret", false)),  false)
+    check("short pw",     canSubmit(LoginState("a@b.com", "123", false)),    false)
+    check("submitting",   canSubmit(LoginState("a@b.com", "secret", true)),  false)
+    check("dot before @", canSubmit(LoginState("a.b@com", "secret", false)), false)
+    check("dotted local", canSubmit(LoginState("a.b@c.com", "secret", false)), true)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>"a '.' after it" means you look for the dot starting just past the '@': <code>val at = email.indexOf('@'); val dot = email.indexOf('.', at + 1)</code>, then require <code>at &gt;= 0 &amp;&amp; dot &gt; at</code>. (Searching from <code>at + 1</code> is what lets <code>a.b@c.com</code> still pass.)</li>
+<li>Combine with <code>&amp;&amp;</code>: valid email, <code>password.length &gt;= 6</code>, and <code>!submitting</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun canSubmit(state: LoginState): Boolean {
+    val at = state.email.indexOf('@')
+    // look for a dot AFTER the '@', so "a.b@c.com" still validates
+    val dot = state.email.indexOf('.', at + 1)
+    val emailOk = at &gt;= 0 &amp;&amp; dot &gt; at
+    return emailOk &amp;&amp; state.password.length &gt;= 6 &amp;&amp; !state.submitting
+}</code></pre>
+</div>
+<p class="muted">In Compose this is read with <code>derivedStateOf { canSubmit(state) }</code> so the button's enabled state recomputes automatically when any field changes — and you never store a flag that could drift out of sync. (This is a deliberately simplified check — real-world email validation is far gnarlier — but searching for the dot <em>after</em> the <code>@</code> avoids rejecting valid addresses like <code>a.b@c.com</code> whose local part contains a dot.)</p>
+</div></div>
+</div>
+</div>
+<!-- S3 -->
+<div class="chal-meta"><span class="chal-num">S3</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Immutable list update inside state</h3></div>
+<p class="chal-prompt">State holding a list is still immutable: you replace the whole list. Add an item without duplicates and without mutating the old state.</p>
+<div class="codeblock" data-challenge="ch-state-3" data-run="kotlin" data-topic="state">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class CartState(val items: List&lt;String&gt;)
+
+// Add `sku` to the cart, returning a NEW CartState:
+//   - ignore blank skus (return state unchanged)
+//   - do not add a duplicate (case-insensitive) — return state unchanged
+//   - otherwise append the TRIMMED, UPPERCASED sku to a new list
+// Never mutate state.items.
+
+fun addItem(state: CartState, sku: String): CartState {
+    // YOUR CODE — start here
+    return state
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: CartState, want: CartState) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val s = CartState(listOf("ABC"))
+    check("adds new",   addItem(s, "xyz"),   CartState(listOf("ABC", "XYZ")))
+    check("dedup ci",   addItem(s, "abc"),   CartState(listOf("ABC")))
+    check("blank skip", addItem(s, "  "),    CartState(listOf("ABC")))
+    check("trims+caps", addItem(CartState(emptyList()), " pen "), CartState(listOf("PEN")))
+    check("original",   s,                   CartState(listOf("ABC")))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Normalize once: <code>val clean = sku.trim().uppercase()</code>, then bail on <code>clean.isBlank()</code>.</li>
+<li>Dedup: <code>if (clean in state.items) return state</code> (items are already uppercase, so this is case-insensitive).</li>
+<li>Build the new list with the <code>+</code> operator: <code>state.copy(items = state.items + clean)</code> — that creates a brand-new list.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun addItem(state: CartState, sku: String): CartState {
+    val clean = sku.trim().uppercase()
+    if (clean.isBlank()) return state
+    if (clean in state.items) return state
+    return state.copy(items = state.items + clean)
+}</code></pre>
+</div>
+<p class="muted"><code>list + element</code> returns a new <code>List</code>; the old one is untouched, so Compose sees a new reference and recomposes. Never reach for <code>MutableList.add()</code> on state — that mutation is invisible to recomposition.</p>
+</div></div>
+</div>
+</div>
+<!-- S4 -->
+<div class="chal-meta"><span class="chal-num">S4</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Sealed event → state reducer</h3></div>
+<p class="chal-prompt">Unidirectional data flow: the UI sends sealed <em>events</em>, the reducer maps (state, event) → new state. Build the reducer for a counter screen.</p>
+<div class="codeblock" data-challenge="ch-state-4" data-run="kotlin" data-topic="state">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class CounterState(val count: Int)
+
+sealed interface CounterEvent {
+    data object Increment : CounterEvent
+    data object Decrement : CounterEvent
+    data object Reset : CounterEvent
+    data class SetTo(val value: Int) : CounterEvent
+}
+
+// Pure reducer: (state, event) -&gt; new state. count must never go below 0.
+fun reduce(state: CounterState, event: CounterEvent): CounterState {
+    // YOUR CODE — start here
+    return state
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: CounterState, want: CounterState) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val s = CounterState(2)
+    check("inc",        reduce(s, CounterEvent.Increment),     CounterState(3))
+    check("dec",        reduce(s, CounterEvent.Decrement),     CounterState(1))
+    check("floor",      reduce(CounterState(0), CounterEvent.Decrement), CounterState(0))
+    check("reset",      reduce(s, CounterEvent.Reset),         CounterState(0))
+    check("set",        reduce(s, CounterEvent.SetTo(9)),      CounterState(9))
+    check("set floors", reduce(s, CounterEvent.SetTo(-5)),     CounterState(0))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Use an exhaustive <code>when (event)</code> — no <code>else</code> needed because the type is sealed.</li>
+<li>Each branch returns <code>state.copy(count = …)</code>; clamp with <code>.coerceAtLeast(0)</code>.</li>
+<li>The <code>SetTo</code> branch smart-casts: <code>event.value</code> is available inside <code>is CounterEvent.SetTo -&gt;</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun reduce(state: CounterState, event: CounterEvent): CounterState = when (event) {
+    CounterEvent.Increment -&gt; state.copy(count = state.count + 1)
+    CounterEvent.Decrement -&gt; state.copy(count = (state.count - 1).coerceAtLeast(0))
+    CounterEvent.Reset     -&gt; state.copy(count = 0)
+    is CounterEvent.SetTo  -&gt; state.copy(count = event.value.coerceAtLeast(0))
+}</code></pre>
+</div>
+<p class="muted">One pure function, every event handled, compiler-checked exhaustiveness. Add a new event type and the build breaks until you handle it — the single biggest reason to model events as a sealed interface.</p>
+</div></div>
+</div>
+</div>
+<!-- S5 -->
+<div class="chal-meta"><span class="chal-num">S5</span><span class="diff diff--hard">hard</span><h3 class="chal-title">Loading / Success / Error state machine</h3></div>
+<p class="chal-prompt">A screen's whole life in one sealed type. Model the transitions a data-loading screen goes through and the text it shows.</p>
+<div class="codeblock" data-challenge="ch-state-5" data-run="kotlin" data-topic="state">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>sealed interface ScreenState {
+    data object Loading : ScreenState
+    data class Success(val items: List&lt;String&gt;) : ScreenState
+    data class Error(val message: String) : ScreenState
+}
+
+// statusText: collapse a ScreenState to a single user-facing line:
+//   Loading                 -&gt; "Loading…"
+//   Success with 0 items    -&gt; "No results"
+//   Success with N items    -&gt; "N result(s)"  e.g. "1 result", "3 results"
+//   Error(msg)              -&gt; "Error: $msg"
+
+fun statusText(state: ScreenState): String {
+    // YOUR CODE — start here
+    return ""
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: String, want: String) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected \"$want\", got \"$got\"") }
+    }
+    check("loading",  statusText(ScreenState.Loading),                       "Loading…")
+    check("empty",    statusText(ScreenState.Success(emptyList())),          "No results")
+    check("one",      statusText(ScreenState.Success(listOf("a"))),          "1 result")
+    check("many",     statusText(ScreenState.Success(listOf("a","b","c"))),  "3 results")
+    check("error",    statusText(ScreenState.Error("offline")),             "Error: offline")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>when (state)</code> over the sealed interface; the <code>is Success</code> branch smart-casts to read <code>state.items</code>.</li>
+<li>For the count: <code>when</code> on <code>items.size</code> — 0 → "No results", 1 → "1 result", else → "$size results".</li>
+<li>Watch the pluralization: exactly "1 result" (singular) but "3 results" (plural).</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun statusText(state: ScreenState): String = when (state) {
+    ScreenState.Loading -&gt; "Loading…"
+    is ScreenState.Success -&gt; when (val n = state.items.size) {
+        0    -&gt; "No results"
+        1    -&gt; "1 result"
+        else -&gt; "$n results"
+    }
+    is ScreenState.Error -&gt; "Error: ${state.message}"
+}</code></pre>
+</div>
+<p class="muted">This sealed-state pattern is the canonical Android architecture for a screen that loads data — you'll wire a <code>ViewModel</code> to emit exactly these three states in Sessions 5 and 10–11. Nesting a <code>when</code> for the success sub-cases keeps it exhaustive and readable.</p>
+</div></div>
+</div>
+</div>
+<!-- S6 -->
+<div class="chal-meta"><span class="chal-num">S6</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Flow's <code>distinctUntilChanged</code>, by hand</h3></div>
+<p class="chal-prompt">A <code>StateFlow</code> only re-emits when the value actually changes — that's how recomposition skips no-op updates. Re-create that operator's core rule as pure list logic: drop only <em>consecutive</em> duplicates, keeping the first of each run.</p>
+<div class="codeblock" data-challenge="ch-state-6" data-run="kotlin" data-topic="state">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Model the semantics of Flow.distinctUntilChanged() over a List:
+// keep an element only if it differs from the one EMITTED JUST BEFORE it.
+// Equal-but-non-adjacent values are kept (only RUNS of duplicates collapse).
+//   [1,1,2,2,2,1,3,3] -&gt; [1,2,1,3]
+//   []                -&gt; []
+//   ["a","a","a"]     -&gt; ["a"]
+
+fun &lt;T&gt; distinctUntilChanged(values: List&lt;T&gt;): List&lt;T&gt; {
+    // YOUR CODE — start here
+    return values
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Any?, want: Any?) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("collapses runs",  distinctUntilChanged(listOf(1,1,2,2,2,1,3,3)), listOf(1,2,1,3))
+    check("empty",           distinctUntilChanged(emptyList&lt;Int&gt;()),         emptyList&lt;Int&gt;())
+    check("all same",        distinctUntilChanged(listOf("a","a","a")),     listOf("a"))
+    check("no dupes",        distinctUntilChanged(listOf(1,2,3)),           listOf(1,2,3))
+    check("keeps non-adjacent", distinctUntilChanged(listOf(1,2,1)),        listOf(1,2,1))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Walk the list once, tracking the <em>last kept</em> value. Emit an element only when it differs from that previous one (and always emit the very first).</li>
+<li>The whole thing is one fold: <code>fold(mutableListOf&lt;T&gt;())</code> and append <code>x</code> when <code>acc.lastOrNull() != x</code>.</li>
+<li>This is <strong>not</strong> <code>distinct()</code>: <code>distinct()</code> dedupes globally; <code>distinctUntilChanged</code> only collapses neighbours, so <code>[1,2,1]</code> stays <code>[1,2,1]</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun &lt;T&gt; distinctUntilChanged(values: List&lt;T&gt;): List&lt;T&gt; =
+    values.fold(mutableListOf()) { acc, x -&gt;
+        if (acc.lastOrNull() != x) acc.add(x)
+        acc
+    }</code></pre>
+</div>
+<p class="muted">This is exactly what a <code>StateFlow</code> (and Compose's snapshot system) does for you: a write that produces an <em>equal</em> value is dropped, so collectors — and recomposition — don't run for a no-op change. Understanding "consecutive only" is why a screen doesn't redraw on every identical keystroke, yet still reacts when a value genuinely toggles back. The real operator is <code>flow.distinctUntilChanged()</code>; here you built its kernel as a pure, testable fold.</p>
+</div></div>
+</div>
+</div>
+<p class="back-top"><a href="#top">↑ back to top</a></p>
+</section>
+<!-- =================================================================
+     TOPIC 4 — LISTS
+     ================================================================= -->
+<section aria-labelledby="t-lists-h" class="section-anchor" id="t-lists">
+<div class="topic-head">
+<h2 id="t-lists-h">4 · Lists <span class="clo-tag">CLO 2</span></h2>
+<span class="topic-score" data-topic-score="lists" data-total="5"><span class="dot"></span><span data-role="label">0/5 solved</span></span>
+</div>
+<p class="muted">The data prep that feeds a <code>LazyColumn</code>: searching, sectioning, paging math, and diffing. Get these right and your list screens are fast and bug-free.</p>
+<!-- L1 -->
+<div class="chal-meta"><span class="chal-num">L1</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Case-insensitive search filter</h3></div>
+<p class="chal-prompt">Every list screen has a search box. Filter items by a query, ignoring case and surrounding whitespace.</p>
+<div class="codeblock" data-challenge="ch-lists-1" data-run="kotlin" data-topic="lists">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Return items that CONTAIN the query, case-insensitively.
+//   - trim the query first
+//   - a blank query returns ALL items (unchanged order)
+
+fun search(items: List&lt;String&gt;, query: String): List&lt;String&gt; {
+    // YOUR CODE — start here
+    return emptyList()
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: List&lt;String&gt;, want: List&lt;String&gt;) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val data = listOf("Green Tea", "Black Coffee", "Chamomile Tea")
+    check("substr ci",  search(data, "tea"),  listOf("Green Tea", "Chamomile Tea"))
+    check("caps query", search(data, "COFF"), listOf("Black Coffee"))
+    check("blank=all",  search(data, "   "),  data)
+    check("no match",   search(data, "xyz"),  emptyList())
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Trim the query; if it's blank, <code>return items</code>.</li>
+<li><code>String.contains(other, ignoreCase = true)</code> does the case-insensitive match in one call.</li>
+<li><code>items.filter { it.contains(q, ignoreCase = true) }</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun search(items: List&lt;String&gt;, query: String): List&lt;String&gt; {
+    val q = query.trim()
+    if (q.isBlank()) return items
+    return items.filter { it.contains(q, ignoreCase = true) }
+}</code></pre>
+</div>
+<p class="muted">Passing <code>ignoreCase = true</code> beats <code>lowercase()</code>-ing both sides: no extra allocations, and it's correct for locale-sensitive comparisons. The blank-query shortcut avoids filtering the whole list for nothing.</p>
+</div></div>
+</div>
+</div>
+<!-- L2 -->
+<div class="chal-meta"><span class="chal-num">L2</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Distinct while preserving first-seen order</h3></div>
+<p class="chal-prompt">A list often arrives with dupes. Remove them but keep the original order — the subtle requirement a naive <code>toSet()</code> would break.</p>
+<div class="codeblock" data-challenge="ch-lists-2" data-run="kotlin" data-topic="lists">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Return the items with duplicates removed, keeping the FIRST occurrence's
+// position. Comparison is case-insensitive, but keep the ORIGINAL casing
+// of the first occurrence.
+
+fun dedupe(items: List&lt;String&gt;): List&lt;String&gt; {
+    // YOUR CODE — start here
+    return emptyList()
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: List&lt;String&gt;, want: List&lt;String&gt;) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("order kept", dedupe(listOf("b", "a", "b", "c", "a")), listOf("b", "a", "c"))
+    check("ci dedupe",  dedupe(listOf("Tea", "tea", "TEA")),     listOf("Tea"))
+    check("empty",      dedupe(emptyList()),                     emptyList())
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>distinctBy { selector }</code> keeps the first element for each distinct key, in order.</li>
+<li>Make the key case-insensitive: <code>distinctBy { it.lowercase() }</code> — the returned element keeps its original casing.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun dedupe(items: List&lt;String&gt;): List&lt;String&gt; =
+    items.distinctBy { it.lowercase() }</code></pre>
+</div>
+<p class="muted"><code>distinctBy</code> is order-preserving by contract — unlike converting to a <code>HashSet</code>, which scrambles order. The selector lets you define "same-ness" (here, ignoring case) while keeping the real element.</p>
+</div></div>
+</div>
+</div>
+<!-- L3 -->
+<div class="chal-meta"><span class="chal-num">L3</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Sticky headers: group into sections</h3></div>
+<p class="chal-prompt">A sectioned list (A, B, C… headers) is just a grouped, sorted map. Build the section structure a <code>LazyColumn</code> with sticky headers needs.</p>
+<div class="codeblock" data-challenge="ch-lists-3" data-run="kotlin" data-topic="lists">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Group contact names by their UPPERCASE first letter, for a sectioned list.
+// Return a Map&lt;Char, List&lt;String&gt;&gt; where:
+//   - keys are sorted alphabetically (use a sorted map)
+//   - within each section, names are sorted alphabetically (case-insensitive)
+//   - blank names are skipped
+// Example: ["bob","Alice","amy"] -&gt; {A=[Alice, amy], B=[bob]}
+
+fun sectioned(names: List&lt;String&gt;): Map&lt;Char, List&lt;String&gt;&gt; {
+    // YOUR CODE — start here
+    return emptyMap()
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Map&lt;Char, List&lt;String&gt;&gt;, want: Map&lt;Char, List&lt;String&gt;&gt;) {
+        val sameOrder = got.keys.toList() == want.keys.toList()
+        if (got == want &amp;&amp; sameOrder) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("groups+sort", sectioned(listOf("bob", "Alice", "amy")),
+        sortedMapOf('A' to listOf("Alice", "amy"), 'B' to listOf("bob")))
+    check("skips blank", sectioned(listOf("  ", "Zed")),
+        sortedMapOf('Z' to listOf("Zed")))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>filter { it.isNotBlank() }</code> first.</li>
+<li><code>groupBy { it.trim().first().uppercaseChar() }</code> buckets by section letter.</li>
+<li><code>mapValues { (_, list) -&gt; list.sortedBy { it.lowercase() } }</code> sorts within a section; <code>toSortedMap()</code> sorts the section keys.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun sectioned(names: List&lt;String&gt;): Map&lt;Char, List&lt;String&gt;&gt; =
+    names
+        .filter { it.isNotBlank() }
+        .groupBy { it.trim().first().uppercaseChar() }
+        .mapValues { (_, list) -&gt; list.sortedBy { it.lowercase() } }
+        .toSortedMap()</code></pre>
+</div>
+<p class="muted">This single pipeline is exactly the data a sticky-header <code>LazyColumn</code> iterates: <code>sectioned.forEach { (letter, names) -&gt; stickyHeader { … }; items(names) { … } }</code>. The sorting on both axes is what makes the UI feel ordered.</p>
+</div></div>
+</div>
+</div>
+<!-- L4 -->
+<div class="chal-meta"><span class="chal-num">L4</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Pagination math: which page, how many pages</h3></div>
+<p class="chal-prompt">Infinite-scroll and paged lists need correct slice math. Return the items for a given page and the total page count — with the off-by-one traps handled.</p>
+<div class="codeblock" data-challenge="ch-lists-4" data-run="kotlin" data-topic="lists">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Return the slice of `items` for a 0-based `page`, `pageSize` per page.
+//   - an out-of-range or negative page -&gt; empty list
+//   - the last page may be partial
+//   - pageSize &lt;= 0 -&gt; empty list (defensive)
+
+fun pageOf(items: List&lt;String&gt;, page: Int, pageSize: Int): List&lt;String&gt; {
+    // YOUR CODE — start here
+    return emptyList()
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: List&lt;String&gt;, want: List&lt;String&gt;) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val data = (1..7).map { "i$it" }   // i1..i7
+    check("page 0", pageOf(data, 0, 3), listOf("i1", "i2", "i3"))
+    check("page 1", pageOf(data, 1, 3), listOf("i4", "i5", "i6"))
+    check("partial last", pageOf(data, 2, 3), listOf("i7"))
+    check("past end", pageOf(data, 3, 3), emptyList())
+    check("negative", pageOf(data, -1, 3), emptyList())
+    check("bad size", pageOf(data, 0, 0), emptyList())
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Guard <code>page &lt; 0 || pageSize &lt;= 0</code> → empty.</li>
+<li>The window starts at <code>page * pageSize</code>. If that's <code>&gt;= items.size</code>, you're past the end → empty.</li>
+<li><code>items.drop(start).take(pageSize)</code> safely returns a partial last page (no index exceptions).</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun pageOf(items: List&lt;String&gt;, page: Int, pageSize: Int): List&lt;String&gt; {
+    if (page &lt; 0 || pageSize &lt;= 0) return emptyList()
+    val start = page * pageSize
+    if (start &gt;= items.size) return emptyList()
+    return items.drop(start).take(pageSize)
+}</code></pre>
+</div>
+<p class="muted"><code>drop().take()</code> is the bounds-safe way to slice — <code>subList(start, end)</code> throws if <code>end</code> overruns. That single choice eliminates the classic "IndexOutOfBounds on the last page" crash.</p>
+</div></div>
+</div>
+</div>
+<!-- L5 -->
+<div class="chal-meta"><span class="chal-num">L5</span><span class="diff diff--hard">hard</span><h3 class="chal-title">List diff: what changed for an animated update</h3></div>
+<p class="chal-prompt">Animated list updates (and <code>DiffUtil</code>) need to know exactly which ids were added, removed, or kept. Compute the diff between an old and new id list.</p>
+<div class="codeblock" data-challenge="ch-lists-5" data-run="kotlin" data-topic="lists">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class Diff(val added: List&lt;Int&gt;, val removed: List&lt;Int&gt;, val kept: List&lt;Int&gt;)
+
+// Compare two lists of ids and report the change set:
+//   - added:   ids in `new` but not in `old`,  in `new`'s order
+//   - removed: ids in `old` but not in `new`,  in `old`'s order
+//   - kept:    ids in both,                    in `new`'s order
+// Assume each list has no duplicates.
+
+fun diffIds(old: List&lt;Int&gt;, new: List&lt;Int&gt;): Diff {
+    // YOUR CODE — start here
+    return Diff(emptyList(), emptyList(), emptyList())
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Diff, want: Diff) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("mixed", diffIds(listOf(1, 2, 3), listOf(2, 3, 4)),
+        Diff(added = listOf(4), removed = listOf(1), kept = listOf(2, 3)))
+    check("all new", diffIds(emptyList(), listOf(5, 6)),
+        Diff(added = listOf(5, 6), removed = emptyList(), kept = emptyList()))
+    check("all gone", diffIds(listOf(9), emptyList()),
+        Diff(added = emptyList(), removed = listOf(9), kept = emptyList()))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Convert each list to a <code>Set</code> for fast membership tests: <code>val oldSet = old.toSet()</code>, <code>val newSet = new.toSet()</code>.</li>
+<li><code>added = new.filter { it !in oldSet }</code> — filtering <code>new</code> keeps its order.</li>
+<li><code>removed = old.filter { it !in newSet }</code>; <code>kept = new.filter { it in oldSet }</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun diffIds(old: List&lt;Int&gt;, new: List&lt;Int&gt;): Diff {
+    val oldSet = old.toSet()
+    val newSet = new.toSet()
+    return Diff(
+        added   = new.filter { it !in oldSet },
+        removed = old.filter { it !in newSet },
+        kept    = new.filter { it in oldSet }
+    )
+}</code></pre>
+</div>
+<p class="muted">Filtering the right <em>source</em> list controls the result order for free; converting to sets makes each membership test O(1) instead of O(n). This is the conceptual core of what <code>DiffUtil</code> and Compose's keyed lists do to animate insertions and removals.</p>
+</div></div>
+</div>
+</div>
+<p class="back-top"><a href="#top">↑ back to top</a></p>
+</section>
+<!-- =================================================================
+     TOPIC 5 — NAVIGATION / VIEWMODEL
+     ================================================================= -->
+<section aria-labelledby="t-nav-h" class="section-anchor" id="t-nav">
+<div class="topic-head">
+<h2 id="t-nav-h">5 · Navigation / ViewModel <span class="clo-tag">CLO 2</span></h2>
+<span class="topic-score" data-topic-score="architecture" data-total="5"><span class="dot"></span><span data-role="label">0/5 solved</span></span>
+</div>
+<p class="muted">Routes are strings with arguments; ViewModels survive config changes and expose state. These drill the string-handling and back-stack logic that navigation actually runs on.</p>
+<!-- N1 -->
+<div class="chal-meta"><span class="chal-num">N1</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Build a route with an argument</h3></div>
+<p class="chal-prompt">Compose Navigation routes are templated strings like <code>"detail/{id}"</code>. Substitute an argument to produce the concrete route you navigate to.</p>
+<div class="codeblock" data-challenge="ch-nav-1" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Given a route template containing "{id}" and an actual id, build the
+// concrete route. Examples:
+//   buildRoute("detail/{id}", 42)       -&gt; "detail/42"
+//   buildRoute("user/{id}/posts", 7)    -&gt; "user/7/posts"
+// If the template has no "{id}" placeholder, return it unchanged.
+
+fun buildRoute(template: String, id: Int): String {
+    // YOUR CODE — start here
+    return template
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: String, want: String) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected \"$want\", got \"$got\"") }
+    }
+    check("trailing arg", buildRoute("detail/{id}", 42),    "detail/42")
+    check("middle arg",   buildRoute("user/{id}/posts", 7), "user/7/posts")
+    check("no placeholder", buildRoute("home", 1),          "home")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>template.replace("{id}", id.toString())</code> — if the placeholder isn't present, <code>replace</code> returns the string unchanged, so the "no placeholder" case is automatic.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun buildRoute(template: String, id: Int): String =
+    template.replace("{id}", id.toString())</code></pre>
+</div>
+<p class="muted">This is literally what you write before <code>navController.navigate(...)</code>. Keeping route construction in one helper means there's a single place to fix if the template ever changes.</p>
+</div></div>
+</div>
+</div>
+<!-- N2 -->
+<div class="chal-meta"><span class="chal-num">N2</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Parse a nav argument back out</h3></div>
+<p class="chal-prompt">The destination receives the concrete route and must read its argument back. Extract the id from <code>"detail/42"</code>, safely.</p>
+<div class="codeblock" data-challenge="ch-nav-2" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Extract the trailing Int id from a "detail/{id}" route, e.g. "detail/42" -&gt; 42.
+// If the last segment is not a valid Int, return null.
+//   "detail/42"  -&gt; 42
+//   "detail/abc" -&gt; null
+//   "detail/"    -&gt; null
+
+fun parseDetailId(route: String): Int? {
+    // YOUR CODE — start here
+    return null
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Int?, want: Int?) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("valid",   parseDetailId("detail/42"),  42)
+    check("not int", parseDetailId("detail/abc"), null)
+    check("empty",   parseDetailId("detail/"),    null)
+    check("nested",  parseDetailId("a/b/9"),      9)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>route.substringAfterLast('/')</code> gives the last segment.</li>
+<li><code>.toIntOrNull()</code> turns "abc" or "" into <code>null</code> without throwing.</li>
+<li>Chain them: <code>route.substringAfterLast('/').toIntOrNull()</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun parseDetailId(route: String): Int? =
+    route.substringAfterLast('/').toIntOrNull()</code></pre>
+</div>
+<p class="muted">In a real screen this is what <code>backStackEntry.arguments?.getString("id")?.toIntOrNull()</code> does under the hood. Returning a nullable forces the destination to handle a malformed deep link gracefully.</p>
+</div></div>
+</div>
+</div>
+<!-- N3 -->
+<div class="chal-meta"><span class="chal-num">N3</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Back stack: pop to a destination</h3></div>
+<p class="chal-prompt">A back stack is just a list. Model <code>popUpTo(route, inclusive)</code> — the single most misunderstood navigation operation.</p>
+<div class="codeblock" data-challenge="ch-nav-3" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// The back stack is a list, index 0 = root, last = current screen.
+// popUpTo(stack, route, inclusive) removes screens from the TOP until it
+// reaches `route`:
+//   - inclusive == false -&gt; stop popping with `route` still on top
+//   - inclusive == true  -&gt; also remove `route` itself
+// If `route` is not in the stack, return the stack UNCHANGED.
+
+fun popUpTo(stack: List&lt;String&gt;, route: String, inclusive: Boolean): List&lt;String&gt; {
+    // YOUR CODE — start here
+    return stack
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: List&lt;String&gt;, want: List&lt;String&gt;) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val stack = listOf("home", "list", "detail", "edit")
+    check("exclusive", popUpTo(stack, "list", false), listOf("home", "list"))
+    check("inclusive", popUpTo(stack, "list", true),  listOf("home"))
+    check("to current", popUpTo(stack, "edit", false), listOf("home", "list", "detail", "edit"))
+    check("missing",    popUpTo(stack, "settings", true), stack)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Find the target with <code>stack.indexOf(route)</code>; if it's <code>-1</code>, return the stack unchanged.</li>
+<li>Exclusive keeps indices <code>0..idx</code> → <code>stack.subList(0, idx + 1)</code> (or <code>take(idx + 1)</code>).</li>
+<li>Inclusive also drops <code>route</code> → <code>take(idx)</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun popUpTo(stack: List&lt;String&gt;, route: String, inclusive: Boolean): List&lt;String&gt; {
+    val idx = stack.indexOf(route)
+    if (idx == -1) return stack
+    return if (inclusive) stack.take(idx) else stack.take(idx + 1)
+}</code></pre>
+</div>
+<p class="muted">This is exactly the semantics of <code>navigate(route) { popUpTo("list") { inclusive = true } }</code>. Modeling it as list <code>take()</code> makes the inclusive/exclusive off-by-one obvious — the part everyone gets wrong on the real API.</p>
+</div></div>
+</div>
+</div>
+<!-- N4 -->
+<div class="chal-meta"><span class="chal-num">N4</span><span class="diff diff--medium">medium</span><h3 class="chal-title">ViewModel survives: keep state across recreation</h3></div>
+<p class="chal-prompt">A ViewModel outlives configuration changes; transient UI does not. Decide what state to preserve when an Activity is recreated (e.g. on rotation).</p>
+<div class="codeblock" data-challenge="ch-nav-4" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class FormState(
+    val draftText: String,   // user-entered — must survive rotation
+    val isKeyboardOpen: Boolean,  // transient UI — should reset
+    val submitCount: Int     // user progress — must survive
+)
+
+// On Activity recreation the ViewModel-held FormState is preserved, but
+// transient UI is reset. Return the state as it should look AFTER recreation:
+//   - keep draftText and submitCount
+//   - reset isKeyboardOpen to false (transient)
+
+fun afterRecreation(state: FormState): FormState {
+    // YOUR CODE — start here
+    return state
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Any?, want: Any?) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val s = FormState(draftText = "hello", isKeyboardOpen = true, submitCount = 2)
+    check("keeps draft",  afterRecreation(s).draftText,      "hello")
+    check("keeps count",  afterRecreation(s).submitCount,    2)
+    check("resets kb",    afterRecreation(s).isKeyboardOpen, false)
+    check("full shape",   afterRecreation(s),                FormState("hello", false, 2))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Only one field changes, so <code>copy()</code> it: <code>state.copy(isKeyboardOpen = false)</code>.</li>
+<li><code>draftText</code> and <code>submitCount</code> carry over untouched.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun afterRecreation(state: FormState): FormState =
+    state.copy(isKeyboardOpen = false)</code></pre>
+</div>
+<p class="muted">This is the mental model behind <em>why</em> you put real data in the ViewModel: it survives rotation, so <code>draftText</code> and <code>submitCount</code> persist. Transient UI like the keyboard flag is fine to reset because the system recreates the view anyway.</p>
+</div></div>
+</div>
+</div>
+<!-- N5 -->
+<div class="chal-meta"><span class="chal-num">N5</span><span class="diff diff--hard">hard</span><h3 class="chal-title">Parse a deep link with query parameters</h3></div>
+<p class="chal-prompt">Deep links carry data in the query string. Parse <code>"app://search?q=tea&amp;page=2"</code> into a typed object, defaulting missing or malformed params.</p>
+<div class="codeblock" data-challenge="ch-nav-5" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class SearchArgs(val query: String, val page: Int)
+
+// Parse a deep link of the form "app://search?q=&lt;text&gt;&amp;page=&lt;n&gt;" into SearchArgs:
+//   - q     -&gt; query  (default "" if missing)
+//   - page  -&gt; page   (default 1 if missing OR not a valid Int)
+// Params can appear in any order; ignore unknown params. There may be no "?".
+
+fun parseSearch(link: String): SearchArgs {
+    // YOUR CODE — start here
+    return SearchArgs("", 1)
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: SearchArgs, want: SearchArgs) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("both",     parseSearch("app://search?q=tea&amp;page=2"), SearchArgs("tea", 2))
+    check("reorder",  parseSearch("app://search?page=5&amp;q=cof"), SearchArgs("cof", 5))
+    check("no page",  parseSearch("app://search?q=tea"),        SearchArgs("tea", 1))
+    check("bad page", parseSearch("app://search?q=t&amp;page=x"),   SearchArgs("t", 1))
+    check("no query", parseSearch("app://search"),              SearchArgs("", 1))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Grab the query string with <code>link.substringAfter('?', "")</code> — the default <code>""</code> handles links with no <code>?</code>.</li>
+<li>Split into pairs: <code>.split("&amp;")</code>, then each on <code>"="</code> into a <code>Map</code> via <code>associate</code>.</li>
+<li>Read with defaults: <code>params["q"] ?: ""</code> and <code>params["page"]?.toIntOrNull() ?: 1</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun parseSearch(link: String): SearchArgs {
+    val query = link.substringAfter('?', "")
+    val params = query
+        .split("&amp;")
+        .filter { it.contains("=") }
+        .associate { pair -&gt;
+            val (k, v) = pair.split("=", limit = 2)
+            k to v
+        }
+    return SearchArgs(
+        query = params["q"] ?: "",
+        page = params["page"]?.toIntOrNull() ?: 1
+    )
+}</code></pre>
+</div>
+<p class="muted">Every step has a safe default: missing <code>?</code>, missing key, or unparseable number all fall back gracefully. That defensiveness is non-negotiable for deep links — they arrive from outside your app and you can't trust their shape.</p>
+</div></div>
+</div>
+</div>
+<p class="back-top"><a href="#top">↑ back to top</a></p>
+</section>
+<!-- =================================================================
+     TOPIC 6 — DATASTORE / ROOM
+     ================================================================= -->
+<section aria-labelledby="t-data-h" class="section-anchor" id="t-data">
+<div class="topic-head">
+<h2 id="t-data-h">6 · DataStore / Room <span class="clo-tag">CLO 4</span></h2>
+<span class="topic-score" data-topic-score="data" data-total="5"><span class="dot"></span><span data-role="label">0/5 solved</span></span>
+</div>
+<p class="muted">Persistence is just key/value reads and table queries. We drill the pure logic — default values, an in-memory DAO, query filtering, and an upsert — without needing a device or database engine.</p>
+<!-- D1 -->
+<div class="chal-meta"><span class="chal-num">D1</span><span class="diff diff--easy">easy</span><h3 class="chal-title">DataStore read with a default</h3></div>
+<p class="chal-prompt">Preferences DataStore returns <code>null</code> for an unset key. Read a value and supply the default the first launch needs.</p>
+<div class="codeblock" data-challenge="ch-data-1" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// A DataStore-backed prefs map returns null for an unset key.
+// Read the "fontScale" pref as a Float:
+//   - if present and parseable -&gt; that value
+//   - if missing OR not a valid Float -&gt; the default 1.0f
+
+fun readFontScale(prefs: Map&lt;String, String&gt;): Float {
+    // YOUR CODE — start here
+    return 0f
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Float, want: Float) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("present",  readFontScale(mapOf("fontScale" to "1.5")), 1.5f)
+    check("missing",  readFontScale(emptyMap()),                  1.0f)
+    check("garbage",  readFontScale(mapOf("fontScale" to "big")), 1.0f)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>prefs["fontScale"]</code> is <code>null</code> if absent.</li>
+<li><code>?.toFloatOrNull()</code> safely handles both "not present" and "not a float."</li>
+<li>End with Elvis: <code>?: 1.0f</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun readFontScale(prefs: Map&lt;String, String&gt;): Float =
+    prefs["fontScale"]?.toFloatOrNull() ?: 1.0f</code></pre>
+</div>
+<p class="muted">In real DataStore this is <code>prefs[FONT_SCALE_KEY] ?: 1.0f</code> inside a <code>Flow.map { }</code>. The "supply a default for the unset key" pattern is the whole reason reads return a nullable.</p>
+</div></div>
+</div>
+</div>
+<!-- D2 -->
+<div class="chal-meta"><span class="chal-num">D2</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Upsert into a preferences map</h3></div>
+<p class="chal-prompt">Writing a preference replaces the old value. Implement an immutable "edit" that returns the new preferences snapshot.</p>
+<div class="codeblock" data-challenge="ch-data-2" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Return a NEW prefs map with key set to value (insert or overwrite).
+//   - a blank key is invalid -&gt; return prefs unchanged
+//   - do not mutate the input map
+
+fun writePref(prefs: Map&lt;String, String&gt;, key: String, value: String): Map&lt;String, String&gt; {
+    // YOUR CODE — start here
+    return prefs
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Map&lt;String, String&gt;, want: Map&lt;String, String&gt;) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val p = mapOf("theme" to "light")
+    check("insert",    writePref(p, "lang", "en"), mapOf("theme" to "light", "lang" to "en"))
+    check("overwrite", writePref(p, "theme", "dark"), mapOf("theme" to "dark"))
+    check("blank key", writePref(p, "  ", "x"), p)
+    check("original",  p, mapOf("theme" to "light"))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Guard <code>key.isBlank()</code> → return <code>prefs</code>.</li>
+<li><code>prefs + (key to value)</code> returns a new map with the entry added or overwritten — the input is untouched.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun writePref(prefs: Map&lt;String, String&gt;, key: String, value: String): Map&lt;String, String&gt; {
+    if (key.isBlank()) return prefs
+    return prefs + (key to value)
+}</code></pre>
+</div>
+<p class="muted"><code>map + (key to value)</code> is the immutable upsert: existing key → overwrite, new key → insert, all without touching the original. Mirrors <code>dataStore.edit { it[KEY] = value }</code> conceptually.</p>
+</div></div>
+</div>
+</div>
+<!-- D3 -->
+<div class="chal-meta"><span class="chal-num">D3</span><span class="diff diff--medium">medium</span><h3 class="chal-title">In-memory DAO: insert &amp; query by id</h3></div>
+<p class="chal-prompt">A Room DAO is an interface over a table. Implement a tiny in-memory version: insert returns a generated id, and you can fetch a row back.</p>
+<div class="codeblock" data-challenge="ch-data-3" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class Note(val id: Int, val text: String)
+
+// A minimal in-memory DAO. Complete it:
+//   - insert(text): assign the NEXT id (1, 2, 3, …), store the Note, return its id
+//   - getById(id): return the Note or null if absent
+class NoteDao {
+    private val rows = mutableMapOf&lt;Int, Note&gt;()
+    private var nextId = 1
+
+    fun insert(text: String): Int {
+        // YOUR CODE — start here
+        return 0
+        // YOUR CODE — end
+    }
+
+    fun getById(id: Int): Note? {
+        // YOUR CODE — start here
+        return null
+        // YOUR CODE — end
+    }
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, cond: Boolean) {
+        if (cond) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label") }
+    }
+    val dao = NoteDao()
+    val id1 = dao.insert("first")
+    val id2 = dao.insert("second")
+    check("ids increment", id1 == 1 &amp;&amp; id2 == 2)
+    check("get returns row", dao.getById(1) == Note(1, "first"))
+    check("get second", dao.getById(2) == Note(2, "second"))
+    check("missing -&gt; null", dao.getById(99) == null)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>In <code>insert</code>: capture <code>val id = nextId++</code>, store <code>rows[id] = Note(id, text)</code>, then <code>return id</code>.</li>
+<li><code>nextId++</code> returns the current value then increments — exactly the auto-increment behavior.</li>
+<li><code>getById</code> is just <code>rows[id]</code> (a <code>Map</code> get already returns null when absent).</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun insert(text: String): Int {
+    val id = nextId++
+    rows[id] = Note(id, text)
+    return id
+}
+
+fun getById(id: Int): Note? = rows[id]</code></pre>
+</div>
+<p class="muted">Room generates this exact behavior from <code>@Insert</code> (returns the new rowId) and <code>@Query("SELECT * FROM note WHERE id = :id")</code>. Building the toy version cements what the annotations actually produce.</p>
+</div></div>
+</div>
+</div>
+<!-- D4 -->
+<div class="chal-meta"><span class="chal-num">D4</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Query: filter, sort, limit (a SELECT in Kotlin)</h3></div>
+<p class="chal-prompt">A Room <code>@Query</code> is filter + order + limit. Implement the equivalent over an in-memory list so the SQL clauses click.</p>
+<div class="codeblock" data-challenge="ch-data-4" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class Task(val id: Int, val title: String, val done: Boolean, val priority: Int)
+
+// Emulate: SELECT * FROM task WHERE done = 0
+//          ORDER BY priority DESC, id ASC LIMIT :limit
+// i.e. only unfinished tasks, highest priority first; ties broken by id ascending;
+// at most `limit` rows. Return the matching tasks.
+
+fun pendingTasks(tasks: List&lt;Task&gt;, limit: Int): List&lt;Task&gt; {
+    // YOUR CODE — start here
+    return emptyList()
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: List&lt;Int&gt;, want: List&lt;Int&gt;) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val data = listOf(
+        Task(1, "a", false, 2),
+        Task(2, "b", true,  9),   // done -&gt; excluded
+        Task(3, "c", false, 5),
+        Task(4, "d", false, 2),
+        Task(5, "e", false, 5)
+    )
+    // unfinished by priority desc, id asc: 3(p5), 5(p5), 1(p2), 4(p2)
+    check("order+filter", pendingTasks(data, 10).map { it.id }, listOf(3, 5, 1, 4))
+    check("limit",        pendingTasks(data, 2).map { it.id },  listOf(3, 5))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>filter { !it.done }</code> is the WHERE clause.</li>
+<li>Two-key sort: <code>sortedWith(compareByDescending&lt;Task&gt; { it.priority }.thenBy { it.id })</code> — priority descending, then id ascending.</li>
+<li><code>take(limit)</code> is LIMIT.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun pendingTasks(tasks: List&lt;Task&gt;, limit: Int): List&lt;Task&gt; =
+    tasks
+        .filter { !it.done }
+        .sortedWith(compareByDescending&lt;Task&gt; { it.priority }.thenBy { it.id })
+        .take(limit)</code></pre>
+</div>
+<p class="muted"><code>compareByDescending { }.thenBy { }</code> is the Kotlin spelling of <code>ORDER BY priority DESC, id ASC</code>. Seeing the SQL and the collection pipeline side by side is the fastest way to read a Room <code>@Query</code> confidently.</p>
+</div></div>
+</div>
+</div>
+<!-- D5 -->
+<div class="chal-meta"><span class="chal-num">D5</span><span class="diff diff--hard">hard</span><h3 class="chal-title">Upsert by unique key (insert-or-update)</h3></div>
+<p class="chal-prompt">Room's <code>@Upsert</code> inserts a new row or updates an existing one with the same primary key. Implement that merge over an in-memory table.</p>
+<div class="codeblock" data-challenge="ch-data-5" data-run="kotlin" data-topic="data">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class User(val id: Int, val name: String, val visits: Int)
+
+// Upsert a user into the table (a List, treated as immutable):
+//   - if no row has this id   -&gt; append the new user
+//   - if a row has this id    -&gt; REPLACE it in place (same position),
+//                                ADDING the incoming visits to the existing ones
+// Return the new table. Do not mutate the input list.
+
+fun upsert(table: List&lt;User&gt;, incoming: User): List&lt;User&gt; {
+    // YOUR CODE — start here
+    return table
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: List&lt;User&gt;, want: List&lt;User&gt;) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    val table = listOf(User(1, "Ada", 3), User(2, "Al", 1))
+    check("insert new", upsert(table, User(3, "Bo", 5)),
+        listOf(User(1, "Ada", 3), User(2, "Al", 1), User(3, "Bo", 5)))
+    check("update+sum visits", upsert(table, User(1, "Ada", 2)),
+        listOf(User(1, "Ada", 5), User(2, "Al", 1)))  // position kept, visits 3+2
+    check("original kept", table, listOf(User(1, "Ada", 3), User(2, "Al", 1)))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Check existence: <code>if (table.none { it.id == incoming.id }) return table + incoming</code>.</li>
+<li>Otherwise <code>map</code> over the table, replacing only the matching row: <code>if (it.id == incoming.id) it.copy(visits = it.visits + incoming.visits) else it</code>.</li>
+<li><code>map</code> preserves position, so the updated row stays where it was.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun upsert(table: List&lt;User&gt;, incoming: User): List&lt;User&gt; {
+    if (table.none { it.id == incoming.id }) return table + incoming
+    return table.map { row -&gt;
+        if (row.id == incoming.id) row.copy(visits = row.visits + incoming.visits)
+        else row
+    }
+}</code></pre>
+</div>
+<p class="muted">Insert-or-update keyed on the primary key — the exact contract of <code>@Upsert</code>. Doing it with <code>map</code> keeps the list immutable and the row's position stable, which matters for keyed list rendering downstream.</p>
+</div></div>
+</div>
+</div>
+<p class="back-top"><a href="#top">↑ back to top</a></p>
+</section>
+<!-- =================================================================
+     TOPIC 7 — NETWORKING / RETROFIT
+     ================================================================= -->
+<section aria-labelledby="t-net-h" class="section-anchor" id="t-net">
+<div class="topic-head">
+<h2 id="t-net-h">7 · Networking / Retrofit <span class="clo-tag">CLO 5</span> <span class="clo-tag">CLO 6</span></h2>
+<span class="topic-score" data-topic-score="networking" data-total="5"><span class="dot"></span><span data-role="label">0/5 solved</span></span>
+</div>
+<p class="muted">The repository layer: map DTOs to domain models, wrap calls in a Result, handle HTTP status codes, and build query URLs. All pure logic you can test without a server.</p>
+<!-- W1 -->
+<div class="chal-meta"><span class="chal-num">W1</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Map an HTTP status to a result</h3></div>
+<p class="chal-prompt">Repositories translate raw status codes into meaningful outcomes. Bucket a status code into a small set of cases.</p>
+<div class="codeblock" data-challenge="ch-net-1" data-run="kotlin" data-topic="networking">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Classify an HTTP status code into one of:
+//   200..299 -&gt; "ok"
+//   401, 403 -&gt; "auth"
+//   404      -&gt; "not found"
+//   500..599 -&gt; "server error"
+//   anything else -&gt; "unexpected"
+
+fun classify(status: Int): String {
+    // YOUR CODE — start here
+    return ""
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: String, want: String) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected \"$want\", got \"$got\"") }
+    }
+    check("ok",       classify(200), "ok")
+    check("created",  classify(201), "ok")
+    check("auth 401", classify(401), "auth")
+    check("auth 403", classify(403), "auth")
+    check("not found",classify(404), "not found")
+    check("server",   classify(503), "server error")
+    check("other",    classify(302), "unexpected")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>A subject-ful <code>when (status)</code> mixing ranges and exact values: <code>in 200..299 -&gt; "ok"</code>, <code>401, 403 -&gt; "auth"</code>, <code>404 -&gt; "not found"</code>, <code>in 500..599 -&gt; "server error"</code>, <code>else -&gt; "unexpected"</code>.</li>
+<li>Put the specific cases (404) before broad ranges that might overlap — here they don't, but it's a good habit.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun classify(status: Int): String = when (status) {
+    in 200..299 -&gt; "ok"
+    401, 403    -&gt; "auth"
+    404         -&gt; "not found"
+    in 500..599 -&gt; "server error"
+    else        -&gt; "unexpected"
+}</code></pre>
+</div>
+<p class="muted"><code>when</code> happily mixes ranges (<code>in 200..299</code>) and comma-separated literals (<code>401, 403</code>) in one statement — far cleaner than a chain of <code>if</code>s. This is the first thing a repository does with a Retrofit <code>Response</code>.</p>
+</div></div>
+</div>
+</div>
+<!-- W2 -->
+<div class="chal-meta"><span class="chal-num">W2</span><span class="diff diff--easy">easy</span><h3 class="chal-title">Map a DTO to a domain model</h3></div>
+<p class="chal-prompt">Never let network DTOs leak into your UI. Convert a nullable, loosely-typed DTO into a clean domain model with sane defaults.</p>
+<div class="codeblock" data-challenge="ch-net-2" data-run="kotlin" data-topic="networking">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// The DTO mirrors the JSON: everything nullable because the server is untrusted.
+data class UserDto(val id: Int?, val name: String?, val email: String?)
+// The domain model your UI uses: non-null, clean.
+data class UserModel(val id: Int, val name: String, val email: String)
+
+// Map dto -&gt; model, or return null if the DTO is unusable:
+//   - id must be non-null  (else return null — can't identify the user)
+//   - name: trimmed; if null/blank -&gt; "Unknown"
+//   - email: trimmed lowercased; if null/blank -&gt; ""
+
+fun toModel(dto: UserDto): UserModel? {
+    // YOUR CODE — start here
+    return null
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: UserModel?, want: UserModel?) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("full",     toModel(UserDto(1, " Ada ", "ADA@X.COM")), UserModel(1, "Ada", "ada@x.com"))
+    check("defaults", toModel(UserDto(2, null, null)),           UserModel(2, "Unknown", ""))
+    check("no id",    toModel(UserDto(null, "Al", "a@b.c")),     null)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Bail early on a null id: <code>val id = dto.id ?: return null</code>.</li>
+<li>Name: <code>dto.name?.trim()?.takeIf { it.isNotBlank() } ?: "Unknown"</code>.</li>
+<li>Email: <code>dto.email?.trim()?.lowercase()?.takeIf { it.isNotBlank() } ?: ""</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun toModel(dto: UserDto): UserModel? {
+    val id = dto.id ?: return null
+    val name = dto.name?.trim()?.takeIf { it.isNotBlank() } ?: "Unknown"
+    val email = dto.email?.trim()?.lowercase()?.takeIf { it.isNotBlank() } ?: ""
+    return UserModel(id, name, email)
+}</code></pre>
+</div>
+<p class="muted">DTOs are all-nullable because you can't trust the wire; the mapping function is the boundary that produces the non-null, clean types your UI relies on. Returning <code>null</code> for an unidentifiable record lets the repository skip it.</p>
+</div></div>
+</div>
+</div>
+<!-- W3 -->
+<div class="chal-meta"><span class="chal-num">W3</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Wrap a call in a sealed <code>NetworkResult</code></h3></div>
+<p class="chal-prompt">Surface success, an HTTP error, and an exception as one sealed type — the contract your ViewModel collects. Build the wrapper from a status + body or thrown error.</p>
+<div class="codeblock" data-challenge="ch-net-3" data-run="kotlin" data-topic="networking">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>sealed interface NetworkResult&lt;out T&gt; {
+    data class Success&lt;T&gt;(val data: T) : NetworkResult&lt;T&gt;
+    data class HttpError(val code: Int) : NetworkResult&lt;Nothing&gt;
+    data class Failure(val message: String) : NetworkResult&lt;Nothing&gt;
+}
+
+// Build a NetworkResult&lt;String&gt; from a simulated response:
+//   - if `thrown` is non-null    -&gt; Failure(thrown)        (e.g. no connectivity)
+//   - else if status in 200..299 -&gt; Success(body)
+//   - else                        -&gt; HttpError(status)
+
+fun wrap(status: Int, body: String, thrown: String?): NetworkResult&lt;String&gt; {
+    // YOUR CODE — start here
+    return NetworkResult.Failure("todo")
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: NetworkResult&lt;String&gt;, want: NetworkResult&lt;String&gt;) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("success",  wrap(200, "OK", null),       NetworkResult.Success("OK"))
+    check("http err", wrap(404, "nope", null),     NetworkResult.HttpError(404))
+    check("thrown",   wrap(0, "", "no network"),   NetworkResult.Failure("no network"))
+    check("thrown wins", wrap(200, "OK", "boom"),  NetworkResult.Failure("boom"))
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Check <code>thrown</code> first — a thrown exception trumps any status: <code>thrown?.let { return NetworkResult.Failure(it) }</code>.</li>
+<li>Then <code>if (status in 200..299) Success(body) else HttpError(status)</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun wrap(status: Int, body: String, thrown: String?): NetworkResult&lt;String&gt; {
+    thrown?.let { return NetworkResult.Failure(it) }
+    return if (status in 200..299) NetworkResult.Success(body)
+           else NetworkResult.HttpError(status)
+}</code></pre>
+</div>
+<p class="muted">Three outcomes, one sealed type, no exceptions escaping the repository — the ViewModel just <code>when</code>s over the result. Checking the thrown error first models a <code>try/catch</code> around the Retrofit call where connectivity failures short-circuit everything else.</p>
+</div></div>
+</div>
+</div>
+<!-- W4 -->
+<div class="chal-meta"><span class="chal-num">W4</span><span class="diff diff--medium">medium</span><h3 class="chal-title">Build a query URL with parameters</h3></div>
+<p class="chal-prompt">Retrofit assembles URLs from <code>@Query</code> params, dropping the nulls. Build the query string yourself — omitting absent params and ordering them predictably.</p>
+<div class="codeblock" data-challenge="ch-net-4" data-run="kotlin" data-topic="networking">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Build a URL: "$base?key=value&amp;key=value..." from the given params.
+//   - SKIP params whose value is null
+//   - keep the params in the ORDER given by the list
+//   - if NO params survive, return just `base` (no '?')
+
+fun buildUrl(base: String, params: List&lt;Pair&lt;String, String?&gt;&gt;): String {
+    // YOUR CODE — start here
+    return base
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: String, want: String) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected \"$want\", got \"$got\"") }
+    }
+    check("two params", buildUrl("/search", listOf("q" to "tea", "page" to "2")),
+        "/search?q=tea&amp;page=2")
+    check("drops null", buildUrl("/search", listOf("q" to "tea", "lang" to null)),
+        "/search?q=tea")
+    check("all null", buildUrl("/search", listOf("q" to null)),
+        "/search")
+    check("empty", buildUrl("/search", emptyList()), "/search")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Keep only non-null values: <code>params.mapNotNull { (k, v) -&gt; v?.let { "$k=$it" } }</code>.</li>
+<li>If that list is empty, return <code>base</code>.</li>
+<li>Otherwise <code>base + "?" + parts.joinToString("&amp;")</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun buildUrl(base: String, params: List&lt;Pair&lt;String, String?&gt;&gt;): String {
+    val parts = params.mapNotNull { (k, v) -&gt; v?.let { "$k=$it" } }
+    return if (parts.isEmpty()) base else "$base?${parts.joinToString("&amp;")}"
+}</code></pre>
+</div>
+<p class="muted"><code>mapNotNull</code> filters and transforms in one pass — null values vanish, survivors become <code>key=value</code> strings. This is precisely how Retrofit treats a <code>@Query</code> with a null argument: it omits it. (Real code would URL-encode the values too.)</p>
+</div></div>
+</div>
+</div>
+<!-- W5 -->
+<div class="chal-meta"><span class="chal-num">W5</span><span class="diff diff--hard">hard</span><h3 class="chal-title">Retry with backoff: how long to wait?</h3></div>
+<p class="chal-prompt">Flaky networks need retries with exponential backoff — but only for retryable failures, and capped. Compute the delay (or signal "give up") for an attempt.</p>
+<div class="codeblock" data-challenge="ch-net-5" data-run="kotlin" data-topic="networking">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// Decide the backoff delay (ms) before retry attempt number `attempt` (1-based).
+// Rules:
+//   - delay doubles each attempt: base, base*2, base*4, …  i.e. base * 2^(attempt-1)
+//   - never exceed `maxDelay` (cap it)
+//   - if attempt &gt; maxAttempts -&gt; return null (give up, no more retries)
+//   - attempt &lt; 1 is invalid    -&gt; return null
+
+fun backoffMs(attempt: Int, base: Long, maxDelay: Long, maxAttempts: Int): Long? {
+    // YOUR CODE — start here
+    return null
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(label: String, got: Long?, want: Long?) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected $want, got $got") }
+    }
+    check("attempt 1", backoffMs(1, 100, 5000, 4), 100L)
+    check("attempt 2", backoffMs(2, 100, 5000, 4), 200L)
+    check("attempt 3", backoffMs(3, 100, 5000, 4), 400L)
+    check("capped",    backoffMs(10, 100, 5000, 20), 5000L)  // 100*2^9=51200 -&gt; capped
+    check("give up",   backoffMs(5, 100, 5000, 4), null)     // attempt &gt; maxAttempts
+    check("invalid",   backoffMs(0, 100, 5000, 4), null)
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Guard the invalid/give-up cases first: <code>if (attempt &lt; 1 || attempt &gt; maxAttempts) return null</code>.</li>
+<li>Compute the raw delay: <code>base * (1L shl (attempt - 1))</code> — <code>1L shl n</code> is 2ⁿ as a Long.</li>
+<li>Cap it: <code>.coerceAtMost(maxDelay)</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span>
+<pre><code>fun backoffMs(attempt: Int, base: Long, maxDelay: Long, maxAttempts: Int): Long? {
+    if (attempt &lt; 1 || attempt &gt; maxAttempts) return null
+    val raw = base * (1L shl (attempt - 1))   // base * 2^(attempt-1)
+    return raw.coerceAtMost(maxDelay)
+}</code></pre>
+</div>
+<p class="muted">Exponential backoff (<code>base · 2ⁿ</code>) spreads retries out so you don't hammer a struggling server; the cap stops the wait from ballooning, and the attempt guard guarantees you eventually give up. <code>1L shl n</code> is a fast, allocation-free power of two. (Production adds random "jitter" to avoid thundering-herd retries.)</p>
+</div></div>
+</div>
+</div>
+<p class="back-top"><a href="#top">↑ back to top</a></p>
+</section>
+<!-- ====================== WRAP-UP ====================== -->
+<section class="section-anchor">
+<div class="card card--accent">
+<h2 class="card__title">Cleared the arena? Here's what's next</h2>
+<div class="grid grid-2">
+<div>
+<p>Every <strong>ALL TESTS PASSED 🎉</strong> you marked solved is logged toward your personal mastery above. To turn that into durable skill:</p>
+<ul>
+<li><strong>Re-solve from memory.</strong> Hit Reset on a few you found hard and re-write the solution cold — retrieval beats re-reading.</li>
+<li><strong>Vary the inputs.</strong> Add your own <code>check(...)</code> lines and break your function on purpose; understanding the failure is the lesson.</li>
+<li><strong>Port it to a real app.</strong> Each pure function here has a home in an Android project — drop it into your session build and wire it to a composable.</li>
+</ul>
+</div>
+<div>
+<p class="muted" style="margin-top:0;">Keep building the same muscles:</p>
+<div class="row" style="flex-wrap:wrap;gap:8px;">
+<a class="btn btn--sm" href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a>
+<a class="btn btn--sm" href="../labs/compose-playground.html">Compose Playground</a>
+<a class="btn btn--sm" href="../assessments/flashcards.html">Flashcards (SRS)</a>
+<a class="btn btn--sm" href="../index.html">Course Hub</a>
+</div>
+<div class="callout callout--info" style="margin-top:var(--space-3);">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Deliberate practice, defined</span>
+<p>Focused reps, just past your current ability, with immediate feedback. That's the entire design of this page — your job is to keep climbing the difficulty.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div><!-- /.arena-content -->
+</div><!-- /.arena-layout -->
+</main>
+<!-- ===================== FOOTER ===================== -->
+<footer class="footer">
+<div class="wrap">
+<span><span class="footer__brand">COP4667 Android Development</span> · Coding Challenge Arena · auto-checked deliberate practice</span>
+<span class="muted">Keiser University · B.S. Software Engineering · 3.0 credit hours · taught in Kotlin + Jetpack Compose</span>
+<span><a href="../index.html">↩ Back to course hub</a></span>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+<script>
+/* Per-topic "X/Y solved" pills — driven by the shared MASTERY engine.
+   Counts how many of this page's [data-challenge] blocks in each topic are
+   solved, and recolors the pill. Re-runs live on every mastery:change. */
+(function () {
+  'use strict';
+  if (!window.MASTERY) { return; }
+
+  // Collect this page's challenge ids per topic from the DOM (authoritative).
+  var byTopic = {};
+  Array.prototype.forEach.call(
+    document.querySelectorAll('[data-challenge][data-topic]'),
+    function (el) {
+      var topic = el.getAttribute('data-topic');
+      var id = el.getAttribute('data-challenge');
+      if (!topic || !id) { return; }
+      (byTopic[topic] = byTopic[topic] || []).push(id);
+    }
+  );
+
+  function refresh() {
+    Array.prototype.forEach.call(
+      document.querySelectorAll('[data-topic-score]'),
+      function (pill) {
+        var topic = pill.getAttribute('data-topic-score');
+        var ids = byTopic[topic] || [];
+        var total = ids.length || parseInt(pill.getAttribute('data-total'), 10) || 0;
+        var solved = ids.filter(function (id) {
+          return window.MASTERY.progress.isSolved(id);
+        }).length;
+        var label = pill.querySelector('[data-role="label"]');
+        if (label) { label.textContent = solved + '/' + total + ' solved'; }
+        pill.classList.toggle('is-complete', total > 0 && solved === total);
+        pill.classList.toggle('is-progress', solved > 0 && solved < total);
+      }
+    );
+  }
+
+  refresh();
+  document.addEventListener('mastery:change', refresh);
+})();
+</script>
+</body>
+</html>

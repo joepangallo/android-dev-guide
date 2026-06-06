@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Session 6 lesson plan: Material 3 theming, responsive/adaptive layout, Quiz 1, and Project Milestone 1." name="description"/>
+<title>Session 6 · Material 3 Theming &amp; Responsive Design — COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* Page-specific tweaks only — chrome uses the shared design-system classes. */
+    .obj-list { list-style: none; padding-left: 0; display: grid; gap: var(--space-3); }
+    .obj-list > li { display: flex; gap: var(--space-3); align-items: flex-start; }
+    .obj-list .clo-tag { flex: 0 0 auto; margin-top: 2px; }
+    .swatch-row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-4) 0; }
+    .swatch {
+      width: 92px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+      overflow: hidden; box-shadow: var(--shadow); font-size: var(--fs-xs);
+    }
+    .swatch__chip { height: 54px; }
+    .swatch__name { padding: 6px 8px; font-weight: 700; }
+    .swatch__hex { padding: 0 8px 6px; font-family: var(--font-mono); color: var(--muted); }
+    .device-frames { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: flex-start; }
+    .device {
+      border: 3px solid var(--teal-2); border-radius: 18px; background: var(--surface-2);
+      padding: 8px; box-shadow: var(--shadow);
+    }
+    .device--phone { width: 150px; }
+    .device--tablet { width: 280px; }
+    .device__screen {
+      background: var(--surface); border-radius: 10px; min-height: 120px;
+      padding: 10px; display: grid; gap: 6px; align-content: start; border: 1px solid var(--line);
+    }
+    .device__bar { height: 14px; border-radius: 6px; background: linear-gradient(90deg, var(--green), var(--green-dark)); }
+    .device__line { height: 10px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--line); }
+    .device--tablet .device__screen { grid-template-columns: 90px 1fr; }
+    .device__caption { text-align: center; font-size: var(--fs-xs); color: var(--muted); margin-top: 6px; font-weight: 600; }
+    .timer-rail { display: flex; justify-content: flex-end; margin-bottom: var(--space-2); }
+    .legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+    @media (max-width: 860px) { .layout-with-toc { grid-template-columns: 1fr; } .toc-aside { position: static; } }
+    .layout-with-toc { display: grid; grid-template-columns: 230px 1fr; gap: var(--space-5); align-items: start; }
+    .toc-aside { position: sticky; top: 76px; }
+  </style>
+</head>
+<body>
+<!-- ============================ TOP NAV ============================ -->
+<header class="topbar no-print">
+<div class="wrap">
+<a class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">🤖</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-05.html">‹ Prev (S5)</a>
+<a aria-current="page" class="active" href="session-06.html">S6</a>
+<a href="session-07.html">Next (S7) ›</a>
+<a href="../assessments/quiz-1.html">Quiz 1</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ============================ HERO ============================ -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta">
+<span class="pill pill--green">Session 6 of 12</span>
+<span class="pill">Week 2</span>
+<span class="pill">Building UIs with Jetpack Compose</span>
+</div>
+<h1 class="hero-title" id="hero-title">Responsive Design &amp; Material 3 Theming — Quiz 1 &amp; Project Milestone 1</h1>
+<p class="hero-sub">
+      Today we polish the look of our Compose apps with Material 3 theming (color, type, shape, light/dark,
+      dynamic color), make layouts adapt across phone and tablet sizes — then run <strong>Quiz 1</strong> and
+      demo <strong>Project Milestone 1</strong>. This is the capstone of the UI week.
+    </p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 2</span>
+<span class="pill">Unit 2 capstone</span>
+</div>
+</section>
+<div class="layout-with-toc">
+<!-- On-page index (auto-filled by app.js) -->
+<aside aria-label="On this page" class="toc-aside no-print">
+<div class="card">
+<h2 class="card__title" style="margin-top:0">On this page</h2>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+</aside>
+<div>
+<!-- ============================ LEARNING OBJECTIVES ============================ -->
+<section aria-labelledby="obj-h" class="slide">
+<h2 id="obj-h">Learning Objectives</h2>
+<div class="card card--accent">
+<p class="muted">By the end of this session, each student can:</p>
+<ul class="obj-list">
+<li><span class="clo-tag">CLO 2</span><span><strong>Apply a custom <code>MaterialTheme</code></strong> — define a Material 3 color scheme, typography, and shapes, and wire them into the app via a theme composable.</span></li>
+<li><span class="clo-tag">CLO 2</span><span><strong>Support light and dark themes</strong> by supplying <code>lightColorScheme()</code> / <code>darkColorScheme()</code> and reacting to <code>isSystemInDarkTheme()</code>; understand <strong>dynamic color</strong> (Material You) on Android 12+.</span></li>
+<li><span class="clo-tag">CLO 2</span><span><strong>Build responsive/adaptive layouts</strong> using <code>Modifier.weight</code>, <code>fillMaxWidth/Height</code>, <code>WindowSizeClass</code>, and <code>BoxWithConstraints</code> so a screen reflows between phone-portrait and a wide layout.</span></li>
+<li><span class="clo-tag">CLO 2</span><span><strong>Preview multiple device sizes</strong> with <code>@Preview</code> annotations (phone, tablet, dark mode, font scale) without running the emulator.</span></li>
+<li><span class="clo-tag">CLO 2</span><span><strong>Apply a consistent spacing &amp; component system</strong> for UI polish, pulling values from the theme instead of hard-coding.</span></li>
+</ul>
+</div>
+</section>
+<!-- ============================ LECTURE / CONCEPT NOTES ============================ -->
+<section aria-labelledby="lecture-h" class="slide">
+<h2 id="lecture-h">Lecture / Concept Notes</h2>
+<p class="muted">Teaching content for the four big ideas. Code is current Kotlin + Jetpack Compose, Material 3 (<code>androidx.compose.material3</code>).</p>
+<!-- BIG IDEA 1 -->
+<h3 id="idea-theme">1 · Material 3: color scheme, typography, shape &amp; <code>MaterialTheme</code></h3>
+<p>
+<strong>Analogy:</strong> Think of <code>MaterialTheme</code> as a building's <em>electrical system</em>. You wire up the
+        outlets (color, type, shape) <em>once</em> at the top, and every composable downstream just "plugs in" with
+        <code>MaterialTheme.colorScheme.primary</code> instead of running its own generator. Change the source, and the
+        whole app updates — no rewiring each room.
+      </p>
+<p>Material 3 theming has <strong>three pillars</strong>, each a system you provide to <code>MaterialTheme(...)</code>:</p>
+<ul>
+<li><strong>Color</strong> — a <code>ColorScheme</code> of ~30 named roles: <code>primary</code>, <code>onPrimary</code>, <code>primaryContainer</code>, <code>secondary</code>, <code>surface</code>, <code>background</code>, <code>error</code>, etc. The <code>on*</code> roles are the <em>content</em> color that sits <em>on</em> that background (this is how M3 guarantees contrast).</li>
+<li><strong>Typography</strong> — a <code>Typography</code> object of named text styles: <code>displayLarge</code>, <code>headlineMedium</code>, <code>titleLarge</code>, <code>bodyLarge</code>, <code>labelSmall</code>, etc.</li>
+<li><strong>Shape</strong> — a <code>Shapes</code> object mapping size buckets (<code>extraSmall</code> … <code>extraLarge</code>) to corner radii used by buttons, cards, sheets.</li>
+</ul>
+<div aria-hidden="false" class="swatch-row">
+<div class="swatch"><div class="swatch__chip" style="background:#3DDC84;display:flex;align-items:center;justify-content:center;color:#073042;font-weight:700;font-size:var(--fs-xs)">onPrimary</div><div class="swatch__name">primary</div><div class="swatch__hex">background</div></div>
+<div class="swatch"><div class="swatch__chip" style="background:#0A4A5A;display:flex;align-items:center;justify-content:center;color:#FFFFFF;font-weight:700;font-size:var(--fs-xs)">onSecondary</div><div class="swatch__name">secondary</div><div class="swatch__hex">background</div></div>
+<div class="swatch"><div class="swatch__chip" style="background:#FFB300;display:flex;align-items:center;justify-content:center;color:#0E1A1F;font-weight:700;font-size:var(--fs-xs)">onTertiary</div><div class="swatch__name">tertiary</div><div class="swatch__hex">accent</div></div>
+<div class="swatch"><div class="swatch__chip" style="background:#E5484D;display:flex;align-items:center;justify-content:center;color:#FFFFFF;font-weight:700;font-size:var(--fs-xs)">onError</div><div class="swatch__name">error</div><div class="swatch__hex">background</div></div>
+</div>
+<p class="muted" style="margin-top:calc(-1 * var(--space-2))">Each chip shows a base color role with its paired <code>on*</code> <em>content</em> color drawn on top — exactly how M3 guarantees readable contrast (e.g. <code>onPrimary</code> text sits on <code>primary</code>). The <code>on*</code> role is never a separate background; it's the foreground that goes on the matching surface.</p>
+<p>The golden rule: <strong>never hard-code colors, fonts, or corner radii in a composable.</strong> Read them from the theme. Below, the same <code>Card</code> + <code>Text</code>, done wrong then right:</p>
+<div aria-label="Hard-coded vs themed" class="tabs" role="tablist">
+<button class="tab" data-tab="bad">❌ Hard-coded</button>
+<button class="tab" data-tab="good">✅ Theme-aware</button>
+</div>
+<div class="tabpanel" data-tabpanel="bad">
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin</span><pre><code>// Anti-pattern: literal colors &amp; sizes everywhere.
+// Breaks in dark mode, ignores dynamic color, hard to restyle.
+Card(
+    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF)),
+    shape = RoundedCornerShape(4.dp)
+) {
+    Text(
+        text = "Workout summary",
+        color = Color(0xFF000000),
+        fontSize = 22.sp,
+        fontWeight = FontWeight.Bold
+    )
+}</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="good">
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin</span><pre><code>// Theme-aware: colors, type &amp; shape come from MaterialTheme.
+// Dark mode + dynamic color "just work"; one theme edit restyles all.
+Card(
+    // Card already defaults to surface colors &amp; the medium shape,
+    // so often you don't pass them at all:
+) {
+    Text(
+        text = "Workout summary",
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+}</code></pre></div>
+</div>
+<p>Here is a complete, realistic theme file. This is what you'll paste into your own project in the lab. One brand-new piece of syntax appears at the bottom — the <code>content: @Composable () -&gt; Unit</code> parameter — so read the definition first, then the file:</p>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p><code>content: @Composable () -&gt; Unit</code> is a <strong>slot</strong>: a parameter whose type is a <em>function that emits UI</em>, so the <strong>caller</strong> hands you a chunk of UI and you drop it into your layout by <strong>calling <code>content()</code></strong> wherever you want it to appear.</p>
+</div>
+</div>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · ui/theme/Theme.kt</span><pre><code>import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import android.os.Build
+
+// 1) Define brand colors (generate these with the Material Theme Builder).
+private val BrandGreen      = Color(0xFF3DDC84)
+private val BrandGreenDark  = Color(0xFF20B265)
+private val BrandTeal       = Color(0xFF073042)
+private val BrandAmber      = Color(0xFFFFB300)
+
+// 2) Two color schemes — one per theme.
+private val LightColors = lightColorScheme(
+    primary = BrandGreenDark,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFB8F2D4),
+    secondary = BrandTeal,
+    tertiary = BrandAmber,
+    background = Color(0xFFF4F7F6),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF0E1A1F)
+)
+
+private val DarkColors = darkColorScheme(
+    primary = BrandGreen,
+    onPrimary = BrandTeal,
+    primaryContainer = Color(0xFF0A4A5A),
+    secondary = Color(0xFF7FD7EA),
+    tertiary = Color(0xFFFFC233),
+    background = Color(0xFF06181E),
+    surface = Color(0xFF0C2630),
+    onSurface = Color(0xFFE6F1EE)
+)
+
+// 3) The theme composable wraps your app's content.
+@Composable
+fun KeiserFitTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,          // Material You on Android 12+
+    content: @Composable () -&gt; Unit
+) {
+    val context = LocalContext.current
+    val colorScheme = when {
+        dynamicColor &amp;&amp; Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.S -&gt;
+            if (darkTheme) dynamicDarkColorScheme(context)
+            else dynamicLightColorScheme(context)
+        darkTheme -&gt; DarkColors
+        else      -&gt; LightColors
+    }
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = KeiserTypography,   // defined in Type.kt
+        shapes = KeiserShapes,           // defined in Shape.kt
+        content = content
+    )
+}</code></pre></div>
+<p>The slot lines are what make this a reusable wrapper. Reading them in order:</p>
+<ul>
+<li><strong><code>content: @Composable () -&gt; Unit</code></strong> — a parameter named <code>content</code> whose <em>type</em> is <code>@Composable () -&gt; Unit</code>: "a composable function that takes no arguments and emits UI." You're not receiving a String or a number — you're receiving a piece of UI-emitting code the caller will hand you.</li>
+<li><strong><code>content = content</code></strong> — you forward that received slot into <code>MaterialTheme(...)</code>'s own <code>content</code> slot, so whatever the caller passed ends up <em>inside</em> the themed scope. (You could also write <code>MaterialTheme(...) { content() }</code> — same result; the named-argument form is what Studio generates.)</li>
+<li><strong><code>content()</code></strong> — <em>calling</em> the slot is how you <strong>place</strong> the caller's UI at this exact spot in the tree. Here it happens indirectly via <code>MaterialTheme</code>; in your own slot you'd call <code>content()</code> yourself (see below).</li>
+</ul>
+<p>The caller supplies the slot as a <strong>trailing lambda</strong> — that's the <code>{ … }</code> block you've been writing after <code>Surface</code>, <code>Column</code>, and <code>Scaffold</code> all along. So this call passes <code>Greeting()</code> <em>into</em> the theme's slot:</p>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · the caller fills the slot</span><pre><code>KeiserFitTheme {        // everything in these braces becomes `content`
+    Greeting()          // …and gets placed where KeiserFitTheme calls content()
+}</code></pre></div>
+<p>You can build your own slot composable with the exact same pattern — accept a <code>content</code> parameter, then call it where you want the caller's UI to land:</p>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · make your own slot</span><pre><code>@Composable
+fun Labeled(label: String, content: @Composable () -&gt; Unit) {
+    Column {
+        Text(label)     // your own UI first…
+        content()       // …then drop in whatever the caller passed
+    }
+}
+
+// Caller fills the slot with a trailing lambda:
+Labeled(label = "Heart rate") {
+    Text("72 bpm")      // this Text becomes `content`
+}</code></pre></div>
+<p>This is the <strong>slot API</strong> pattern, and it's everywhere in Compose: <code>Scaffold</code> has <code>topBar</code> + <code>content</code> slots, <code>Button</code> has a <code>content</code> slot (the label), <code>Surface</code> and <code>Column</code> take their children as a slot. Learn it once here and you can read all of them.</p>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p><code>content</code> is <em>not</em> data you compute or return — it's UI-emitting code you were handed. You never write <code>return content</code> or treat it like a String; you <strong>invoke <code>content()</code></strong> to place it. And forgetting the parentheses (<code>content</code> instead of <code>content()</code>) means the slot never gets called, so the caller's UI silently never appears.</p>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Where the theme is applied</span>
+<p>Wrap your top-level content in <code>setContent { KeiserFitTheme { /* app */ } }</code> inside <code>MainActivity.onCreate</code>. Everything inside the lambda can now read <code>MaterialTheme.colorScheme</code>, <code>.typography</code>, and <code>.shapes</code>.</p>
+</div>
+</div>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · ui/theme/Type.kt &amp; Shape.kt</span><pre><code>import androidx.compose.material3.Typography
+import androidx.compose.material3.Shapes
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+val KeiserTypography = Typography(
+    titleLarge = TextStyle(fontWeight = FontWeight.Bold,   fontSize = 22.sp, lineHeight = 28.sp),
+    bodyLarge  = TextStyle(fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
+    labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 16.sp)
+    // Unspecified styles fall back to Material 3 defaults — that's fine.
+)
+
+val KeiserShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small      = RoundedCornerShape(8.dp),
+    medium     = RoundedCornerShape(14.dp),   // matches our card radius
+    large      = RoundedCornerShape(20.dp)
+)</code></pre></div>
+<!-- BIG IDEA 2 -->
+<h3 id="idea-darkmode">2 · Light / dark theme &amp; dynamic color (Material You)</h3>
+<p>
+        Because every composable reads from the theme, supporting dark mode is <strong>almost free</strong>: you supply a
+        second <code>ColorScheme</code> and pick it based on <code>isSystemInDarkTheme()</code> (already wired in the theme
+        composable above). The OS flips <code>darkTheme</code> when the user toggles system dark mode.
+      </p>
+<p>
+<strong>Dynamic color</strong> (Material You, Android 12 / API 31+) goes further: the OS derives a color scheme from
+        the user's <em>wallpaper</em>. <code>dynamicLightColorScheme(context)</code> / <code>dynamicDarkColorScheme(context)</code>
+        return those schemes. You must guard with a version check (<code>Build.VERSION.SDK_INT &gt;= S</code>) because older
+        devices don't have it.
+      </p>
+<p>To <em>preview</em> dark mode without changing system settings, add a dark <code>@Preview</code> (see idea 4) or wrap a preview in your theme with <code>darkTheme = true</code>.</p>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin</span><pre><code>// A simple in-app theme switch backed by state (no system change needed).
+// Useful for a settings screen and for demoing light/dark live.
+var userPrefersDark by rememberSaveable { mutableStateOf(false) }
+
+KeiserFitTheme(darkTheme = userPrefersDark, dynamicColor = false) {
+    Scaffold { padding -&gt;
+        Column(Modifier.padding(padding)) {
+            Switch(
+                checked = userPrefersDark,
+                onCheckedChange = { userPrefersDark = it }
+            )
+            Text("Dark theme", style = MaterialTheme.typography.bodyLarge)
+        }
+    }
+}</code></pre></div>
+<!-- BIG IDEA 3 -->
+<h3 id="idea-responsive">3 · Responsive &amp; adaptive layout</h3>
+<p>
+<strong>Analogy:</strong> A responsive layout is like <em>water</em> — it fills whatever container you pour it into.
+        We achieve that in Compose with <code>fillMaxWidth()</code>/<code>fillMaxHeight()</code> (stretch to the parent) and
+        <code>Modifier.weight(...)</code> (split remaining space proportionally), instead of fixed <code>.dp</code> widths.
+      </p>
+<p>There are two related ideas:</p>
+<ul>
+<li><strong>Responsive</strong> — the <em>same</em> layout stretches/shrinks fluidly (weights, fillMax, <code>Arrangement.spacedBy</code>).</li>
+<li><strong>Adaptive</strong> — the layout <em>changes shape</em> at breakpoints (e.g., a list-only phone screen becomes a list+detail two-pane on a tablet). Decide with <code>WindowSizeClass</code> or <code>BoxWithConstraints</code>.</li>
+</ul>
+<div aria-hidden="false" class="device-frames">
+<div>
+<div class="device device--phone">
+<div class="device__screen">
+<div class="device__bar"></div>
+<div class="device__line"></div><div class="device__line"></div>
+<div class="device__line"></div><div class="device__line"></div>
+</div>
+</div>
+<div class="device__caption">Compact width → single column (list only)</div>
+</div>
+<div>
+<div class="device device--tablet">
+<div class="device__screen">
+<div>
+<div class="device__line"></div><div class="device__line"></div>
+<div class="device__line"></div>
+</div>
+<div>
+<div class="device__bar"></div>
+<div class="device__line"></div><div class="device__line"></div>
+</div>
+</div>
+</div>
+<div class="device__caption">Expanded width → two-pane (list + detail)</div>
+</div>
+</div>
+<p><strong>Weights &amp; fillMax</strong> — the responsive workhorses:</p>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin</span><pre><code>// Two cards that always split the row 1:2, regardless of screen width.
+Row(
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp),
+    horizontalArrangement = Arrangement.spacedBy(16.dp)
+) {
+    StatCard(modifier = Modifier.weight(1f))   // takes 1 share
+    ChartCard(modifier = Modifier.weight(2f))  // takes 2 shares (twice as wide)
+}</code></pre></div>
+<p><strong>Adaptive via <code>WindowSizeClass</code></strong> — the recommended way to choose a layout. Width buckets: <code>Compact</code> (&lt; 600dp, phones), <code>Medium</code> (600–840dp, large phones / small tablets), <code>Expanded</code> (≥ 840dp, tablets / desktop).</p>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · MainActivity.onCreate</span><pre><code>// build.gradle: implementation("androidx.compose.material3:material3-window-size-class")
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+
+setContent {
+    KeiserFitTheme {
+        val windowSize = calculateWindowSizeClass(this)
+        when (windowSize.widthSizeClass) {
+            WindowWidthSizeClass.Compact -&gt; WorkoutListScreen()            // phone: list only
+            else -&gt; WorkoutListDetailScreen()                              // tablet: two-pane
+        }
+    }
+}</code></pre></div>
+<p>Or contrast it with <strong><code>BoxWithConstraints</code></strong>, which lets a single composable branch on the space <em>it</em> was given (great for reusable components):</p>
+<div aria-label="Adaptive approaches" class="tabs" role="tablist">
+<button class="tab" data-tab="wsc">WindowSizeClass</button>
+<button class="tab" data-tab="bwc">BoxWithConstraints</button>
+</div>
+<div class="tabpanel" data-tabpanel="wsc">
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin</span><pre><code>// Best for top-level navigation decisions (whole-screen layout).
+when (windowSize.widthSizeClass) {
+    WindowWidthSizeClass.Compact  -&gt; NavigationBar { /* bottom bar */ }
+    WindowWidthSizeClass.Medium   -&gt; NavigationRail { /* side rail */ }
+    WindowWidthSizeClass.Expanded -&gt; PermanentNavigationDrawer { /* drawer */ }
+}</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="bwc">
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin</span><pre><code>// Best for a single reusable component reacting to ITS OWN width.
+@Composable
+fun ProfileBlock() {
+    BoxWithConstraints {
+        if (maxWidth &lt; 480.dp) {
+            Column { Avatar(); ProfileDetails() }   // stacked when narrow
+        } else {
+            Row { Avatar(); ProfileDetails() }      // side-by-side when wide
+        }
+    }
+}</code></pre></div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Don't reach for absolute pixels</span>
+<p>Avoid <code>Modifier.size(412.dp)</code> to "fit the Pixel 7." That breaks on every other device. Use <code>fillMaxWidth()</code>, <code>weight()</code>, and size classes. Fixed <code>.dp</code> is fine for <em>spacing</em> and <em>icons</em>, not for whole-screen widths.</p>
+</div>
+</div>
+<!-- BIG IDEA 4 -->
+<h3 id="idea-spacing">4 · Spacing system &amp; consistent components (UI polish)</h3>
+<p>
+        Polish comes from <strong>consistency</strong>, not cleverness. Pick a spacing scale (commonly multiples of 4dp: 4, 8,
+        12, 16, 24, 32) and use it everywhere. Centralize values so the whole app shares one rhythm — a tiny custom object
+        works well, or define them in the theme.
+      </p>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · ui/theme/Spacing.kt</span><pre><code>import androidx.compose.ui.unit.dp
+
+// One source of truth for spacing — reference everywhere.
+object Spacing {
+    val xs = 4.dp
+    val sm = 8.dp
+    val md = 16.dp
+    val lg = 24.dp
+    val xl = 32.dp
+}
+
+// Usage:
+Column(
+    modifier = Modifier.padding(Spacing.md),
+    verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+) { /* ... */ }</code></pre></div>
+<p>Pair the spacing system with consistent component use: prefer <code>Scaffold</code> for screen structure (it handles top/bottom bars and insets), reuse small composables (<code>StatCard</code>, <code>SectionHeader</code>) rather than copy-pasting layouts, and lean on Material defaults (<code>Button</code>, <code>Card</code>, <code>OutlinedTextField</code>) which already honor the theme.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">📚</span>
+<div class="callout__body">
+<span class="callout__label">Official references</span>
+<p>
+<a href="https://developer.android.com/develop/ui/compose/designsystems/material3" rel="noopener" target="_blank">Material 3 in Compose</a> ·
+            <a href="https://developer.android.com/develop/ui/compose/layouts/adaptive" rel="noopener" target="_blank">Adaptive layouts</a> ·
+            <a href="https://m3.material.io/theme-builder" rel="noopener" target="_blank">Material Theme Builder</a> ·
+            <a href="https://developer.android.com/courses/android-basics-compose/unit-2" rel="noopener" target="_blank">Android Basics · Unit 2</a>
+</p>
+<p class="muted" style="margin-bottom:0"><strong>Staying current:</strong> everything here is Material 3 (stable). Google is rolling out <em>Material 3 Expressive</em> — a more dynamic, motion-rich evolution — which graduates to stable in <code>material3 1.5.x</code>. It builds on the same <code>MaterialTheme</code> / color-role model you learn today, so what you write now carries forward.</p>
+</div>
+</div>
+</section>
+<!-- ============================ GUIDED LIVE-CODING ============================ -->
+<section aria-labelledby="livecode-h" class="slide">
+<h2 id="livecode-h">Guided Live-Coding</h2>
+<p class="muted">Each step is typed live; follow along. Two builds on the <code>ThemingLab</code> starter. Run a <code>@Preview</code> after each step so the change is visible.</p>
+<h3>Build A — Apply a custom theme &amp; flip light / dark / dynamic</h3>
+<ol class="stepper">
+<li class="step">
+<h4>Generate a scheme with the Theme Builder</h4>
+<p>Open <a href="https://m3.material.io/theme-builder" rel="noopener" target="_blank">m3.material.io/theme-builder</a>, set the primary to Android green, export. <strong>You'll see:</strong> a full set of color roles. (To save time, paste the prebuilt <code>Theme.kt</code> from the lecture instead of typing all 30 roles by hand.)</p>
+</li>
+<li class="step">
+<h4>Drop in <code>Theme.kt</code>, <code>Type.kt</code>, <code>Shape.kt</code></h4>
+<p>Paste the three files from the Lecture section into <code>ui/theme/</code>. Notice the named arguments in <code>lightColorScheme(primary = …)</code> — that's the Kotlin pattern from Session 2 paying off again.</p>
+</li>
+<li class="step">
+<h4>Wrap the app in the theme</h4>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · MainActivity.kt</span><pre><code>override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContent {
+        KeiserFitTheme {                       // &lt;-- our custom theme
+            Surface(color = MaterialTheme.colorScheme.background) {
+                AppNavHost()                   // the 2-screen nav from Session 3
+            }
+        }
+    }
+}</code></pre></div>
+<p><strong>You'll see:</strong> the app's colors/typography change app-wide with one wrapper.</p>
+</li>
+<li class="step">
+<h4>Make one screen read from the theme</h4>
+<p>Find a composable that still hard-codes a color/size and switch it to <code>MaterialTheme.colorScheme.*</code> / <code>MaterialTheme.typography.*</code>. Re-run preview. Emphasize: this is the "why" of theming.</p>
+</li>
+<li class="step">
+<h4>Flip light ↔ dark, then dynamic color</h4>
+<p>Toggle the emulator's system dark mode (Quick Settings) — the app follows automatically via <code>isSystemInDarkTheme()</code>. Then set the wallpaper to something colorful and relaunch to watch <strong>dynamic color</strong> repaint the app. <strong>You'll see:</strong> dark mode "for free," and Material You overriding the brand colors.</p>
+</li>
+</ol>
+<h3>Build B — Make a screen adapt phone → wide</h3>
+<ol class="stepper">
+<li class="step">
+<h4>Add the window-size-class dependency</h4>
+<div class="codeblock" data-lang="Gradle (Kotlin DSL)"><span class="codeblock__lang">Kotlin · build.gradle.kts</span><pre><code>dependencies {
+    // No version here — the Compose BOM already pins it (same as material3 itself).
+    implementation("androidx.compose.material3:material3-window-size-class")
+}</code></pre></div>
+<p>Sync Gradle. <strong>You'll see:</strong> the import for <code>calculateWindowSizeClass</code> resolves.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Let the BOM manage the version</span>
+<p>Don't hard-pin a number on this artifact — the Compose BOM keeps it in lockstep with the rest of Material 3. The newer, recommended path is the <code>androidx.compose.material3.adaptive</code> APIs (which also give you list/detail scaffolds for free), but <code>calculateWindowSizeClass</code> shown here is still fully supported and is the simplest way to learn the Compact / Medium / Expanded buckets.</p>
+</div>
+</div>
+</li>
+<li class="step">
+<h4>Branch the top-level layout on width</h4>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · MainActivity.kt</span><pre><code>setContent {
+    KeiserFitTheme {
+        val size = calculateWindowSizeClass(this)
+        Surface(color = MaterialTheme.colorScheme.background) {
+            if (size.widthSizeClass == WindowWidthSizeClass.Expanded) {
+                WorkoutListDetail()     // two-pane
+            } else {
+                WorkoutList()           // single column
+            }
+        }
+    }
+}</code></pre></div>
+</li>
+<li class="step">
+<h4>Build the two-pane composable with weights</h4>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun WorkoutListDetail() {
+    Row(Modifier.fillMaxSize()) {
+        WorkoutList(
+            modifier = Modifier.weight(1f)        // left third-ish
+        )
+        WorkoutDetail(
+            modifier = Modifier
+                .weight(2f)                        // right: twice as wide
+                .fillMaxHeight()
+        )
+    }
+}</code></pre></div>
+</li>
+<li class="step">
+<h4>Verify with two previews + two emulators</h4>
+<p>Run the phone AVD (single column) and the tablet AVD (two-pane) side by side, or use the two <code>@Preview</code>s below. <strong>You'll see:</strong> the <em>same code</em> producing two layouts based on width — that's "adaptive."</p>
+</li>
+</ol>
+<h3 id="idea-preview">Previewing multiple device sizes (no emulator needed)</h3>
+<p>Stack <code>@Preview</code> annotations to render phone, tablet, dark mode, and large font all at once in the Design pane:</p>
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin</span><pre><code>import androidx.compose.ui.tooling.preview.Preview
+
+@Preview(name = "Phone",  device = "spec:width=411dp,height=891dp")
+@Preview(name = "Tablet", device = "spec:width=1280dp,height=800dp,dpi=240")
+@Preview(name = "Dark",   uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Big font", fontScale = 1.5f)
+@Composable
+fun WorkoutListPreview() {
+    KeiserFitTheme {                 // ALWAYS wrap previews in your theme
+        WorkoutList()
+    }
+}</code></pre></div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Preview must be wrapped in the theme</span>
+<p>A preview that isn't wrapped in <code>KeiserFitTheme { }</code> falls back to default Material colors and "looks broken." If a student says "my preview is plain/ugly," check for the missing theme wrapper first.</p>
+</div>
+</div>
+</section>
+<!-- ============================ HANDS-ON LAB ============================ -->
+<section aria-labelledby="lab-h" class="slide">
+<h2 id="lab-h">Hands-On Lab — Theming Lab + Milestone Prep</h2>
+<div class="card card--accent">
+<h3 class="card__title" style="margin-top:0">🎯 Goal <span class="clo-tag">CLO 2</span></h3>
+<p>Apply a custom Material 3 theme to <strong>your own project prototype</strong>, then prove it adapts: verify it in <strong>light and dark</strong> and at a <strong>second screen size</strong>. This directly feeds your Milestone 1 demo.</p>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Add a theme to your project</h4>
+<p>Create <code>ui/theme/Theme.kt</code>, <code>Type.kt</code>, <code>Shape.kt</code>. Start from the lecture files and change the brand colors to <em>your</em> app's identity (use the Theme Builder if you want a generated palette).</p>
+</li>
+<li class="step">
+<h4>Wrap your app &amp; remove hard-coded styles</h4>
+<p>Wrap <code>setContent</code> in <code>YourAppTheme { }</code>. Then hunt down at least <strong>three</strong> hard-coded colors/sizes and replace them with <code>MaterialTheme.colorScheme.*</code> / <code>.typography.*</code>.</p>
+<p class="muted"><strong>Hint:</strong> search the project for <code>Color(0x</code> and <code>.sp</code> literals.</p>
+</li>
+<li class="step">
+<h4>Verify light &amp; dark</h4>
+<p>Add a <code>@Preview(uiMode = UI_MODE_NIGHT_YES)</code> alongside a normal preview, <em>or</em> toggle system dark mode on the emulator. Fix any text that becomes unreadable (usually a hard-coded color you missed).</p>
+</li>
+<li class="step">
+<h4>Make one screen adapt to width</h4>
+<p>Pick your busiest screen. Either (a) use <code>BoxWithConstraints</code> to stack vs. row at a breakpoint, or (b) add the window-size-class dependency and branch the layout. Add a tablet <code>@Preview</code> to prove it.</p>
+</li>
+<li class="step">
+<h4>Apply the spacing system</h4>
+<p>Add a <code>Spacing</code> object and use it for padding/arrangement on at least one screen so spacing is consistent.</p>
+</li>
+<li class="step">
+<h4>Screenshot for the Discussion Board</h4>
+<p>Capture your themed prototype (ideally a light + dark pair). You'll post it in the <a href="#discussion-h">Discussion Board</a> block.</p>
+</li>
+</ol>
+<div class="grid grid-2">
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">✅</span>
+<div class="callout__body">
+<span class="callout__label">Expected result</span>
+<p>Your prototype renders with a coherent custom theme, looks correct in both light and dark, reflows sensibly at a second screen size, and uses theme values instead of literals. You can demo all of this from <code>@Preview</code> even if your emulator misbehaves.</p>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">🧯</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting</span>
+<ul>
+<li><strong>Preview looks plain/default:</strong> you forgot to wrap it in your theme composable.</li>
+<li><strong>Dark text on dark background:</strong> a hard-coded <code>Color(0xFF000000)</code> — switch to <code>onSurface</code>.</li>
+<li><strong><code>calculateWindowSizeClass</code> unresolved:</strong> missing <code>material3-window-size-class</code> dependency / Gradle not synced.</li>
+<li><strong><code>weight()</code> "can only be used within a Row/Column" error:</strong> you're calling it outside a <code>Row</code>/<code>Column</code> scope.</li>
+<li><strong>Dynamic color ignoring brand colors:</strong> expected on Android 12+ — set <code>dynamicColor = false</code> to keep your palette.</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Stretch goal</span>
+<p>Add an in-app theme toggle (a <code>Switch</code> backed by <code>rememberSaveable</code>) on a settings screen, OR add a <code>NavigationRail</code> for Medium/Expanded widths while keeping a <code>NavigationBar</code> for Compact. Bonus: persist the theme choice with DataStore (preview of Unit 6).</p>
+</div>
+</div>
+</section>
+<!-- ============================ ASSESSMENTS TODAY ============================ -->
+<section aria-labelledby="assess-h" class="slide">
+<h2 id="assess-h">Assessments Today</h2>
+<div class="grid grid-2">
+<div class="card card--teal">
+<h3 class="card__title" style="margin-top:0">📝 Quiz 1 </h3>
+<p>Covers <strong>Weeks 1–2</strong>: Kotlin fundamentals, Activity lifecycle &amp; intents, Compose basics, and state. Administered at <strong>2:15–2:35</strong>.</p>
+<p><a href="../assessments/quiz-1.html">→ Open Quiz 1</a></p>
+</div>
+<div class="card card--amber">
+<h3 class="card__title" style="margin-top:0">🎤 Project Milestone 1 </h3>
+<p>Each student demos a <strong>working Compose UI prototype of ≥ 2 screens with navigation</strong> (2–3 min). Review during the lab block (2:35–3:25).</p>
+<p class="muted" style="margin-bottom:4px"><strong>Demo rubric — you're checked on:</strong></p>
+<ul>
+<li><strong>≥ 2 screens</strong> built with Compose.</li>
+<li><strong>Navigation works</strong> — you can move forward and Back between them.</li>
+<li><strong>UI is driven by state</strong> (not hard-coded text that never changes).</li>
+<li><strong>It runs</strong> — on the emulator <em>or</em> via <code>@Preview</code> if your emulator misbehaves.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">No pre-test / post-test today</span>
+<p>The Pre-test was Session 1; the Post-test is Session 12. Today's assessments are <strong>Quiz 1</strong> and <strong>Milestone 1</strong>. The weekly Discussion Board (below) is part of the coursework.</p>
+</div>
+</div>
+<!-- Optional self-check quiz students can use to study before the real Quiz 1 -->
+<h3>Optional self-check </h3>
+<p class="muted">Use this to check yourself before the real Quiz 1, which lives at <a href="../assessments/quiz-1.html">assessments/quiz-1.html</a>.</p>
+<div data-quiz="selfcheck-data" data-topic="compose-ui"></div>
+<script id="selfcheck-data" type="application/json">
+      {
+        "title": "Theming & Layout self-check",
+        "intro": "Five quick questions on today's material. Submit to see explanations.",
+        "passingScore": 0.7,
+        "shuffle": false,
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "prompt": "Where should a composable get its primary color from to support dark mode automatically?",
+            "options": [
+              {"id": "a", "text": "A literal Color(0xFF...) value"},
+              {"id": "b", "text": "MaterialTheme.colorScheme.primary"},
+              {"id": "c", "text": "android.R.color.primary"},
+              {"id": "d", "text": "A hard-coded hex in the XML theme"}
+            ],
+            "correct": ["b"],
+            "explanation": "Reading from MaterialTheme.colorScheme lets the theme swap light/dark (and dynamic color) schemes without touching the composable."
+          },
+          {
+            "id": "q2",
+            "type": "truefalse",
+            "prompt": "Dynamic color (Material You) is available on every Android version.",
+            "correct": false,
+            "explanation": "Dynamic color requires Android 12 (API 31+). Guard with Build.VERSION.SDK_INT >= S and provide fallback schemes for older devices."
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "prompt": "Which width WindowSizeClass typically indicates a tablet / two-pane layout?",
+            "options": [
+              {"id": "a", "text": "Compact"},
+              {"id": "b", "text": "Medium"},
+              {"id": "c", "text": "Expanded"},
+              {"id": "d", "text": "Fullscreen"}
+            ],
+            "correct": ["c"],
+            "explanation": "Expanded width (>= 840dp) is the bucket for tablets/desktop, where a list+detail two-pane layout makes sense."
+          },
+          {
+            "id": "q4",
+            "type": "multi",
+            "prompt": "Which modifiers help build a RESPONSIVE (fluid) layout? (Select all that apply.)",
+            "options": [
+              {"id": "a", "text": "Modifier.weight(1f)"},
+              {"id": "b", "text": "Modifier.fillMaxWidth()"},
+              {"id": "c", "text": "Modifier.size(412.dp)"},
+              {"id": "d", "text": "Modifier.fillMaxHeight()"}
+            ],
+            "correct": ["a", "b", "d"],
+            "explanation": "weight() splits remaining space proportionally; fillMax* stretches to the parent. A fixed size(412.dp) is the opposite of responsive."
+          },
+          {
+            "id": "q5",
+            "type": "short",
+            "prompt": "Name the composable function you wrap your previews in so they show your custom colors. (Use the lecture's theme name.)",
+            "correct": ["KeiserFitTheme", "KeiserFitTheme()", "YourAppTheme"],
+            "explanation": "Always wrap @Preview content in your app's theme composable (e.g., KeiserFitTheme { ... }); otherwise the preview falls back to default Material colors."
+          }
+        ]
+      }
+      </script>
+<h3>Review flashcards (Quiz 1 prep)</h3>
+<p class="muted">Optional retrieval practice spanning Weeks 1–2 — useful right before Quiz 1.</p>
+<div data-flashcards="flash-data"></div>
+<script id="flash-data" type="application/json">
+      [
+        {"front": "What does MaterialTheme provide to its content?", "back": "A colorScheme, typography, and shapes that descendant composables read via MaterialTheme.colorScheme / .typography / .shapes.", "tag": "Theming"},
+        {"front": "lightColorScheme() vs darkColorScheme()", "back": "Two ColorScheme builders. Pick one based on isSystemInDarkTheme() (or a user toggle) inside your theme composable.", "tag": "Theming"},
+        {"front": "What is dynamic color (Material You)?", "back": "Android 12+ derives a color scheme from the user's wallpaper via dynamicLightColorScheme/dynamicDarkColorScheme(context). It overrides your brand colors unless disabled.", "tag": "Theming"},
+        {"front": "Responsive vs adaptive layout", "back": "Responsive = same layout stretches (weights/fillMax). Adaptive = layout changes shape at breakpoints (WindowSizeClass / BoxWithConstraints).", "tag": "Layout"},
+        {"front": "Modifier.weight(2f) does what?", "back": "Inside a Row/Column, it claims 2 shares of the remaining space relative to siblings' weights.", "tag": "Layout"},
+        {"front": "remember vs rememberSaveable", "back": "Both cache a value across recompositions; rememberSaveable also survives config changes/process death by saving to the saved-instance-state bundle.", "tag": "State"},
+        {"front": "What is recomposition?", "back": "Compose re-running composable functions when the state they read changes, to update the UI.", "tag": "State"},
+        {"front": "Why wrap @Preview in your theme?", "back": "Otherwise the preview uses default Material colors and looks wrong. KeiserFitTheme { ... } makes the preview match the running app.", "tag": "Preview"}
+      ]
+      </script>
+</section>
+<!-- ============================ DISCUSSION BOARD ============================ -->
+<section aria-labelledby="discussion-h" class="slide">
+<h2 id="discussion-h">Discussion Board Prompt (Week 2)</h2>
+<div class="card card--teal">
+<h3 class="card__title" style="margin-top:0">💬 Post your themed prototype</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">📌</span>
+<div class="callout__body">
+<span class="callout__label">Exact prompt</span>
+<p>"Post a <strong>screenshot of your prototype</strong> (a light + dark pair is ideal) and describe <strong>one UI decision you made</strong> this week and why. Examples: a color/role choice, how you made a screen adapt, a spacing rule you adopted, or why you turned dynamic color on/off. Then <strong>reply to at least one classmate</strong> with one specific, kind suggestion."</p>
+</div>
+</div>
+
+<ul>
+<li>1 original post with a screenshot + a 2–4 sentence rationale (due end of Week 2).</li>
+<li>≥ 1 substantive reply to a classmate (more than "looks good!").</li>
+<li>Both the post and the reply are due by <strong>end of Week 2</strong>; they count toward your weekly participation.</li>
+</ul>
+</div>
+</section>
+<!-- ============================ HOMEWORK / NEXT CLASS ============================ -->
+<section aria-labelledby="hw-h" class="slide">
+<h2 id="hw-h">Homework / Next Class</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<h3 class="card__title" style="margin-top:0">📌 Project tasks</h3>
+<ul>
+<li><strong>Act on your Milestone 1 feedback.</strong> Write down the one or two changes the class/instructor flagged in your demo and fix them this week (most common: a hard-coded color that broke in dark mode, or a screen that didn't reflow).</li>
+<li><strong>Make navigation between your two screens solid.</strong> Confirm forward navigation passes any needed argument and the system Back button returns cleanly — the <a href="session-03.html#lab-h">Session 3 two-screen nav lab</a> is your reference.</li>
+<li><strong>Apply today's theming to the whole prototype</strong>, not just one screen: remove remaining <code>Color(0x…)</code>/raw <code>.sp</code> literals and verify a light + dark <a href="#idea-preview">@Preview</a> pair.</li>
+<li><strong>Plan your Unit 3 target.</strong> Pick the screen in your app that shows a <em>list</em> (workouts, items, history) — that's what you'll convert to a <code>LazyColumn</code> of real data next session.</li>
+</ul>
+</div>
+<div class="card card--teal">
+<h3 class="card__title" style="margin-top:0">📖 Reading &amp; preview (Unit 3)</h3>
+<ul>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-3" rel="noopener" target="_blank">Android Basics with Compose — Unit 3</a> (Display lists &amp; use Material Design): work the <strong>"Build a Scrollable List"</strong> pathway (Pathway 2) before Session 7.</li>
+<li><a href="https://developer.android.com/develop/ui/compose/lists" rel="noopener" target="_blank">Lists &amp; grids in Compose</a> (official docs) — focus on <code>LazyColumn</code> and the <code>items()</code> DSL.</li>
+<li><a href="https://developer.android.com/develop/ui/compose/components/scaffold" rel="noopener" target="_blank">Material 3 <code>Scaffold</code></a> — skim how the top/bottom bars and content slots frame a list screen, so the next session's UI feels familiar.</li>
+<li>Optional: re-skim <a href="https://developer.android.com/develop/ui/compose/designsystems/material3" rel="noopener" target="_blank">Material 3 in Compose</a> to lock in today's theming vocabulary.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">➡️</span>
+<div class="callout__body">
+<span class="callout__label">Next class — Session 7</span>
+<p>We begin <strong>Unit 3: displaying lists with <code>LazyColumn</code></strong> and applying Material Design list components — the foundation for showing API/database data later in the course.</p>
+</div>
+</div>
+</section>
+</div><!-- /content column -->
+</div><!-- /layout-with-toc -->
+<!-- ===================== LIVE, RUNNABLE COMPOSE (playground.js) ===================== -->
+<section aria-labelledby="til-h" class="card slide" id="try-it-live">
+<h2 class="card__title" id="til-h">► Try it live in your browser</h2>
+<div class="callout callout--warn">
+<span class="callout__icon">►</span>
+<div class="callout__body">
+<span class="callout__label">Live Compose — experimental</span>
+<p>A complete, editable Compose program. Press <strong>Run</strong> to compile to WebAssembly on JetBrains’ servers and render here. Compose-on-web is <strong>experimental</strong> — if it won’t compile on your network, use the offline <a href="../labs/compose-playground.html">visual simulator</a> or Android Studio.</p>
+</div>
+</div>
+<p class="mt"><strong>Material 3 theming &amp; dark mode.</strong> One <code>MaterialTheme</code> swap re-skins everything — toggle the switch and watch the whole UI respond.</p>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Kotlin + Compose · runnable</div>
+<pre><code>import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
+
+fun main() {
+    ComposeViewport(document.body!!) { App() }
+}
+
+@Composable
+fun App() {
+    var dark by remember { mutableStateOf(false) }
+    MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+        Surface(Modifier.fillMaxSize()) {
+            Column(Modifier.padding(24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Dark theme")
+                    Spacer(Modifier.width(12.dp))
+                    Switch(checked = dark, onCheckedChange = { dark = it })
+                }
+                Spacer(Modifier.height(16.dp))
+                Card { Text("Themed card", Modifier.padding(16.dp)) }
+            }
+        }
+    }
+}</code></pre>
+</div>
+</section>
+<!-- ============================ MASTER IT ============================ -->
+<section aria-labelledby="master-h" class="card slide" id="master-it">
+<h2 class="card__title" id="master-h">🧠 Master it — Material 3 theming &amp; adaptive layout</h2>
+<p class="muted">
+        The four ideas above are easy to <em>read</em> and easy to get subtly wrong in real code.
+        This section makes you build the hardest one from first principles, names the mistakes that
+        actually ship to users, shows the senior-engineer pattern, and then sends you to deliberate
+        practice. Work it top to bottom — predict before you run, and don't peek at a solution until
+        you've made the cases go green yourself.
+      </p>
+<!-- ---------- 1. WORKED EXAMPLE → FADED ---------- -->
+<h3 id="master-worked">1 · Worked example: deriving the width breakpoints (then you finish it)</h3>
+<p>
+        The single highest-leverage skill today is turning a raw available width into the correct
+        <strong>adaptive decision</strong>. Studio gives you <code>WindowSizeClass</code>, but the logic
+        underneath is just bucketing a number into <code>Compact</code> / <code>Medium</code> /
+        <code>Expanded</code>. If you can reproduce that bucketing exactly — including the boundaries —
+        you understand the abstraction instead of memorizing an API. Let's reason it out.
+      </p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🔎</span>
+<div class="callout__body">
+<span class="callout__label">The reasoning, step by step</span>
+<ol class="mt">
+<li><strong>What are the official cut points?</strong> Material's width classes are: <code>Compact</code> = width <code>&lt; 600dp</code>, <code>Medium</code> = <code>600dp ≤ width &lt; 840dp</code>, <code>Expanded</code> = <code>width ≥ 840dp</code>. Two numbers, 600 and 840, define everything.</li>
+<li><strong>Which side owns the boundary?</strong> The boundaries are <em>inclusive on the lower end of the larger bucket</em>. Exactly <code>600dp</code> is <strong>Medium</strong>, not Compact. Exactly <code>840dp</code> is <strong>Expanded</strong>. This off-by-one is the #1 bug in hand-rolled breakpoint code, so encode it deliberately with <code>&gt;=</code>, not <code>&gt;</code>.</li>
+<li><strong>What about garbage input?</strong> A width can't be negative. Decide the contract: treat <code>&lt; 0</code> as invalid and map it to the smallest sane bucket (<code>Compact</code>) rather than crashing — defensive layout code never throws on a measurement.</li>
+<li><strong>Order the checks largest-first or guard explicitly.</strong> If you write <code>if (w &lt; 600) Compact else if (w &lt; 840) Medium else Expanded</code>, the inclusive boundaries fall out for free. That's the cleanest shape.</li>
+</ol>
+</div>
+</div>
+<p>Here's the fully worked, runnable reference — read it, predict its output, then run it:</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Predict, then run</span>
+<p>Before pressing Run: what does <code>layoutFor(600)</code> print — <code>Compact</code> or <code>Medium</code>? What about <code>layoutFor(839)</code> and <code>layoutFor(840)</code>? Commit to an answer, then confirm.</p>
+</div>
+</div>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable (worked reference)</div>
+<pre><code>// The same bucketing WindowSizeClass does under the hood.
+fun layoutFor(widthDp: Int): String = when {
+    widthDp &lt; 0    -&gt; "Compact"   // defensive: never throw on a measurement
+    widthDp &lt; 600  -&gt; "Compact"   // phones, portrait
+    widthDp &lt; 840  -&gt; "Medium"    // large phones / small tablets (600..839)
+    else           -&gt; "Expanded"  // tablets / desktop (&gt;= 840)
+}
+
+fun main() {
+    // Boundaries are the interesting cases — print them explicitly.
+    listOf(0, 411, 599, 600, 839, 840, 1280, -50).forEach { w -&gt;
+        println("width=$w -&gt; ${layoutFor(w)}")
+    }
+}</code></pre>
+</div>
+<p>
+        Now <strong>you</strong> build it from a blank slate. Below is a faded version: the boundary logic
+        is removed and replaced with a <code>// YOUR CODE</code> region. Fill it in so every test case goes
+        green. A built-in harness checks the exact boundaries (including the <code>600</code>/<code>840</code>
+        inclusivity that trips people up) and the negative-width contract. <strong>You've got it when you see
+        <code>ALL TESTS PASSED 🎉</code>.</strong>
+</p>
+<div class="codeblock" data-challenge="s06-windowclass" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge — make every case green</div>
+<pre><code>// CHALLENGE: reproduce Material's width-size-class bucketing.
+// Return exactly "Compact", "Medium", or "Expanded".
+// Rules: w &lt; 600 -&gt; Compact ; 600 &lt;= w &lt; 840 -&gt; Medium ; w &gt;= 840 -&gt; Expanded.
+// A negative width is invalid -&gt; treat as "Compact" (never throw).
+
+fun layoutFor(widthDp: Int): String {
+    // ---------- YOUR CODE ----------
+    // Replace the line below with the correct bucketing logic.
+    return "Compact"
+    // -------------------------------
+}
+
+// ---- test harness (do not edit) ----
+fun main() {
+    data class Case(val w: Int, val expected: String)
+    val cases = listOf(
+        Case(-50, "Compact"),   // invalid -&gt; smallest sane bucket
+        Case(0,   "Compact"),
+        Case(411, "Compact"),   // a Pixel-ish phone
+        Case(599, "Compact"),   // just below the first cut
+        Case(600, "Medium"),    // boundary is INCLUSIVE for the larger bucket
+        Case(700, "Medium"),
+        Case(839, "Medium"),    // just below the second cut
+        Case(840, "Expanded"),  // boundary is INCLUSIVE for the larger bucket
+        Case(1280,"Expanded")   // a tablet in landscape
+    )
+    var allPass = true
+    for (c in cases) {
+        val got = layoutFor(c.w)
+        if (got == c.expected) {
+            println("✓ passed: layoutFor(${c.w}) = $got")
+        } else {
+            allPass = false
+            println("✗ FAILED: layoutFor(${c.w}) expected ${c.expected}, got $got")
+        }
+    }
+    println(if (allPass) "ALL TESTS PASSED 🎉" else "Some cases failed — re-read the boundary rules.")
+}</code></pre>
+</div>
+<div class="accordion" data-accordion="">
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body">
+<p>One <code>when</code> with three guards solves it. Order them smallest-threshold first so the
+            inclusive boundaries are automatic:</p>
+<pre><code>when {
+    widthDp &lt; 0   -&gt; ...
+    widthDp &lt; 600 -&gt; ...
+    widthDp &lt; 840 -&gt; ...
+    else          -&gt; ...
+}</code></pre>
+<p>The trap is writing <code>widthDp &lt;= 600 -&gt; "Compact"</code> — that wrongly makes <code>600</code> Compact. Use strict <code>&lt;</code>.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin</span><pre><code>fun layoutFor(widthDp: Int): String = when {
+    widthDp &lt; 0    -&gt; "Compact"
+    widthDp &lt; 600  -&gt; "Compact"
+    widthDp &lt; 840  -&gt; "Medium"
+    else           -&gt; "Expanded"
+}</code></pre></div>
+<p class="muted">In a real app you never write this by hand — you call
+            <code>calculateWindowSizeClass(activity).widthSizeClass</code> and <code>when</code> on the
+            resulting <code>WindowWidthSizeClass</code>. But now you know <em>exactly</em> what that value means.</p>
+</div>
+</div>
+</div>
+<p class="muted mt">
+        Mark this challenge solved once your harness prints <code>ALL TESTS PASSED 🎉</code>. That progress is
+        yours — it feeds your <strong>compose-ui</strong> mastery on the
+        <a href="../path.html">skill map</a>, not any grade.
+      </p>
+<!-- ---------- 2. MISCONCEPTIONS & PITFALLS ---------- -->
+<h3 id="master-misconceptions">2 · Common misconceptions &amp; pitfalls</h3>
+<p class="muted">Each of these is a real mistake that compiles, runs, and then misbehaves on a user's device. Open one, find the symptom you'd actually see.</p>
+<div class="accordion" data-accordion="">
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ “Hard-coding <code>Color(0xFF000000)</code> is fine — black text is always readable.”</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> a literal color is “safe” because you can see it works in the preview you're looking at.</p>
+<p><strong>Why it's wrong:</strong> the preview you're looking at is <em>light mode</em>. A literal color is frozen — it can't follow the theme. In dark mode your surface flips to near-black, but your literal text stays black, so it vanishes. Dynamic color (Material You) can also recolor surfaces; literals ignore that entirely.</p>
+<p><strong>Correct model:</strong> read the <em>role</em>, not the value. Text on a surface uses <code>MaterialTheme.colorScheme.onSurface</code>; the framework guarantees the <code>on*</code> pairing has contrast in every scheme. Reserve literals for your theme definition file only.</p>
+<p><strong>Symptom:</strong> “Dark text on a dark background” / invisible text after toggling system dark mode — the exact bug listed in the lab troubleshooting.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ “Modifier order doesn't matter — padding is padding.”</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> modifiers are a bag of properties, so <code>.padding().background()</code> and <code>.background().padding()</code> produce the same thing.</p>
+<p><strong>Why it's wrong:</strong> a <code>Modifier</code> chain is an <em>ordered pipeline</em> applied outside-in. <code>Modifier.padding(16.dp).background(Color.Red)</code> paints red <em>inside</em> the padding (red box with a transparent margin). <code>Modifier.background(Color.Red).padding(16.dp)</code> paints red first, then insets the content — red fills the whole area with 16dp of red showing around the content. Same with <code>.clickable</code>: putting padding before it shrinks the tap target.</p>
+<p><strong>Correct model:</strong> read the chain left-to-right as “each modifier wraps the next.” Decide deliberately whether color/clip/click should be inside or outside the spacing.</p>
+<p><strong>Symptom:</strong> backgrounds that don't reach the edges, ripples that don't cover the visible card, or tap targets that feel “dead” near the edges.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ “Just size the screen to the device: <code>Modifier.size(412.dp)</code> for a Pixel 7.”</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> you tested on one device, it fit, so a fixed width is “correct.”</p>
+<p><strong>Why it's wrong:</strong> 412dp is one device's portrait width. On a narrower phone it overflows and clips; on a tablet or in split-screen it leaves a tiny island in a sea of empty space; rotate the Pixel itself and it's wrong. Absolute pixel layouts are device-coupled by construction.</p>
+<p><strong>Correct model:</strong> let the layout flow — <code>fillMaxWidth()</code>, <code>Modifier.weight()</code>, and <code>Arrangement.spacedBy()</code> — and only <em>change shape</em> at real breakpoints via <code>WindowSizeClass</code> / <code>BoxWithConstraints</code>. Keep fixed <code>.dp</code> for spacing, icon sizes, and minimum touch targets, never whole-screen widths.</p>
+<p><strong>Symptom:</strong> horizontal scrollbars / clipped content on small phones, and an absurd amount of dead space on tablets and foldables.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ “A preview that looks plain just needs more styling.”</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> the boring gray preview means your composable is ugly, so you start tweaking colors inside the composable.</p>
+<p><strong>Why it's wrong:</strong> a <code>@Preview</code> renders in isolation. If you don't wrap its content in <code>YourAppTheme { }</code>, it falls back to <em>default</em> Material colors/type — it ignores your custom scheme entirely. The composable is fine; the preview just isn't seeing your theme.</p>
+<p><strong>Correct model:</strong> every preview body is <code>YourAppTheme { TheComposable() }</code>. If you preview light and dark, wrap each accordingly (or pass <code>uiMode = UI_MODE_NIGHT_YES</code>). The running app is always themed because <code>setContent</code> wraps it — previews must do the same wrapping manually.</p>
+<p><strong>Symptom:</strong> “my preview looks broken/plain but the app looks right” — a missing theme wrapper, not a styling problem.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ “Dynamic color = my brand colors, just nicer.”</button>
+<div class="accordion__body">
+<p><strong>Wrong mental model:</strong> turning on dynamic color enhances your palette while keeping your brand identity.</p>
+<p><strong>Why it's wrong:</strong> dynamic color (Android 12+) <em>derives the whole scheme from the user's wallpaper</em> and <strong>overrides</strong> your hand-picked brand colors. With <code>dynamicColor = true</code>, two users with different wallpapers see two different-colored versions of your app — and your green-fitness brand might come out lavender.</p>
+<p><strong>Correct model:</strong> decide intentionally. If brand consistency matters, set <code>dynamicColor = false</code> and ship your scheme. If you want the “feels native, matches my phone” effect, keep it on — but guard with <code>Build.VERSION.SDK_INT &gt;= S</code> and provide your brand scheme as the fallback for older devices.</p>
+<p><strong>Symptom:</strong> “my brand colors disappeared on a Pixel” / inconsistent app color across users — expected behavior when dynamic color is left on.</p>
+</div>
+</div>
+</div>
+<!-- ---------- 3. IN PRODUCTION ---------- -->
+<h3 id="master-production">3 · In production</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">How a senior engineer actually ships this</span>
+<p>
+            A production theme is generated, not hand-typed. You design the seed color in the
+            <a href="https://m3.material.io/theme-builder" rel="noopener" target="_blank">Material Theme Builder</a>,
+            export the full <code>Color.kt</code> + <code>Theme.kt</code>, and never touch the 30 roles by hand — that
+            keeps tonal contrast correct. The theme composable is wired exactly once, at the top of
+            <code>setContent</code>, with dynamic color <em>off by default</em> unless the product explicitly
+            wants Material-You theming (brand teams usually keep it off). Adaptive decisions live in a single
+            place near the top of the screen — typically a <code>when</code> on
+            <code>WindowSizeClass.widthSizeClass</code> choosing <code>NavigationBar</code> (Compact) →
+            <code>NavigationRail</code> (Medium) → <code>PermanentNavigationDrawer</code> (Expanded) — so the rest of
+            the tree stays size-agnostic and reusable. Spacing comes from one constants object (or a theme
+            <code>CompositionLocal</code>), never scattered magic numbers. And every screen ships with a small
+            multi-<code>@Preview</code> stack (Phone, Tablet, Dark, <code>fontScale = 1.5f</code>) so reviewers catch
+            dark-mode and large-font breakage <em>in code review</em>, before it reaches a device.</p>
+<p class="mt">
+<strong>Tasteful gotcha:</strong> <code>calculateWindowSizeClass()</code> measures the
+            <em>window</em>, not the screen. In multi-window / split-screen / foldable modes the window is
+            smaller than the physical display — so size class is recomputed automatically and your “tablet”
+            can legitimately become <code>Compact</code> when the user splits the screen in half. That's the
+            feature, not a bug: branch on the window, and your app does the right thing in split-screen for free.
+            Never branch on raw screen size or hardware model.</p>
+</div>
+</div>
+<!-- ---------- 4. RETRIEVAL CHECK ---------- -->
+<h3 id="master-retrieval">4 · Retrieval check</h3>
+<p class="muted">
+        Self-test — close your notes first. These ask you to <em>apply</em> the ideas to a decision, not
+        recall a definition. Submit to see a full explanation for each. This is practice, not a grade; retry until
+        every answer makes sense.
+      </p>
+<div data-quiz="rc-6" data-topic="compose-ui"></div>
+<script id="rc-6" type="application/json">
+      {
+        "title": "Apply it: theming & adaptive layout",
+        "intro": "Six application questions. Reason through the scenario before answering.",
+        "passingScore": 0.7,
+        "shuffle": false,
+        "questions": [
+          {
+            "id": "rc6q1",
+            "type": "single",
+            "prompt": "Your app looks great in light mode but several Text elements vanish after a user enables system dark mode. What is the most likely single cause?",
+            "options": [
+              {"id": "a", "text": "You forgot to call isSystemInDarkTheme() anywhere."},
+              {"id": "b", "text": "Some Text uses a literal color (e.g. Color(0xFF000000)) instead of MaterialTheme.colorScheme.onSurface."},
+              {"id": "c", "text": "Dynamic color is disabled."},
+              {"id": "d", "text": "You're missing the material3-window-size-class dependency."}
+            ],
+            "correct": ["b"],
+            "explanation": "A literal color can't follow the theme. In dark mode the surface goes near-black while the literal text stays black, so it disappears. The fix is to read the on* role (onSurface/onBackground), which the framework keeps contrast-correct in every scheme. The theme composable already flips schemes via isSystemInDarkTheme(); the bug is in the leaf composable, not the wiring."
+          },
+          {
+            "id": "rc6q2",
+            "type": "single",
+            "prompt": "A tablet user splits the screen so your app occupies the left half. calculateWindowSizeClass now reports Compact instead of Expanded. Is this correct behavior?",
+            "options": [
+              {"id": "a", "text": "No — it's a bug; tablets should always be Expanded."},
+              {"id": "b", "text": "Yes — size class measures the window, and your window is now phone-width, so a single-column layout is right."},
+              {"id": "c", "text": "No — you should branch on the physical screen size instead."},
+              {"id": "d", "text": "Yes, but only because dynamic color recomputed the scheme."}
+            ],
+            "correct": ["b"],
+            "explanation": "WindowSizeClass intentionally measures the app's WINDOW, not the hardware. In split-screen the window is phone-width, so collapsing to a single column is exactly right. Branching on physical screen size or device model would break split-screen and foldables. This is why you never hardcode by device."
+          },
+          {
+            "id": "rc6q3",
+            "type": "single",
+            "prompt": "You want a red card with a 16dp gap between its red edge and the screen edge — i.e. red fills the card, with margin OUTSIDE the red. Which modifier order is correct?",
+            "options": [
+              {"id": "a", "text": "Modifier.background(Color.Red).padding(16.dp)"},
+              {"id": "b", "text": "Modifier.padding(16.dp).background(Color.Red)"},
+              {"id": "c", "text": "Order doesn't matter for padding."},
+              {"id": "d", "text": "Modifier.size(16.dp).background(Color.Red)"}
+            ],
+            "correct": ["b"],
+            "explanation": "Modifiers apply outside-in. padding(16.dp) FIRST insets the drawing area, then background(Color.Red) fills only the inset area — so the red has a 16dp transparent margin around it. The other order (background then padding) paints red across the whole area first, putting the gap INSIDE the red. Modifier order is semantic, not cosmetic."
+          },
+          {
+            "id": "rc6q4",
+            "type": "single",
+            "prompt": "Available width is exactly 600dp. Which WindowWidthSizeClass is it, and what does that imply?",
+            "options": [
+              {"id": "a", "text": "Compact — still treat it as a phone."},
+              {"id": "b", "text": "Medium — the 600dp boundary belongs to the larger bucket (inclusive)."},
+              {"id": "c", "text": "Expanded — anything 600 and up is a tablet."},
+              {"id": "d", "text": "Undefined — 600dp is a gap between buckets."}
+            ],
+            "correct": ["b"],
+            "explanation": "Compact is width < 600dp; Medium is 600dp..839dp; Expanded is >= 840dp. The boundary is inclusive on the larger bucket, so exactly 600dp is Medium (and exactly 840dp is Expanded). This off-by-one — using <= instead of < — is the classic bug in hand-rolled breakpoints, which is exactly what the s06-windowclass challenge drills."
+          },
+          {
+            "id": "rc6q5",
+            "type": "multi",
+            "prompt": "Your designer insists the app must always look the same green-branded color for every user, on every supported device. Which choices honor that? (Select all that apply.)",
+            "options": [
+              {"id": "a", "text": "Set dynamicColor = false in the theme composable."},
+              {"id": "b", "text": "Provide your own lightColorScheme()/darkColorScheme() and use them."},
+              {"id": "c", "text": "Leave dynamicColor = true so Android picks nice colors."},
+              {"id": "d", "text": "Still guard dynamic-color code with Build.VERSION.SDK_INT >= S (defensive), but never take that branch."}
+            ],
+            "correct": ["a", "b"],
+            "explanation": "Dynamic color (Material You) derives the scheme from the user's wallpaper and OVERRIDES brand colors — so for strict brand consistency you turn it off (a) and ship your own schemes (b). Leaving it on (c) gives every user a different palette. (d) is harmless but irrelevant once you never run the dynamic branch; the version guard matters only if you actually use dynamic color."
+          },
+          {
+            "id": "rc6q6",
+            "type": "truefalse",
+            "prompt": "A @Preview will automatically use your custom MaterialTheme colors as long as the running app wraps setContent in your theme.",
+            "correct": false,
+            "explanation": "False. Each @Preview renders in isolation and does NOT inherit setContent's wrapping. You must wrap the preview body in YourAppTheme { ... } yourself, or it falls back to default Material colors and 'looks plain/broken.' This is the most common cause of an ugly preview next to a correct-looking app."
+          }
+        ]
+      }
+      </script>
+<!-- ---------- 5. DELIBERATE PRACTICE ---------- -->
+<h3 id="master-practice">5 · Deliberate practice — what to do next</h3>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🏋️</span>
+<div class="callout__body">
+<span class="callout__label">Build the reps that make this automatic</span>
+<p>You've solved one challenge and self-tested. Now interleave — short, focused reps with immediate feedback beat re-reading every time:</p>
+<ul class="mt">
+<li><strong><a href="../practice/challenges.html">Faded challenges</a></strong> — do the <code>compose-ui</code> ladder: the <strong>window-size bucketing</strong> rung (same family as <code>s06-windowclass</code> you just passed), the <strong>modifier-order reasoning</strong> rung, and the <strong>theme-color resolver</strong> rung. Each fades from a worked example to a blank you complete.</li>
+<li><strong><a href="../practice/debug-drills.html">Debug drills</a></strong> — hunt the <strong>modifier-order</strong> bug and the <strong>hardcoded-color-vs-<code>colorScheme</code></strong> bug. You diagnose the broken line first, then run the fixed version. This is where the misconceptions above become reflexes.</li>
+<li><strong><a href="../practice/spaced-repetition.html">Spaced repetition</a></strong> — add the <strong>Theming</strong> and <strong>Layout</strong> decks. Cards like “what does <code>onPrimary</code> mean?”, “Compact / Medium / Expanded boundaries”, and “<code>weight(2f)</code> does what?” will resurface on a schedule so they stick past Quiz 1.</li>
+<li><strong><a href="../path.html">Skill map</a></strong> — check your <code>compose-ui</code> node. Passing this session's challenge plus the practice ladder lights it up and unlocks the next node on the path.</li>
+</ul>
+<p class="muted mt">Suggested order: spaced-repetition (5 min warm-up) → one debug drill → two faded challenges → re-take the retrieval check above with notes closed. When all six go green from memory, you own this material.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- ============================ FOOTER ============================ -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Session 6 of 12 · Week 2 — Building UIs with Jetpack Compose
+    </div>
+<div class="muted">
+      Keiser University · B.S. Software Engineering · 3.0 credit hours · Teaching guide
+    </div>
+<div>
+<a href="../index.html">↑ Course Hub</a> ·
+      <a href="session-05.html">‹ Session 5</a> ·
+      <a href="session-07.html">Session 7 ›</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

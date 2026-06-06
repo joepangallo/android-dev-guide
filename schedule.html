@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Course Schedule &amp; Calendar · COP4667 Android Development</title>
+<meta content="COP4667 Android Development (Keiser University, B.S. Software Engineering) — printable student-facing schedule. 12 sessions across 4 weeks (3 days/week, 4 hours/session, 48 contact hours). Session topics, CLO mapping, official Android Developer readings, assignments, and key dates." name="description"/>
+<link href="assets/style.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: var(--fs-xs); font-weight: 800; color: #9BE8C5; margin: 0 0 .35em; }
+
+    /* Schedule table — a real <table> for printability + semantics */
+    .sched-wrap { overflow-x: auto; border-radius: var(--radius); }
+    table.sched {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      font-size: var(--fs-sm);
+    }
+    table.sched caption {
+      caption-side: top;
+      text-align: left;
+      font-weight: 800;
+      font-size: var(--fs-lg);
+      padding: var(--space-4) var(--space-4) var(--space-3);
+      color: var(--ink);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    table.sched th, table.sched td {
+      text-align: left;
+      vertical-align: top;
+      padding: var(--space-3) var(--space-3);
+      border-top: 1px solid var(--line);
+    }
+    table.sched thead th {
+      background: var(--teal);
+      color: #DDF6F2;
+      font-weight: 700;
+      font-size: var(--fs-xs);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      border-top: none;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    table.sched tbody tr:nth-child(even) { background: var(--surface-2); }
+    table.sched tbody tr:hover { background: color-mix(in srgb, var(--green) 8%, var(--surface)); }
+    .col-s   { width: 56px; }
+    .col-clo { width: 96px; white-space: normal; }
+    .sess-no {
+      display: inline-grid; place-items: center;
+      width: 34px; height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--green), var(--green-dark));
+      color: var(--teal); font-weight: 850; font-family: var(--font-mono);
+      box-shadow: var(--shadow); text-decoration: none; border-bottom: none;
+    }
+    .sess-no:hover { color: var(--teal); filter: brightness(1.05); }
+    .sess-title { font-weight: 750; color: var(--ink); border-bottom: none; }
+    .sess-title:hover { color: var(--green-dark); }
+    [data-theme="dark"] .sess-title { color: var(--ink); }
+    .sess-topics { color: var(--muted); margin: 3px 0 0; font-size: var(--fs-xs); line-height: 1.5; }
+    .clo-stack { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+    .clo-tag.clo-tag--mini { padding: 3px 7px; font-size: 10px; }
+    .due-list { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 5px; }
+    .due-list li { font-size: var(--fs-xs); line-height: 1.45; display: flex; gap: 6px; align-items: flex-start; }
+    .due-list li::before { content: "›"; color: var(--green-dark); font-weight: 800; flex: 0 0 auto; }
+    .assess-cell { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+    .reading-link { font-weight: 600; }
+
+    /* Week band header row inside the table flow */
+    .week-band {
+      background: linear-gradient(135deg, var(--teal-2), var(--green-dark)) !important;
+      color: #EAFBF2 !important;
+    }
+    .week-band td {
+      border-top: none;
+      font-weight: 800;
+      letter-spacing: .02em;
+      padding: var(--space-3) var(--space-4);
+    }
+    .week-band .week-meta { font-weight: 600; opacity: .9; font-size: var(--fs-xs); }
+
+    /* Legend chips */
+    .legend { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-4) 0 0; }
+
+    /* Key-dates timeline strip */
+    .keydates { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3); margin: var(--space-4) 0; }
+    .keydate {
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: var(--space-3) var(--space-4);
+      box-shadow: var(--shadow);
+    }
+    .keydate__when { font-family: var(--font-mono); font-weight: 800; color: var(--teal-2); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .04em; }
+    [data-theme="dark"] .keydate__when { color: var(--green); }
+    .keydate__what { font-weight: 700; margin-top: 2px; }
+    .keydate__note { color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
+    .keydate--exam   { border-left-color: var(--info); }
+    .keydate--grade  { border-left-color: var(--green-dark); }
+    .keydate--posttest { border-left-color: var(--teal-2); }
+
+    /* small tables */
+    .mini-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+    .mini-table th, .mini-table td { text-align: left; padding: var(--space-3); border-bottom: 1px solid var(--line); }
+    .mini-table thead th { color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .04em; }
+    .mini-table tbody tr:last-child td { border-bottom: none; }
+    .mini-table td.num, .mini-table th.num { text-align: right; font-family: var(--font-mono); font-weight: 700; }
+    .weight-bar { position: relative; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 6px; }
+    .weight-bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, var(--green), var(--green-dark)); }
+    .grade-pill {
+      display: inline-grid; place-items: center; width: 30px; height: 30px;
+      border-radius: 8px; font-weight: 850; font-family: var(--font-mono); color: #fff;
+    }
+    .grade-A { background: var(--green-dark); }
+    .grade-B { background: var(--info); }
+    .grade-C { background: var(--accent); color: var(--teal); }
+    .grade-D { background: #C77700; }
+    .grade-F { background: var(--danger); }
+
+    /* Print: keep it tight on the page */
+    @media print {
+      .eyebrow { color: #073042 !important; }
+      table.sched { font-size: 8.6pt; box-shadow: none; }
+      table.sched thead th { background: #073042 !important; color: #fff !important; position: static; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      table.sched th, table.sched td { padding: 4px 6px; }
+      table.sched tbody tr { break-inside: avoid; }
+      .week-band td { background: #0A4A5A !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sess-no { background: #20B265 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none; }
+      .keydates { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      .keydate { box-shadow: none; padding: 5px 8px; break-inside: avoid; }
+      .card { break-inside: avoid; }
+      .sched-section { break-before: auto; }
+      .print-meta { display: block !important; margin: 0 0 8px; font-size: 9pt; color: #333; }
+    }
+    .print-meta { display: none; }
+  </style>
+</head>
+<body>
+<!-- ====================== TOP NAV ====================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 teaching guide home" class="brand" href="index.html">
+<span aria-hidden="true" class="brand__mark">▶</span>
+<span>COP4667
+          <small>Android Development</small>
+</span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="index.html">Hub</a>
+<a aria-current="page" class="active" href="schedule.html">Calendar</a>
+<a href="sessions/session-01.html">Sessions</a>
+<button aria-label="Print this schedule" class="nav__btn" onclick="window.print()" type="button">🖨️ Print</button>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ====================== HERO ====================== -->
+<section aria-labelledby="page-title" class="hero">
+<p class="eyebrow">Keiser University · B.S. Software Engineering · 3.0 Credit Hours · Face-to-Face</p>
+<h1 class="hero-title" id="page-title">Course Schedule &amp; Calendar</h1>
+<p class="hero-sub">COP4667 Android Development at a glance: 12 sessions across 4 weeks. We meet 3 days per week for 4 hours per session — 48 contact hours total. Each syllabus "Week" is three of our sessions. Kotlin is front-loaded to Session 2 so you can write real code immediately.</p>
+<div class="hero-meta">
+<span class="pill pill--green">12 Sessions · 4 Weeks</span>
+<span class="pill pill--accent">48 Contact Hours</span>
+<span class="pill">🤖 Kotlin + Jetpack Compose (Material 3)</span>
+<span class="pill">📚 Official Android Developer docs (no textbook)</span>
+</div>
+</section>
+<p class="print-meta print-only">COP4667 Android Development — Course Schedule · Keiser University, B.S. Software Engineering · 12 sessions / 4 weeks / 48 contact hours · Kotlin + Jetpack Compose.</p>
+<!-- ====================== AT-A-GLANCE KPIs ====================== -->
+<section aria-label="Course at a glance" class="kpi-grid no-print">
+<div class="kpi"><span class="kpi__num">12</span><span class="kpi__label">Class sessions</span></div>
+<div class="kpi"><span class="kpi__num">48</span><span class="kpi__label">Contact hours</span></div>
+<div class="kpi"><span class="kpi__num">6</span><span class="kpi__label">Course outcomes (CLOs)</span></div>
+<div class="kpi"><span class="kpi__num">4</span><span class="kpi__label">Assignments</span></div>
+</section>
+<!-- ====================== HOW TO READ THIS ====================== -->
+<div class="callout callout--info" role="note">
+<span aria-hidden="true" class="callout__icon">🧭</span>
+<div class="callout__body">
+<span class="callout__label">How to read this schedule</span>
+<p>Rows are grouped by the four course weeks. Each row is one class meeting. The <strong>Session #</strong> links straight to that session's lesson page. <strong>Topics</strong> previews what you'll do; <strong>CLOs</strong> shows which course outcomes the session advances; <strong>Reading / prep</strong> lists the official Android Developer resources to review; and <strong>Assignments &amp; assessments</strong> shows what's collected. All readings are free at <a href="https://developer.android.com">developer.android.com</a> — there is no textbook to buy.</p>
+</div>
+</div>
+<!-- ====================== KEY DATES STRIP ====================== -->
+<section aria-labelledby="keydates-title" class="card card--amber">
+<h2 class="card__title" id="keydates-title">📌 Key Dates — Don't Miss These</h2>
+<p class="muted" style="margin-top:0;">The key project checkpoints. Everything is anchored to a session, not a calendar date, so it stays correct no matter when your section runs.</p>
+<div class="keydates">
+<div class="keydate keydate--exam">
+<div class="keydate__when">Session 1 · Wk 1</div>
+<div class="keydate__what"><a href="assessments/pre-test.html">Pre-Test</a></div>
+<div class="keydate__note">Diagnostic baseline. Paired with the Post-Test in S12.</div>
+</div>
+<div class="keydate">
+<div class="keydate__when">End of Wk 1 · after S3</div>
+<div class="keydate__what">Assignment 1 due</div>
+<div class="keydate__note">Kotlin + first multi-screen app fundamentals.</div>
+</div>
+<div class="keydate keydate--exam">
+<div class="keydate__when">Session 6 · Wk 2</div>
+<div class="keydate__what"><a href="assessments/quiz-1.html">Quiz 1</a></div>
+<div class="keydate__note">Covers Kotlin, lifecycle, and Compose UI through Wk 2.</div>
+</div>
+<div class="keydate keydate--grade">
+<div class="keydate__when">Session 6 · Wk 2</div>
+<div class="keydate__what"><a href="sessions/session-06.html">Project Milestone 1</a></div>
+<div class="keydate__note">Working Compose UI prototype — first project checkpoint.</div>
+</div>
+<div class="keydate">
+<div class="keydate__when">End of Wk 2 · after S6</div>
+<div class="keydate__what">Assignment 2 due</div>
+<div class="keydate__note">State, input handling, and Material 3 theming.</div>
+</div>
+<div class="keydate">
+<div class="keydate__when">End of Wk 3 · after S9</div>
+<div class="keydate__what">Assignment 3 due</div>
+<div class="keydate__note">Lists, navigation/architecture, and local persistence (Room).</div>
+</div>
+<div class="keydate">
+<div class="keydate__when">Wk 4 · with S11 (Unit 6)</div>
+<div class="keydate__what">Assignment 4 due</div>
+<div class="keydate__note">Networking + persistence integration in your project.</div>
+</div>
+<div class="keydate keydate--grade">
+<div class="keydate__when">Session 12 · Wk 4</div>
+<div class="keydate__what"><a href="sessions/session-12.html">Final Project demo</a></div>
+<div class="keydate__note">Full app demo — second project checkpoint.</div>
+</div>
+<div class="keydate keydate--posttest">
+<div class="keydate__when">Session 12 · Wk 4</div>
+<div class="keydate__what"><a href="assessments/post-test.html">Post-Test</a></div>
+<div class="keydate__note">Measures growth from the S1 Pre-Test.</div>
+</div>
+<div class="keydate keydate--exam">
+<div class="keydate__when">Weekly · every week</div>
+<div class="keydate__what">Discussion Board</div>
+<div class="keydate__note">Async participation, part of the activities.</div>
+</div>
+<div class="keydate">
+<div class="keydate__when">Async · ongoing</div>
+<div class="keydate__what">Async activities &amp; exercises</div>
+<div class="keydate__note">Codelabs, exercises, and short readings between sessions.</div>
+</div>
+</div>
+<div aria-hidden="true" class="legend no-print">
+<span class="tag">📘 Reading = developer.android.com</span>
+</div>
+</section>
+<!-- ====================== THE FULL SCHEDULE TABLE ====================== -->
+<section aria-labelledby="sched-title" class="sched-section">
+<h2 id="sched-title">📅 Full 12-Session Schedule</h2>
+<p class="muted">Click any session number to open its full lesson page. Topics are summarized; each lesson page has the live-coding, labs, and the complete reading list. All readings are free at <a href="https://developer.android.com">developer.android.com</a>; assignment briefs and submission are posted on the LMS.</p>
+<div class="sched-wrap">
+<table class="sched">
+<caption>Twelve sessions, grouped by the four syllabus weeks <span class="badge">3 days/wk · 4 hr/session</span></caption>
+<thead>
+<tr>
+<th class="col-s" scope="col">Session</th>
+<th scope="col">Topic</th>
+<th class="col-clo" scope="col">CLOs</th>
+<th scope="col">Reading / prep</th>
+<th scope="col">Assignments &amp; assessments</th>
+</tr>
+</thead>
+<tbody>
+<tr class="week-band"><td colspan="5">Week 1 · Foundations <span class="week-meta">— Android ecosystem, Kotlin, activities &amp; the lifecycle (Units 1–2)</span></td></tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-01.html" aria-label="Open Session 1">S1</a></td>
+<td><a class="sess-title" href="sessions/session-01.html">Android ecosystem &amp; your first Compose app</a><p class="sess-topics">Android Studio, project anatomy, the build chain, a first <code>@Composable</code> that runs on the emulator.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 1</span><span class="clo-tag clo-tag--mini">CLO 3</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/courses/android-basics-compose/course">Android Basics with Compose — Unit 1 "Get started"</a></td>
+<td><div class="assess-cell"><span class="badge">Pre-Test (diagnostic)</span><ul class="due-list"><li>Begin Assignment 1 (Unit 1)</li><li>Weekly Discussion Board</li></ul></div></td>
+</tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-02.html" aria-label="Open Session 2">S2</a></td>
+<td><a class="sess-title" href="sessions/session-02.html">Kotlin essentials</a><p class="sess-topics">Null safety, <code>when</code> as an expression, <code>data</code>/<code>sealed</code> classes, collections &amp; lambdas.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 3</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/courses/android-basics-compose/course">Android Basics — Unit 2 "Building app UI" (Kotlin sections)</a></td>
+<td><div class="assess-cell"><ul class="due-list"><li>Kotlin katas (FizzBuzz, null-safe parse, data-class transform)</li><li>Async Kotlin practice</li></ul></div></td>
+</tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-03.html" aria-label="Open Session 3">S3</a></td>
+<td><a class="sess-title" href="sessions/session-03.html">Activities, the lifecycle &amp; Intents</a><p class="sess-topics">The manifest, the Activity lifecycle, explicit vs implicit Intents, navigating between screens.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 1</span><span class="clo-tag clo-tag--mini">CLO 3</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/guide/components/activities/activity-lifecycle">Guide: The Activity lifecycle &amp; Intents</a></td>
+<td><div class="assess-cell"><span class="badge badge--amber">Assignment 1 due</span><span class="muted">End of Week 1 (Kotlin + app fundamentals)</span></div></td>
+</tr>
+<tr class="week-band"><td colspan="5">Week 2 · Building UI <span class="week-meta">— Jetpack Compose, state &amp; recomposition, Material 3 theming (Unit 2)</span></td></tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-04.html" aria-label="Open Session 4">S4</a></td>
+<td><a class="sess-title" href="sessions/session-04.html">Compose fundamentals</a><p class="sess-topics">Composables, modifiers, the <code>Column</code> / <code>Row</code> / <code>Box</code> layout primitives.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 2</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/develop/ui/compose/layouts/basics">Compose: Layout basics &amp; modifiers</a></td>
+<td><div class="assess-cell"><ul class="due-list"><li>Profile-card lab</li><li>Weekly Discussion Board</li></ul></div></td>
+</tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-05.html" aria-label="Open Session 5">S5</a></td>
+<td><a class="sess-title" href="sessions/session-05.html">State &amp; recomposition</a><p class="sess-topics"><code>remember</code> / <code>mutableStateOf</code>, state hoisting, handling text input — UI as a function of state.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 2</span><span class="clo-tag clo-tag--mini">CLO 3</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/develop/ui/compose/state">Compose: State and Jetpack Compose</a></td>
+<td><div class="assess-cell"><ul class="due-list"><li>Tip-calculator lab</li></ul></div></td>
+</tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-06.html" aria-label="Open Session 6">S6</a></td>
+<td><a class="sess-title" href="sessions/session-06.html">Material 3 theming &amp; responsive layout</a><p class="sess-topics">Color / type / shape, light &amp; dark themes, window size classes for adaptive layout.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 2</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/develop/ui/compose/designsystems/material3">Compose: Material 3 in Compose</a></td>
+<td><div class="assess-cell"><span class="badge badge--amber">Quiz 1</span><span class="badge">Milestone 1</span><span class="muted">Assignment 2 due — end of Week 2</span></div></td>
+</tr>
+<tr class="week-band"><td colspan="5">Week 3 · Lists, architecture &amp; local data <span class="week-meta">— LazyColumn, Navigation + ViewModel, Room &amp; DataStore (Units 3–6)</span></td></tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-07.html" aria-label="Open Session 7">S7</a></td>
+<td><a class="sess-title" href="sessions/session-07.html">Lists &amp; Material components</a><p class="sess-topics"><code>LazyColumn</code> with <code>items()</code> and stable keys; <code>Scaffold</code>, <code>TopAppBar</code>, <code>Card</code>, FAB.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 2</span><span class="clo-tag clo-tag--mini">CLO 4</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/develop/ui/compose/lists">Compose: Lists and grids</a></td>
+<td><div class="assess-cell"><ul class="due-list"><li>List-screen lab (seeds the persistence work in S9)</li></ul></div></td>
+</tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-08.html" aria-label="Open Session 8">S8</a></td>
+<td><a class="sess-title" href="sessions/session-08.html">Navigation, ViewModel &amp; architecture</a><p class="sess-topics">Navigation-Compose (<code>NavHost</code>, routes, args), <code>ViewModel</code>, unidirectional data flow.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 1</span><span class="clo-tag clo-tag--mini">CLO 2</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/develop/ui/compose/navigation">Compose: Navigation &amp; ViewModel + Compose</a></td>
+<td><div class="assess-cell"><ul class="due-list"><li>Two-screen navigation lab</li><li>Weekly Discussion Board</li></ul></div></td>
+</tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-09.html" aria-label="Open Session 9">S9</a></td>
+<td><a class="sess-title" href="sessions/session-09.html">Local data: DataStore &amp; Room</a><p class="sess-topics">Preferences DataStore; Room <code>@Entity</code> / <code>@Dao</code> / <code>@Database</code>, CRUD, and <code>Flow</code>.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 4</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/training/data-storage/room">Guide: Save data with Room &amp; DataStore</a></td>
+<td><div class="assess-cell"><span class="badge badge--amber">Assignment 3 due</span><span class="muted">End of Week 3 (lists, navigation, persistence)</span></div></td>
+</tr>
+<tr class="week-band"><td colspan="5">Week 4 · Networking, integration &amp; capstone <span class="week-meta">— Retrofit, offline-first repository, the finished app (Units 5–6)</span></td></tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-10.html" aria-label="Open Session 10">S10</a></td>
+<td><a class="sess-title" href="sessions/session-10.html">Networking</a><p class="sess-topics">HTTP / REST, JSON with <code>kotlinx.serialization</code>, Retrofit + coroutines, loading / error / empty UI states.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 5</span><span class="clo-tag clo-tag--mini">CLO 6</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/develop/connectivity/network-ops">Guide: Connect to the network (Retrofit)</a></td>
+<td><div class="assess-cell"><ul class="due-list"><li>Retrofit + coroutines lab</li></ul></div></td>
+</tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-11.html" aria-label="Open Session 11">S11</a></td>
+<td><a class="sess-title" href="sessions/session-11.html">Integration: offline-first repository</a><p class="sess-topics">A repository combining Retrofit + Room (cache + network), wiring up the finished app.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 4</span><span class="clo-tag clo-tag--mini">CLO 5</span><span class="clo-tag clo-tag--mini">CLO 6</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/topic/architecture/data-layer">Guide: The data layer &amp; offline-first</a></td>
+<td><div class="assess-cell"><span class="badge badge--amber">Assignment 4 due</span><span class="muted">Networking + persistence integrated in your project</span></div></td>
+</tr>
+<tr>
+<td><a class="sess-no" href="sessions/session-12.html" aria-label="Open Session 12">S12</a></td>
+<td><a class="sess-title" href="sessions/session-12.html">Synthesis &amp; capstone demo</a><p class="sess-topics">Tying the whole arc together; demoing the capstone app; where to go next.</p></td>
+<td><span class="clo-stack"><span class="clo-tag clo-tag--mini">CLO 1–6</span></span></td>
+<td><a class="reading-link" href="https://developer.android.com/courses/android-basics-compose/course">Review across all units (capstone)</a></td>
+<td><div class="assess-cell"><span class="badge badge--amber">Final Project demo</span><span class="badge">Post-Test</span></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="muted" style="font-size:var(--fs-xs);margin-top:var(--space-2);">Each syllabus "Week" is three of our sessions. Detailed assignment briefs and submission live on the LMS; full reading lists are on each session page.</p>
+</section>
+<!-- ====================== PROJECT CHECKLIST ====================== -->
+<section aria-labelledby="project-title">
+<h2 id="project-title">🛠️ The Course Project</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<h3 class="card__title">Required feature checklist</h3>
+<p class="muted" style="margin-top:0;">Build an app of your choice. To call it complete, it should include all of the following &mdash; the same bar a senior engineer would expect in a code review.</p>
+<ul class="feature-list">
+<li><strong>Two or more screens with navigation</strong> &mdash; Navigation-Compose (<code>NavHost</code>, routes, arguments).</li>
+<li><strong>A Jetpack Compose UI driven by state</strong> &mdash; state hoisting; the UI is a function of state.</li>
+<li><strong>Local persistence</strong> &mdash; Preferences DataStore and/or Room, so data survives an app restart.</li>
+<li><strong>Data from a web API over the network</strong> &mdash; Retrofit + coroutines + JSON, with loading / error / empty states.</li>
+<li><strong>Clean architecture</strong> &mdash; ViewModel + repository, unidirectional data flow.</li>
+</ul>
+</div>
+<div class="card card--teal">
+<h3 class="card__title">How it's assessed</h3>
+<p class="muted" style="margin-top:0;">A representative weighting so you know where the points live. Your section's syllabus on the LMS is authoritative if the numbers differ.</p>
+<table class="mini-table">
+<thead><tr><th scope="col">Category</th><th class="num" scope="col">Weight</th></tr></thead>
+<tbody>
+<tr><td>Assignments 1–4 (Units)<div class="weight-bar"><span style="width:30%"></span></div></td><td class="num">30%</td></tr>
+<tr><td>Course project (Milestone 1 + final demo)<div class="weight-bar"><span style="width:30%"></span></div></td><td class="num">30%</td></tr>
+<tr><td>Quiz 1<div class="weight-bar"><span style="width:15%"></span></div></td><td class="num">15%</td></tr>
+<tr><td>Labs &amp; in-class practice<div class="weight-bar"><span style="width:15%"></span></div></td><td class="num">15%</td></tr>
+<tr><td>Discussion Board (weekly)<div class="weight-bar"><span style="width:10%"></span></div></td><td class="num">10%</td></tr>
+</tbody>
+</table>
+<p class="muted" style="font-size:var(--fs-xs);margin-bottom:0;">The Pre-Test (S1) and Post-Test (S12) are ungraded diagnostics — they measure growth, not your grade.</p>
+<table class="mini-table" style="margin-top:var(--space-3);">
+<tbody>
+<tr><td><span class="grade-pill grade-A">A</span> 90–100</td><td><span class="grade-pill grade-B">B</span> 80–89</td><td><span class="grade-pill grade-C">C</span> 70–79</td><td><span class="grade-pill grade-D">D</span> 60–69</td><td><span class="grade-pill grade-F">F</span> &lt; 60</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- ====================== CLO MAP ====================== -->
+<section aria-labelledby="clo-title">
+<h2 id="clo-title">🎯 Course Learning Outcomes &amp; Where They're Taught</h2>
+<p class="muted">Upon completion of COP4667 you will be able to:</p>
+<div class="grid grid-3">
+<div class="card card--accent">
+<h3 class="card__title"><span class="clo-tag">CLO 1</span> Android ecosystem &amp; essentials</h3>
+<p>Understand the essentials of Android development and its ecosystem.</p>
+<p class="muted" style="font-size:var(--fs-xs);margin-bottom:0;">Taught in S1, S3, S8, reviewed S12.</p>
+</div>
+<div class="card card--accent">
+<h3 class="card__title"><span class="clo-tag">CLO 2</span> Designing UIs &amp; wiring them to code</h3>
+<p>Design user interfaces using components and UI elements and connect them to code.</p>
+<p class="muted" style="font-size:var(--fs-xs);margin-bottom:0;">Taught in S4, S5, S6, S7, S8.</p>
+</div>
+<div class="card card--accent">
+<h3 class="card__title"><span class="clo-tag">CLO 3</span> Building apps in Kotlin</h3>
+<p>Create various types of Android applications using an industry-current language (Kotlin).</p>
+<p class="muted" style="font-size:var(--fs-xs);margin-bottom:0;">Taught in S1, S2, S3, S5.</p>
+</div>
+<div class="card card--accent">
+<h3 class="card__title"><span class="clo-tag">CLO 4</span> Local data storage &amp; databases</h3>
+<p>Explore techniques for application data storage using local storage and/or a database.</p>
+<p class="muted" style="font-size:var(--fs-xs);margin-bottom:0;">Taught in S7, S9, S11.</p>
+</div>
+<div class="card card--accent">
+<h3 class="card__title"><span class="clo-tag">CLO 5</span> Integrating APIs</h3>
+<p>Integrate APIs into Android applications (location services, cloud-based storage).</p>
+<p class="muted" style="font-size:var(--fs-xs);margin-bottom:0;">Taught in S10, S11.</p>
+</div>
+<div class="card card--accent">
+<h3 class="card__title"><span class="clo-tag">CLO 6</span> Network protocols for backend comms</h3>
+<p>Understand and implement different network protocols for backend communication.</p>
+<p class="muted" style="font-size:var(--fs-xs);margin-bottom:0;">Taught in S10, S11.</p>
+</div>
+</div>
+</section>
+<!-- ====================== TOOLS & POLICIES ====================== -->
+<div class="callout callout--tip" role="note">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Tools &amp; expectations</span>
+<p>Bring a laptop that can run the latest <a href="https://developer.android.com/studio">Android Studio</a> plus the Android Emulator (or a physical device with USB debugging). We code in <strong>Kotlin</strong> with <strong>Jetpack Compose</strong> and Material 3. There is no textbook — all readings are the official, free docs at <a href="https://developer.android.com">developer.android.com</a>. Complete the listed reading <em>before</em> each session so class time can focus on live coding and labs.</p>
+</div>
+</div>
+</main>
+<!-- ====================== FOOTER ====================== -->
+<footer class="footer">
+<div class="wrap">
+<span><span class="footer__brand">COP4667 Android Development</span> · Keiser University · B.S. Software Engineering</span>
+<span class="muted">Course schedule · 12 sessions · 48 contact hours · Kotlin + Jetpack Compose · Built from the official <a href="https://developer.android.com">Android Developer</a> docs.</span>
+</div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>

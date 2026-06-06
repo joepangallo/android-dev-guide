@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Session 12 of 12: Final Project Demos, whole-course CLO review, the Post-Test, and course wrap-up. Teaching guide with code and assessments." name="description"/>
+<title>Session 12 — Final Project Demos, CLO Review &amp; Post-Test · COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks only (chrome still uses contract classes) ---- */
+    .clo-map { width:100%; border-collapse:collapse; font-size: var(--fs-sm); }
+    .clo-map th, .clo-map td { text-align:left; padding: 8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+    .clo-map th { color: var(--teal-2); font-weight:750; }
+    [data-theme="dark"] .clo-map th { color:#7FD7EA; }
+    .clo-map tr:last-child td { border-bottom:none; }
+    .clo-map td:first-child { white-space:nowrap; font-family: var(--font-mono); font-weight:700; }
+    .objective-list li { margin:.5em 0; }
+    .objective-list .clo-tag { margin-left:6px; vertical-align:middle; }
+    .nutshell { font-style: italic; }
+    .timeblock__body ul { margin:.4em 0 .8em; }
+    .next-grid .card { height:100%; }
+    .layout-2col { display:grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 920px){ .layout-2col { grid-template-columns: 260px 1fr; align-items:start; } .layout-2col__aside { position:sticky; top:76px; } }
+    .mini-legend { display:flex; flex-wrap:wrap; gap:var(--space-2); margin-top:var(--space-2); }
+  </style>
+</head>
+<body>
+<!-- ====================================================================
+       TOP NAVIGATION
+       ==================================================================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▲</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="../sessions/session-11.html">‹ Prev</a>
+<a aria-current="page" href="../index.html">Next ›</a>
+<a href="../assessments/post-test.html">Post-Test</a>
+<button aria-label="Toggle dark theme" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ====================================================================
+         HERO
+         ==================================================================== -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:var(--space-3)">
+<span class="pill pill--green">Session 12 of 12</span>
+<span class="pill">Week 4</span>
+<span class="pill">Final Demos · Post-Test · Wrap-up</span>
+<span class="pill pill--accent">Capstone · Demo Day</span>
+</div>
+<h1 class="hero-title" id="hero-title">Final Project Demos, CLO Review &amp; Post-Test</h1>
+<p class="hero-sub nutshell">Today students ship: each one demos their app against the feature checklist, the class synthesizes the whole arc from ecosystem → Kotlin → Compose → navigation/architecture → local data → networking, and we close the loop with the Post-Test to measure growth since Session 1.</p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 1</span>
+<span class="clo-tag">CLO 2</span>
+<span class="clo-tag">CLO 3</span>
+<span class="clo-tag">CLO 4</span>
+<span class="clo-tag">CLO 5</span>
+<span class="clo-tag">CLO 6</span>
+</div>
+</section>
+<div class="layout-2col">
+<aside aria-label="On this page" class="layout-2col__aside no-print">
+<div class="card">
+<h2 class="card__title" style="font-size:var(--fs-md)">On this page</h2>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+<div class="card mt">
+<h2 class="card__title" style="font-size:var(--fs-md)">Day at a glance</h2>
+<div class="kpi-grid" style="grid-template-columns:1fr 1fr;margin:0">
+<div class="kpi"><span class="kpi__num">6</span><span class="kpi__label">CLOs reviewed</span></div>
+<div class="kpi"><span class="kpi__num">12/12</span><span class="kpi__label">Sessions</span></div>
+</div>
+</div>
+</aside>
+<div class="layout-2col__main">
+<!-- ================================================================
+           1. LEARNING OBJECTIVES
+           ================================================================ -->
+<section aria-labelledby="obj-h" class="slide">
+<div class="card card--accent">
+<h2 class="card__title" id="obj-h">Learning Objectives</h2>
+<p class="muted">By the end of this capstone session, you will be able to:</p>
+<ul class="objective-list">
+<li>Present a working Android app and <strong>demonstrate the required feature checklist</strong> (≥2 screens + navigation, state-driven Compose UI, local persistence, network data, ViewModel + repository) and defend their architecture choices. <span class="clo-tag">CLO 2</span><span class="clo-tag">CLO 3</span><span class="clo-tag">CLO 4</span><span class="clo-tag">CLO 5</span></li>
+<li>Walk through their own code to explain how data flows from the network/repository through the ViewModel into Compose state. <span class="clo-tag">CLO 3</span><span class="clo-tag">CLO 6</span></li>
+<li>Give and receive <strong>structured, actionable peer feedback</strong> using a shared feedback vocabulary. <span class="clo-tag">CLO 1</span></li>
+<li>Synthesize the entire course: place every topic on the map from the Android ecosystem to Kotlin to Compose UI/state to navigation/architecture to local data to networking. <span class="clo-tag">CLO 1</span><span class="clo-tag">CLO 2</span><span class="clo-tag">CLO 3</span><span class="clo-tag">CLO 4</span><span class="clo-tag">CLO 5</span><span class="clo-tag">CLO 6</span></li>
+<li>Complete the <strong>Post-Test</strong> and compare it to their Session-1 Pre-Test to quantify their own growth. <span class="clo-tag">CLO 1</span></li>
+<li>Identify concrete next steps beyond the course: publishing to Google Play, automated testing, dependency injection (Hilt), Compose animation, and building a portfolio. <span class="clo-tag">CLO 1</span></li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p>This is the only session that touches <strong>all six CLOs at once</strong> by design — it is the synthesis checkpoint. The Final Project demo is the summative artifact for CLO 2–5; the CLO review lecture closes CLO 1 and CLO 6; the Post-Test is the measurement instrument tied to the syllabus growth requirement.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ================================================================
+           6. LECTURE / CONCEPT NOTES
+           ================================================================ -->
+<section aria-labelledby="concept-h" class="slide">
+<h2 id="concept-h">Lecture / Concept Notes — The Whole-Course Map</h2>
+<p>This is the synthesis lecture. Teach it as one journey: <strong>ecosystem → Kotlin → Compose UI + state → navigation + architecture → local data → networking</strong>. The big idea: each layer exists to solve a problem the previous layer created.</p>
+<div class="kpi-grid">
+<div class="kpi"><span class="kpi__num">1</span><span class="kpi__label">Ecosystem &amp; Kotlin</span></div>
+<div class="kpi"><span class="kpi__num">2</span><span class="kpi__label">Compose UI + state</span></div>
+<div class="kpi"><span class="kpi__num">3</span><span class="kpi__label">Nav + architecture</span></div>
+<div class="kpi"><span class="kpi__num">4</span><span class="kpi__label">Data + network</span></div>
+</div>
+<!-- ---- Big idea 1: ecosystem + Kotlin + Compose mental model ---- -->
+<h3 id="bi-ecosystem">Big idea 1 — Ecosystem, Kotlin, and the Compose mental model <span class="clo-tag">CLO 1</span><span class="clo-tag">CLO 3</span></h3>
+<p><strong>Analogy:</strong> the Android ecosystem is a city. The OS is the roads and utilities, the SDK is the building code, Android Studio is your workshop, Gradle is the delivery truck, and your app is the house you build to code. Kotlin is the language you give your instructions in.</p>
+<p>Kotlin earns its keep with <strong>null safety</strong> — the type system forces you to handle "this might be missing" instead of crashing at runtime. Remind students this is the same NullPointerException pain they may know from Java, designed out of the language.</p>
+<div aria-label="Kotlin vs Java null handling" class="tabs" role="tablist">
+<button class="tab" data-tab="kt-null">Kotlin</button>
+<button class="tab" data-tab="java-null">Java</button>
+</div>
+<div class="tabpanel" data-tabpanel="kt-null">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// The type system makes "maybe missing" explicit.
+val name: String = "Ada"        // can never be null
+var nickname: String? = null    // nullable — '?' is required
+
+// Safe-call + Elvis: no NPE possible here.
+val length = nickname?.length ?: 0
+
+// Smart cast: inside the null check, the compiler knows it's non-null.
+fun greet(who: String?) {
+    if (who != null) {
+        println("Hi, ${who.uppercase()}") // 'who' is String here
+    }
+}</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="java-null">
+<div class="codeblock"><span class="codeblock__lang">Java</span><pre><code>// Nullability is a comment, not a contract — the compiler can't help.
+String name = "Ada";
+String nickname = null;
+
+// You must remember the guard yourself, or it's a runtime crash.
+int length = (nickname != null) ? nickname.length() : 0;
+
+void greet(String who) {
+    if (who != null) {
+        System.out.println("Hi, " + who.toUpperCase());
+    }
+}</code></pre></div>
+</div>
+<p><strong>The Compose mental model</strong> is the heart of the whole course. Old Android (Views/XML) was <em>imperative</em>: you found a widget by id and mutated it (<code>textView.setText(...)</code>). Compose is <em>declarative</em>: you write a function that describes the UI <em>for a given state</em>, and the framework re-runs (recomposes) that function whenever the state changes.</p>
+<div aria-label="Compose vs legacy Views" class="tabs" role="tablist">
+<button class="tab" data-tab="ui-compose">Jetpack Compose (declarative)</button>
+<button class="tab" data-tab="ui-views">Legacy Views (imperative)</button>
+</div>
+<div class="tabpanel" data-tabpanel="ui-compose">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun Counter() {
+    var count by remember { mutableStateOf(0) }
+    // Describe the UI as a function of 'count'.
+    Button(onClick = { count++ }) {
+        Text("Clicked $count times")
+    }
+    // When 'count' changes, Compose recomposes this function for us.
+}</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="ui-views">
+<div class="codeblock"><span class="codeblock__lang">Kotlin + XML</span><pre><code>// activity_main.xml defines a &lt;Button android:id="@+id/button"/&gt;
+class MainActivity : AppCompatActivity() {
+    private var count = 0
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        val button = findViewById&lt;Button&gt;(R.id.button)
+        button.setOnClickListener {
+            count++
+            button.text = "Clicked $count times"  // we mutate the widget by hand
+        }
+    }
+}</code></pre></div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">One-line takeaway</span>
+<p>In Compose you never "update the UI." You update the <strong>state</strong>, and the UI updates itself. Say this sentence at every station today — it is the through-line of the entire course.</p>
+</div>
+</div>
+<!-- ---- Big idea 2: state + recomposition + hoisting ---- -->
+<h3 id="bi-state">Big idea 2 — State, recomposition, and unidirectional data flow <span class="clo-tag">CLO 2</span><span class="clo-tag">CLO 3</span></h3>
+<p><strong>Recomposition</strong> = Compose re-running composable functions whose inputs changed. <code>remember</code> caches a value across recompositions; <code>mutableStateOf</code> makes a value <em>observable</em> so a change triggers recomposition. <code>rememberSaveable</code> additionally survives configuration changes (rotation) and process death of the UI.</p>
+<p><strong>State hoisting</strong> is the pattern that makes components reusable and testable: move state <em>up</em> to the caller, and pass the value down plus an event up. This produces <strong>unidirectional data flow (UDF)</strong>: state flows down, events flow up.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// HOISTED: this composable owns no state. It is "stateless" and reusable.
+@Composable
+fun NameField(
+    name: String,                       // state flows DOWN
+    onNameChange: (String) -&gt; Unit      // events flow UP
+) {
+    OutlinedTextField(
+        value = name,
+        onValueChange = onNameChange,
+        label = { Text("Your name") }
+    )
+}
+
+// The caller owns the state and decides what to do with events.
+@Composable
+fun SignupScreen() {
+    var name by rememberSaveable { mutableStateOf("") }
+    NameField(name = name, onNameChange = { name = it })
+    Text(if (name.isBlank()) "Type your name" else "Hello, $name!")
+}</code></pre></div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Why hoist state at all? (the reusability argument)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>A stateless <code>NameField</code> can be dropped into a signup screen, a profile editor, or a search bar — each caller supplies its own state and handler. A composable that owns its own state can only ever do one thing. Hoisting also makes the component trivial to preview and unit-test because its output is a pure function of its inputs.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">remember vs rememberSaveable vs ViewModel</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>remember</code> — survives recomposition; lost on rotation. Use for transient UI state (is this menu expanded?).</li>
+<li><code>rememberSaveable</code> — also survives configuration changes and UI process death by saving to a Bundle. Use for small UI state you don't want to lose on rotation (a typed-in field).</li>
+<li><code>ViewModel</code> — survives configuration changes and is the right home for <em>screen</em> state and business logic, especially anything async (network, DB). It outlives the composable.</li>
+</ul>
+</div></div>
+</div>
+</div>
+<!-- ---- Big idea 3: navigation + architecture ---- -->
+<h3 id="bi-arch">Big idea 3 — Navigation and clean architecture <span class="clo-tag">CLO 2</span><span class="clo-tag">CLO 3</span></h3>
+<p><strong>Navigation-Compose</strong> models your app as a graph of routes. A <code>NavHost</code> maps each route string to a screen composable; you navigate by route, and you pass arguments through the route. This is the "≥2 screens with navigation" feature checklist requirement.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun AppNav(navController: NavHostController = rememberNavController()) {
+    NavHost(navController, startDestination = "list") {
+        composable("list") {
+            ListScreen(onItemClick = { id -&gt; navController.navigate("detail/$id") })
+        }
+        composable(
+            route = "detail/{itemId}",
+            arguments = listOf(navArgument("itemId") { type = NavType.IntType })
+        ) { backStackEntry -&gt;
+            val id = backStackEntry.arguments?.getInt("itemId") ?: 0
+            DetailScreen(itemId = id, onBack = { navController.popBackStack() })
+        }
+    }
+}</code></pre></div>
+<p><strong>Clean architecture</strong> is the "ViewModel + repository" requirement. Each layer has one job, and dependencies point inward (UI depends on ViewModel depends on repository — never the reverse).</p>
+<table aria-label="Architecture layers" class="clo-map mt">
+<thead><tr><th>Layer</th><th>Responsibility</th><th>Does NOT</th></tr></thead>
+<tbody>
+<tr><td>UI (Composable)</td><td>Render state, emit user events</td><td>Talk to network/DB; hold long-lived state</td></tr>
+<tr><td>ViewModel</td><td>Hold screen state (UiState), run use-cases, survive rotation</td><td>Reference Views/Context-heavy Android UI</td></tr>
+<tr><td>Repository</td><td>Decide where data comes from (cache vs network), expose a clean API</td><td>Know anything about the UI</td></tr>
+<tr><td>Data sources</td><td>Retrofit (network), Room/DataStore (local)</td><td>Make UI decisions</td></tr>
+</tbody>
+</table>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// A typical screen ViewModel with a single immutable UiState.
+data class WeatherUiState(
+    val isLoading: Boolean = false,
+    val temperatureC: Int? = null,
+    val error: String? = null
+)
+
+class WeatherViewModel(
+    private val repo: WeatherRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(WeatherUiState())
+    val uiState: StateFlow&lt;WeatherUiState&gt; = _uiState.asStateFlow()
+
+    fun load(city: String) {
+        _uiState.value = WeatherUiState(isLoading = true)
+        viewModelScope.launch {
+            try {
+                val temp = repo.getTemperature(city)   // suspend call
+                _uiState.value = WeatherUiState(temperatureC = temp)
+            } catch (e: Exception) {
+                _uiState.value = WeatherUiState(error = e.message ?: "Unknown error")
+            }
+        }
+    }
+}</code></pre></div>
+<!-- ---- Big idea 4: data + network ---- -->
+<h3 id="bi-data">Big idea 4 — Local data and the network <span class="clo-tag">CLO 4</span><span class="clo-tag">CLO 5</span><span class="clo-tag">CLO 6</span></h3>
+<p><strong>Local persistence</strong> (the checklist requirement) comes in two flavors. Choose by data shape:</p>
+<table aria-label="DataStore vs Room" class="clo-map">
+<thead><tr><th>Use</th><th>When</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td>DataStore</td><td>A handful of simple key-value settings</td><td>Dark mode on/off, last-opened tab, username</td></tr>
+<tr><td>Room (SQLite)</td><td>Structured, queryable, many rows</td><td>Saved articles, a task list, cached API results</td></tr>
+</tbody>
+</table>
+<div aria-label="Local persistence options" class="tabs" role="tablist">
+<button class="tab" data-tab="store-room">Room (SQLite)</button>
+<button class="tab" data-tab="store-datastore">DataStore (key-value)</button>
+</div>
+<div class="tabpanel" data-tabpanel="store-room">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Entity(tableName = "article")
+data class Article(
+    @PrimaryKey val id: Int,
+    val title: String,
+    val savedAt: Long
+)
+
+@Dao
+interface ArticleDao {
+    @Query("SELECT * FROM article ORDER BY savedAt DESC")
+    fun observeAll(): Flow&lt;List&lt;Article&gt;&gt;   // reactive: UI updates on change
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(article: Article)
+
+    @Delete
+    suspend fun delete(article: Article)
+}
+
+@Database(entities = [Article::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun articleDao(): ArticleDao
+}</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="store-datastore">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val Context.dataStore by preferencesDataStore(name = "settings")
+private val DARK_MODE = booleanPreferencesKey("dark_mode")
+
+// Read as a Flow — the UI reacts to changes.
+fun darkModeFlow(context: Context): Flow&lt;Boolean&gt; =
+    context.dataStore.data.map { prefs -&gt; prefs[DARK_MODE] ?: false }
+
+// Write (suspend).
+suspend fun setDarkMode(context: Context, enabled: Boolean) {
+    context.dataStore.edit { prefs -&gt; prefs[DARK_MODE] = enabled }
+}</code></pre></div>
+</div>
+<p><strong>Networking</strong> (the "data from a web API" requirement) uses <strong>Retrofit</strong> over OkHttp, with a JSON converter, all on a background coroutine. This is the CLO 5/6 capstone: HTTP, REST, JSON parsing, and asynchronous I/O.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// 1) Model the JSON
+@Serializable
+data class WeatherDto(val tempC: Int, val description: String)
+
+// 2) Declare the endpoint
+interface WeatherApi {
+    @GET("weather")
+    suspend fun getWeather(@Query("city") city: String): WeatherDto
+}
+
+// 3) Build Retrofit (kotlinx.serialization converter)
+val retrofit = Retrofit.Builder()
+    .baseUrl("https://api.example.com/")
+    .addConverterFactory(
+        Json.asConverterFactory("application/json".toMediaType())
+    )
+    .build()
+
+val api: WeatherApi = retrofit.create(WeatherApi::class.java)
+
+// 4) The repository hides the source — UI never sees Retrofit.
+class WeatherRepository(private val api: WeatherApi) {
+    suspend fun getTemperature(city: String): Int = api.getWeather(city).tempC
+}</code></pre></div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">The three networking gotchas to name out loud</span>
+<p>(1) <strong>INTERNET permission</strong> in the manifest or every call fails. (2) <strong>Never block the main thread</strong> — network goes in a coroutine (<code>suspend</code> + <code>viewModelScope.launch</code>). (3) <strong>Always handle the error path</strong>; phones lose connectivity constantly, so a <code>try/catch</code> that sets <code>uiState.error</code> is not optional.</p>
+</div>
+</div>
+<h3 id="bi-next">Big idea (bonus) — Where to go next <span class="clo-tag">CLO 1</span></h3>
+<p>Here is the road beyond the course. You already have the foundation for every one of these.</p>
+<div class="grid grid-3 next-grid">
+<div class="card"><h4>Publish to Google Play</h4><p class="muted">Build a signed release (AAB), create a Play Console listing, roll out to internal testing first.</p></div>
+<div class="card"><h4>Automated testing</h4><p class="muted">JUnit + ViewModel tests, <code>ComposeTestRule</code> UI tests, fake repositories.</p></div>
+<div class="card"><h4>Dependency injection (Hilt)</h4><p class="muted">Stop hand-wiring repositories into ViewModels; let Hilt provide them.</p></div>
+<div class="card"><h4>Compose animation</h4><p class="muted"><code>animate*AsState</code>, <code>AnimatedVisibility</code>, transitions for polish.</p></div>
+<div class="card"><h4>More APIs (CLO 5)</h4><p class="muted">Location services (FusedLocationProvider), cloud storage (Firebase).</p></div>
+<div class="card"><h4>Portfolio &amp; jobs</h4><p class="muted">Polish this project, push to GitHub with a good README, record a demo video.</p></div>
+</div>
+<h3 id="bi-flash">Rapid CLO review flashcards</h3>
+<p class="muted">Use these to warm up before you present, or any time you want a quick self-test on the whole arc. Click to flip; "Got it" removes a card from the deck.</p>
+<div data-flashcards="clo-flashcards"></div>
+<script id="clo-flashcards" type="application/json">
+        [
+          { "front": "Why does Kotlin reduce a whole class of crashes vs. Java?", "back": "Null safety: nullable types must use ? and the compiler forces you to handle the null case (safe-call ?., Elvis ?:). NullPointerExceptions become compile-time concerns.", "tag": "CLO 3" },
+          { "front": "Imperative UI vs. declarative UI in one line each.", "back": "Imperative (Views): find a widget and mutate it. Declarative (Compose): describe the UI for a given state; the framework recomposes when state changes.", "tag": "CLO 2" },
+          { "front": "What is recomposition?", "back": "Compose re-running composable functions whose observed inputs changed, to produce updated UI. You change state, not the UI directly.", "tag": "CLO 2" },
+          { "front": "remember vs rememberSaveable vs ViewModel?", "back": "remember survives recomposition; rememberSaveable also survives rotation/UI process death; ViewModel survives configuration changes and holds screen state + async logic.", "tag": "CLO 3" },
+          { "front": "Define unidirectional data flow (UDF).", "back": "State flows down to child composables; events flow up via callbacks. Achieved by hoisting state to the caller.", "tag": "CLO 2" },
+          { "front": "What does a NavHost do?", "back": "Maps route strings to screen composables and manages the back stack. You navigate by route and pass arguments through it.", "tag": "CLO 2" },
+          { "front": "Job of the repository layer?", "back": "Decide where data comes from (cache vs network vs DB) and expose a clean API. It knows nothing about the UI; the UI never sees Retrofit or Room.", "tag": "CLO 3" },
+          { "front": "DataStore vs Room — when to use each?", "back": "DataStore for a few key-value settings. Room (SQLite) for structured, queryable, multi-row data.", "tag": "CLO 4" },
+          { "front": "Three things every network call needs.", "back": "1) INTERNET permission in the manifest. 2) Run off the main thread (suspend + coroutine). 3) Handle the error path (try/catch -> uiState.error).", "tag": "CLO 6" },
+          { "front": "How does data travel from a web API to the screen?", "back": "Retrofit/repository -> ViewModel updates UiState (StateFlow) -> Compose observes state and recomposes the UI.", "tag": "CLO 5" }
+        ]
+        </script>
+</section>
+<!-- ================================================================
+           7. WORKED EXEMPLAR — a clean network screen end to end
+           ================================================================ -->
+<section aria-labelledby="live-h" class="slide">
+<h2 id="live-h">Worked Exemplar — A Clean Network Screen, End to End</h2>
+<p>If you ever want a reference for "how should I have wired the network call cleanly?", build this exemplar yourself, step by step: a single screen that fetches data, shows loading/error/success, and survives rotation. It threads CLO 3, 5, and 6 into one small, complete slice you can adapt straight into your own project.</p>
+<ol class="stepper">
+<li class="step">
+<h4>Add the INTERNET permission</h4>
+<p>Open <code>AndroidManifest.xml</code> and add the permission above <code>&lt;application&gt;</code>. Nothing visible changes yet — but skipping this is the #1 "why is my app crashing" cause.</p>
+<div class="codeblock"><span class="codeblock__lang">XML</span><pre><code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code></pre></div>
+</li>
+<li class="step">
+<h4>Define the UiState</h4>
+<p>One sealed type models every screen state. Keep this in mind as you write it: your UI will be a single <code>when</code> over these cases.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>sealed interface QuoteUiState {
+    data object Loading : QuoteUiState
+    data class Success(val text: String, val author: String) : QuoteUiState
+    data class Error(val message: String) : QuoteUiState
+}</code></pre></div>
+</li>
+<li class="step">
+<h4>Write the ViewModel</h4>
+<p>The ViewModel owns the state and the error handling. Watch the state transition from <code>Loading</code> to <code>Success</code>/<code>Error</code> as the coroutine completes.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>class QuoteViewModel(private val repo: QuoteRepository) : ViewModel() {
+    private val _state = MutableStateFlow&lt;QuoteUiState&gt;(QuoteUiState.Loading)
+    val state: StateFlow&lt;QuoteUiState&gt; = _state.asStateFlow()
+
+    init { refresh() }
+
+    fun refresh() {
+        _state.value = QuoteUiState.Loading
+        viewModelScope.launch {
+            _state.value = try {
+                val q = repo.randomQuote()
+                QuoteUiState.Success(q.text, q.author)
+            } catch (e: Exception) {
+                QuoteUiState.Error(e.message ?: "Could not load quote")
+            }
+        }
+    }
+}</code></pre></div>
+</li>
+<li class="step">
+<h4>Render state in Compose</h4>
+<p>Collect the state lifecycle-aware and branch on it. Run it: you'll see a spinner, then the quote, then — turn off Wi-Fi and press the button — the error state.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
+fun QuoteScreen(viewModel: QuoteViewModel) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    Column(Modifier.padding(24.dp)) {
+        when (val s = state) {
+            QuoteUiState.Loading -&gt; CircularProgressIndicator()
+            is QuoteUiState.Success -&gt; {
+                Text(text = "“${s.text}”", style = MaterialTheme.typography.headlineSmall)
+                Text(text = "— ${s.author}", style = MaterialTheme.typography.bodyMedium)
+            }
+            is QuoteUiState.Error -&gt; Text("Error: ${s.message}", color = MaterialTheme.colorScheme.error)
+        }
+        Button(onClick = viewModel::refresh, modifier = Modifier.padding(top = 16.dp)) {
+            Text("New quote")
+        }
+    }
+}</code></pre></div>
+</li>
+<li class="step">
+<h4>Prove it survives rotation</h4>
+<p>Run, fetch a quote, then rotate the emulator (<kbd>Ctrl</kbd>+<kbd>F11</kbd> / <kbd>Cmd</kbd>+←→). The quote stays because the ViewModel outlived the recreated UI. This is the "aha" that ties state + architecture together.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">The takeaway</span>
+<p>Notice you never wrote any "save on rotate" code. You put the state in the right layer — the ViewModel — and got correctness for free. That is the whole architecture lesson in one breath.</p>
+</div>
+</div>
+</li>
+</ol>
+</section>
+<!-- ================================================================
+           8. HANDS-ON — prepare and deliver your demo
+           ================================================================ -->
+<section aria-labelledby="lab-h" class="slide">
+<h2 id="lab-h">Hands-On — Prepare and Deliver Your Demo</h2>
+<p>This is your shipping moment. You will present your final project, show your five required features working live, walk through the one piece of code you are proudest of, and answer questions about your architecture. The work below is your <strong>self-prep kit</strong>: a rehearsal flow you run on your own before demo day, the feedback you should actively seek, and the questions you should be ready to answer.</p>
+<h3>What a strong demo proves</h3>
+<p>By the time you present, you should be able to show — by <em>using your app</em>, not just describing it — that you have: ≥2 screens with navigation, a state-driven Compose UI, local persistence (Room or DataStore), data pulled from a web API, and a ViewModel + repository behind it. Your demo is the live evidence that the data path <em>Retrofit/Room → repository → ViewModel → Compose</em> actually runs end-to-end.</p>
+<h3>Rehearse your presenter flow (run this solo first)</h3>
+<p class="muted">Practice this out loud at least once before demo day — speaking it aloud surfaces the gaps that reading it silently hides. Keep each beat tight so the whole walkthrough stays focused.</p>
+<ol class="stepper">
+<li class="step">
+<h4>Set the stage</h4>
+<p>Open with your app name and one sentence: what it does and who it is for. Get it <em>running</em> on the emulator or device on screen before you start talking, so your first impression is a working app, not a build log.</p>
+</li>
+<li class="step">
+<h4>Tour your feature checklist</h4>
+<p>Walk your five required features <em>by using the app</em>, narrating as you go: navigate between screens, change state in the UI, save and reload local data, pull data from the API, and name the ViewModel + repository working behind the scenes. Rehearse the exact taps in order so you never hunt for a button live.</p>
+</li>
+<li class="step">
+<h4>Code walkthrough</h4>
+<p>Pick the single most interesting file ahead of time — usually your ViewModel's data flow or your repository — and open it. Explain how data travels from network/DB into the screen. Decide <em>now</em> which 10–15 lines you will point at so you are not scrolling during the demo.</p>
+</li>
+<li class="step">
+<h4>Reflect</h4>
+<p>Prepare two honest sentences: "The hardest thing I solved was ___." and "If I had another week, I'd add ___." Naming a real obstacle and a real next step shows engineering judgment, not just a finished screen.</p>
+</li>
+<li class="step">
+<h4>Invite feedback and questions</h4>
+<p>Close by asking for the feedback you actually want (see below), then field a question or two about your architecture. Have your answers to the question list ready so this feels like a conversation, not a quiz.</p>
+</li>
+</ol>
+<h3>Feedback you should seek (your own checklist)</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">⭐</span>
+<div class="callout__body">
+<span class="callout__label">Ask peers for "2 stars + 1 wish"</span>
+<p>When you invite feedback, ask for it in a shape you can act on:</p>
+<p><strong>Star 1 (works well):</strong> one specific thing your app or code did well.<br/>
+<strong>Star 2 (works well):</strong> a second specific strength.<br/>
+<strong>Wish (one growth idea):</strong> one concrete suggestion — phrased as "I wonder if…" or "Next, you could…".</p>
+<p class="muted">Push for specificity: "it's good" is not actionable. Steer reviewers toward a feature, a screen, or a line of code, and write down every wish — it is your backlog for the next version.</p>
+</div>
+</div>
+<h3>Be ready to answer these</h3>
+<p class="muted">These are the questions you are most likely to get about your project. Rehearse a crisp answer to one from each group — being able to explain your own data flow is the difference between "it works" and "I understand why it works."</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Architecture &amp; state questions</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>"Where does your screen state live, and what happens to it when the device rotates?"</li>
+<li>"Walk me from a button tap to the data appearing on screen — which layers does it pass through?"</li>
+<li>"What does your repository do that your ViewModel doesn't?"</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Networking &amp; data questions</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>"What happens in your app if the network is down when this screen loads? Can you show it?"</li>
+<li>"Where is the API call running, and why not on the main thread?"</li>
+<li>"You used Room/DataStore — why that choice for this data?"</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Reflection &amp; growth questions</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>"What's one thing you'd refactor if you started over?"</li>
+<li>"What was the bug that took you the longest, and how did you finally find it?"</li>
+<li>"Which course topic clicked for you while building this?"</li>
+</ul>
+</div></div>
+</div>
+</div>
+<h3>Have a backup plan ready</h3>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Demo-day contingencies to prepare in advance</span>
+<ul style="margin:0">
+<li><strong>Slow Gradle build?</strong> Open the project and build once <em>before</em> you present so the app is already installed and ready to launch.</li>
+<li><strong>App crashes on launch?</strong> The usual cause is a missing <code>INTERNET</code> permission in the manifest — verify it ahead of time, and know how to read the Logcat stack trace if something fails.</li>
+<li><strong>API returns nothing or the network is flaky?</strong> Record a short screen capture of your app working beforehand, so you can fall back to it and still walk your architecture.</li>
+<li><strong>Emulator won't boot?</strong> Have a physical device ready over USB, or use your recording. Don't rely on a single environment working live.</li>
+<li><strong>Nerves?</strong> Rehearsing the flow out loud once or twice is the single best fix — a script you have spoken before is hard to lose.</li>
+</ul>
+</div>
+</div>
+<h3>Stretch goals if your app is already solid</h3>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Push your demo further</span>
+<p>If your five features are clearly working, deepen the demo: (1) add a small Compose animation to a transition; (2) show your app handling the offline case gracefully (drop Wi-Fi mid-demo and prove the cached data stays); (3) explain how you would add a unit test for your ViewModel's <code>reduce</code>/mapping logic; or (4) trace one full request from tap to pixel out loud, naming every layer it passes through.</p>
+</div>
+</div>
+</section>
+<!-- ================================================================
+           9. ASSESSMENTS TODAY
+           ================================================================ -->
+<section aria-labelledby="assess-h" class="slide">
+<h2 id="assess-h">Assessments Today</h2>
+<div class="grid grid-2">
+<div class="card card--amber">
+<h3 class="card__title">1. Final Project demos</h3>
+<p>The capstone artifact for CLO 2–5: you present your project live, using the presenter flow above.</p>
+</div>
+<div class="card card--accent">
+<h3 class="card__title">2. Post-Test</h3>
+<p>Take <a href="../assessments/post-test.html">assessments/post-test.html</a> on your own, closed-resource, near the end of the session, then compare your score to your Session-1 Pre-Test to see how far you've come.</p>
+</div>
+</div>
+<div class="card mt">
+<h3 class="card__title">3. Discussion Board (Week 4) </h3>
+<p>The weekly Discussion Board reflection is the prompt below.</p>
+</div>
+</section>
+<!-- ================================================================
+           CLO crosswalk (synthesis reference)
+           ================================================================ -->
+<section aria-labelledby="crosswalk-h" class="slide">
+<div class="card">
+<h2 class="card__title" id="crosswalk-h">CLO Crosswalk — the full course on one screen</h2>
+<p class="muted">Each CLO maps to the sessions that built it and to the feature it shows up in on Demo Day. The complete crosswalk lives on the <a href="../index.html">course hub</a>.</p>
+<table aria-label="CLO crosswalk" class="clo-map">
+<thead><tr><th>CLO</th><th>What it means</th><th>Where it lives in the project</th></tr></thead>
+<tbody>
+<tr><td>CLO 1</td><td>Android ecosystem essentials</td><td>The fact they shipped a real app; their "where to next" reflection</td></tr>
+<tr><td>CLO 2</td><td>Design UI &amp; connect to code</td><td>State-driven Compose screens + navigation</td></tr>
+<tr><td>CLO 3</td><td>Build apps in Kotlin</td><td>Entire codebase; ViewModel + coroutines</td></tr>
+<tr><td>CLO 4</td><td>Local storage / database</td><td>DataStore or Room persistence feature</td></tr>
+<tr><td>CLO 5</td><td>Integrate APIs</td><td>The web-API data feature (and optional location/cloud)</td></tr>
+<tr><td>CLO 6</td><td>Network protocols / backend comms</td><td>Retrofit/HTTP over coroutines; error handling</td></tr>
+</tbody>
+</table>
+<div class="mini-legend">
+<span class="clo-tag">CLO 1</span><span class="clo-tag">CLO 2</span><span class="clo-tag">CLO 3</span>
+<span class="clo-tag">CLO 4</span><span class="clo-tag">CLO 5</span><span class="clo-tag">CLO 6</span>
+</div>
+</div>
+</section>
+<!-- ================================================================
+           10. DISCUSSION BOARD PROMPT
+           ================================================================ -->
+<section aria-labelledby="discussion-h" class="slide">
+<h2 id="discussion-h">Discussion Board Prompt — Week 4 (Final Reflection)</h2>
+<div class="card card--teal">
+<div class="card__title">💬 Prompt (post to the LMS Discussion Board)</div>
+<blockquote>
+<p><strong>"From Pre-Test to shipped app — trace your own growth across the six CLOs."</strong></p>
+<p>In one reflective post (200–300 words), look back across the whole course and connect it to the app you just demoed:</p>
+<ol>
+<li><strong>The arc.</strong> Pick one moment where a concept finally "clicked" — null safety, recomposition, state hoisting, the repository boundary, or the four-state <code>UiState</code> — and describe what changed in how you think about building an app.</li>
+<li><strong>The data path.</strong> In one or two sentences, trace one feature of your project from <em>Retrofit/Room → repository → ViewModel → Compose</em>, and name which CLO each hop demonstrates.</li>
+<li><strong>The gap you closed.</strong> Compare your Session-1 Pre-Test to today's Post-Test: which single CLO grew the most, and what specifically built it?</li>
+<li><strong>Next step.</strong> Name one concrete thing from the "Where to go next" list (Play publishing, testing, Hilt, animation, a new API) you will add to this project, and why.</li>
+</ol>
+</blockquote>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">⭐</span>
+<div class="callout__body">
+<span class="callout__label">Replies (due by end of Week 4)</span>
+<p>Reply to <strong>two</strong> classmates using the same <strong>2 stars + 1 wish</strong> vocabulary from the demo feedback: name two specific strengths in their reflection or app, then offer one concrete, actionable "I wonder if… / next, you could…" suggestion. Keep it specific to a feature, a screen, or a layer — "great job" is not actionable.</p>
+</div>
+</div>
+</section>
+<!-- ================================================================
+           11. HOMEWORK / NEXT CLASS
+           ================================================================ -->
+<section aria-labelledby="hw-h" class="slide">
+<div class="card card--accent">
+<h2 class="card__title" id="hw-h">Homework / After the Course</h2>
+<p class="muted">This is the final session — "next class" is the rest of their Android journey. Frame homework as the on-ramp to continued learning.</p>
+<h4>Required to submit</h4>
+<ul>
+<li><strong>Final Project</strong> — push the code to GitHub (or submit the project ZIP per your section's instructions) so the demoed build is on record.</li>
+<li><strong>Post-Test</strong> — complete <a href="../assessments/post-test.html">assessments/post-test.html</a> closed-resource if you have not already finished it in session.</li>
+<li><strong>Discussion Board (Week 4)</strong> — your final-reflection initial post plus two peer replies (prompt above).</li>
+</ul>
+<h4>Optional — keep going (async, self-paced)</h4>
+<ul>
+<li>Finish any remaining units of <a href="https://developer.android.com/courses/android-basics-compose/course" rel="noopener" target="_blank">Android Basics with Compose</a> — especially:
+              <ul>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-4" rel="noopener" target="_blank">Unit 4 — Navigation &amp; app architecture</a></li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-5" rel="noopener" target="_blank">Unit 5 — Connect to the internet</a></li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-6" rel="noopener" target="_blank">Unit 6 — Data persistence</a></li>
+</ul>
+</li>
+<li>Deepen Kotlin: <a href="https://hyperskill.org/courses/18-kotlin-core" rel="noopener" target="_blank">Hyperskill — Kotlin Core</a>.</li>
+<li>Browse the official <a href="https://developer.android.com/studio" rel="noopener" target="_blank">Android Developer site</a> code samples and pick one pattern (animation, Hilt, testing) to add to the project.</li>
+</ul>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Portfolio nudge</span>
+<p>Encourage every student to push their final project to GitHub with a clean README and a short demo GIF/video. That single artifact is the most credible thing they can show a recruiter for a junior Android role.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ================================================================
+           Knowledge-check quiz (course synthesis)
+           ================================================================ -->
+<section aria-labelledby="quiz-h" class="slide">
+<h2 id="quiz-h">Optional Course-Synthesis Check</h2>
+<p class="muted">A quick self-check you can run any time to test your grasp of the whole course. It is <em>not</em> the Post-Test — that lives at <a href="../assessments/post-test.html">assessments/post-test.html</a>.</p>
+<div data-quiz="synthesis-quiz" data-topic="project"></div>
+<script id="synthesis-quiz" type="application/json">
+        {
+          "title": "Whole-Course Synthesis Check",
+          "intro": "Six questions spanning all six CLOs. Pick the best answer; explanations appear after you submit.",
+          "passingScore": 0.7,
+          "shuffle": true,
+          "questions": [
+            {
+              "id": "q-declarative",
+              "type": "single",
+              "prompt": "In Jetpack Compose, how do you change what appears on screen?",
+              "options": [
+                { "id": "a", "text": "Find the widget by id and call a setter on it" },
+                { "id": "b", "text": "Change the observable state; Compose recomposes the affected UI" },
+                { "id": "c", "text": "Edit the XML layout at runtime" },
+                { "id": "d", "text": "Call invalidate() on the Activity" }
+              ],
+              "correct": ["b"],
+              "explanation": "Compose is declarative: you update state, and the framework recomposes composables that read that state. You never mutate the UI directly."
+            },
+            {
+              "id": "q-rotation",
+              "type": "single",
+              "prompt": "A value stored with plain remember { mutableStateOf(...) } will be lost when...",
+              "options": [
+                { "id": "a", "text": "A recomposition happens" },
+                { "id": "b", "text": "The user taps a button" },
+                { "id": "c", "text": "The device is rotated (configuration change)" },
+                { "id": "d", "text": "It is never lost" }
+              ],
+              "correct": ["c"],
+              "explanation": "remember survives recomposition but not configuration changes. Use rememberSaveable for small UI state, or a ViewModel for screen state, to survive rotation."
+            },
+            {
+              "id": "q-udf",
+              "type": "truefalse",
+              "prompt": "Unidirectional data flow means state flows down to child composables and events flow up via callbacks.",
+              "correct": true,
+              "explanation": "Correct. Hoisting state to the caller and passing value-down / event-up is the definition of UDF in Compose."
+            },
+            {
+              "id": "q-repo",
+              "type": "multi",
+              "prompt": "Which responsibilities belong to the repository layer? (Select all that apply.)",
+              "options": [
+                { "id": "a", "text": "Decide whether data comes from cache, network, or DB" },
+                { "id": "b", "text": "Expose a clean data API to the ViewModel" },
+                { "id": "c", "text": "Render Compose UI" },
+                { "id": "d", "text": "Decide screen layout and colors" }
+              ],
+              "correct": ["a", "b"],
+              "explanation": "The repository abstracts data sources and exposes a clean API. It knows nothing about the UI — rendering and layout are the composables' job."
+            },
+            {
+              "id": "q-network",
+              "type": "multi",
+              "prompt": "Which are required for a correct Retrofit network call in an Android app? (Select all that apply.)",
+              "options": [
+                { "id": "a", "text": "The INTERNET permission in the manifest" },
+                { "id": "b", "text": "Running the call off the main thread (suspend + coroutine)" },
+                { "id": "c", "text": "Handling the error path (try/catch into UiState)" },
+                { "id": "d", "text": "Calling the API directly from a Composable's body" }
+              ],
+              "correct": ["a", "b", "c"],
+              "explanation": "Permission, background execution, and error handling are all required. Calling the network from a composable body is wrong — it belongs in the ViewModel/repository."
+            },
+            {
+              "id": "q-store",
+              "type": "single",
+              "prompt": "You need to store a single 'dark mode on/off' setting. Best tool?",
+              "options": [
+                { "id": "a", "text": "Room with a one-row table" },
+                { "id": "b", "text": "A web API" },
+                { "id": "c", "text": "DataStore (key-value preferences)" },
+                { "id": "d", "text": "A global mutable variable" }
+              ],
+              "correct": ["c"],
+              "explanation": "DataStore is the modern choice for small key-value settings. Room is for structured, queryable, multi-row data."
+            }
+          ]
+        }
+        </script>
+</section>
+<!-- ================================================================
+           MASTER IT — synthesis, capstone logic, deliberate practice
+           ================================================================ -->
+<section aria-labelledby="master-h" class="card slide">
+<h2 class="card__title" id="master-h">Master it — assemble the whole app from its parts</h2>
+<p>Every screen you have ever built in this course is the <strong>same three moving parts</strong> wearing different costumes: a <strong>repository</strong> that owns where data comes from, a <strong>reducer</strong> that folds events into immutable state, and a <strong>mapper</strong> that turns a data result into a four-state <code>UiState</code> the UI can render with one <code>when</code>. The capstone is not a new pattern — it is these three composed. Prove you can wire them together with no UI noise in the way, and you can build any screen in any of these apps.</p>
+<!-- ---------- WORKED EXAMPLE ---------- -->
+<h3 id="master-we">Worked example — a screen reduced to pure logic</h3>
+<p>Here is the reasoning a senior engineer runs before touching Compose. We will build a "saved articles" screen end-to-end as <em>data and functions only</em>, because if the logic is right, the UI is a 15-line <code>when</code>. Follow each step; the reasoning is the lesson.</p>
+<ol class="stepper">
+<li class="step">
+<h4>Step 1 — Name every state the screen can be in (sealed model)</h4>
+<p>A screen is never just "has data" / "no data". From Session 7 onward the default is <strong>four</strong> states: <code>Loading</code>, <code>Success</code>, <code>Empty</code>, <code>Error</code>. Modeling them as a <em>sealed</em> interface means the compiler forces you to handle every branch — a forgotten state becomes a compile error, not a blank screen in production.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>sealed interface ArticlesUiState {
+    data object Loading : ArticlesUiState
+    data class Success(val titles: List&lt;String&gt;) : ArticlesUiState
+    data object Empty : ArticlesUiState          // loaded fine, but zero rows
+    data class Error(val message: String) : ArticlesUiState
+}</code></pre></div>
+</li>
+<li class="step">
+<h4>Step 2 — Let the repository own "where data comes from" and return a Result</h4>
+<p>The repository is the only layer that knows about cache vs. network. It returns <code>Result&lt;T&gt;</code> — never throws into the ViewModel, never exposes Retrofit or Room. Offline-first means: serve the cache, then try to refresh; a network failure on top of a populated cache is not a user-facing error.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// A tiny in-memory stand-in for Room + Retrofit, so the LOGIC is testable.
+class ArticleRepository(
+    private val cache: MutableList&lt;String&gt; = mutableListOf()
+) {
+    fun cached(): List&lt;String&gt; = cache.toList()
+
+    // refresh() merges a network result into the cache (offline-first).
+    fun refresh(networkResult: Result&lt;List&lt;String&gt;&gt;): Result&lt;List&lt;String&gt;&gt; {
+        networkResult.onSuccess { fresh -&gt;
+            for (t in fresh) if (t !in cache) cache.add(t)   // de-dup merge
+        }
+        // If the cache has anything, callers can still render it on failure.
+        return networkResult.map { cache.toList() }
+    }
+}</code></pre></div>
+</li>
+<li class="step">
+<h4>Step 3 — Map a Result into UiState (the mapper)</h4>
+<p>This is the single most reused function in the whole course. It is the <em>only</em> place that decides "success-but-empty → <code>Empty</code>". Notice an <code>IOException</code> (offline) and an <code>HttpException</code>-style failure both become <code>Error</code> here, but the repository already decided whether to surface them at all.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun mapToUiState(result: Result&lt;List&lt;String&gt;&gt;): ArticlesUiState =
+    result.fold(
+        onSuccess = { list -&gt;
+            if (list.isEmpty()) ArticlesUiState.Empty
+            else ArticlesUiState.Success(list)
+        },
+        onFailure = { e -&gt; ArticlesUiState.Error(e.message ?: "Unknown error") }
+    )</code></pre></div>
+</li>
+<li class="step">
+<h4>Step 4 — Reduce events into the next state (UDF)</h4>
+<p>The reducer is a pure function <code>(state, event) -&gt; state</code>. It is the heart of unidirectional data flow: the UI emits events, the reducer is the only thing that mutates "state". Because it is pure, you can test the entire screen behavior with no emulator, no Compose, no coroutines.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>sealed interface ArticlesEvent {
+    data object StartedLoading : ArticlesEvent
+    data class Loaded(val ui: ArticlesUiState) : ArticlesEvent
+}
+
+fun reduce(state: ArticlesUiState, event: ArticlesEvent): ArticlesUiState =
+    when (event) {
+        ArticlesEvent.StartedLoading -&gt; ArticlesUiState.Loading
+        is ArticlesEvent.Loaded      -&gt; event.ui
+    }</code></pre></div>
+</li>
+<li class="step">
+<h4>Step 5 — Compose the three parts into one flow and run it</h4>
+<p>Now the payoff: a "load" is just <code>reduce(Loading)</code>, then <code>repository.refresh()</code>, then <code>mapToUiState(...)</code>, then <code>reduce(Loaded(...))</code>. The harness below runs this for three real scenarios. <strong>Predict the printed output for each case, then press Run to confirm.</strong></p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable</div>
+<pre><code>import java.io.IOException
+
+sealed interface ArticlesUiState {
+    data object Loading : ArticlesUiState
+    data class Success(val titles: List&lt;String&gt;) : ArticlesUiState
+    data object Empty : ArticlesUiState
+    data class Error(val message: String) : ArticlesUiState
+}
+
+class ArticleRepository(private val cache: MutableList&lt;String&gt; = mutableListOf()) {
+    fun cached(): List&lt;String&gt; = cache.toList()
+    fun refresh(networkResult: Result&lt;List&lt;String&gt;&gt;): Result&lt;List&lt;String&gt;&gt; {
+        networkResult.onSuccess { fresh -&gt; for (t in fresh) if (t !in cache) cache.add(t) }
+        return networkResult.map { cache.toList() }
+    }
+}
+
+fun mapToUiState(result: Result&lt;List&lt;String&gt;&gt;): ArticlesUiState =
+    result.fold(
+        onSuccess = { if (it.isEmpty()) ArticlesUiState.Empty else ArticlesUiState.Success(it) },
+        onFailure = { e -&gt; ArticlesUiState.Error(e.message ?: "Unknown error") }
+    )
+
+// Compose the three parts: state in -&gt; loading -&gt; refresh -&gt; map -&gt; state out.
+fun load(repo: ArticleRepository, network: Result&lt;List&lt;String&gt;&gt;): ArticlesUiState {
+    val loading: ArticlesUiState = ArticlesUiState.Loading      // step: StartedLoading
+    println("  during load, UI shows: $loading")
+    return mapToUiState(repo.refresh(network))                 // step: Loaded(...)
+}
+
+fun main() {
+    // Case A: network succeeds with rows -&gt; Success
+    val a = load(ArticleRepository(), Result.success(listOf("Compose 101", "Room CRUD")))
+    println("A -&gt; $a")
+
+    // Case B: network succeeds but returns nothing -&gt; Empty (NOT Error)
+    val b = load(ArticleRepository(), Result.success(emptyList()))
+    println("B -&gt; $b")
+
+    // Case C: offline, but cache already had a row -&gt; still Success (offline-first)
+    val warm = ArticleRepository(mutableListOf("Cached article"))
+    val c = load(warm, Result.failure(IOException("No connection")))
+    // refresh() returned failure, so map -&gt; Error; but cache survived:
+    println("C result = $c, cache still = ${warm.cached()}")
+}</code></pre>
+</div>
+</li>
+</ol>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Read the result of Case C carefully</span>
+<p>The <em>mapper</em> turned the failed refresh into <code>Error</code> — but the <em>cache</em> still holds "Cached article". That gap is exactly the offline-first decision a senior engineer makes: surface the cache to the user and treat the network failure as a quiet background event, not a red error screen. Your repository decides; your mapper only reflects what it is handed.</p>
+</div>
+</div>
+<!-- ---------- FADED CHALLENGE ---------- -->
+<h3 id="master-challenge">Now you — the capstone challenge (faded)</h3>
+<p>You have the worked example. Now fill in the three blanks yourself. The harness proves your logic across five cases. You have got it when every line prints <code>✓ passed</code> and you see <code>ALL TESTS PASSED 🎉</code> — that is your own mastery signal, not a grade.</p>
+<div class="codeblock" data-challenge="s12-capstone" data-run="kotlin" data-topic="project">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>import java.io.IOException
+
+sealed interface UiState {
+    data object Loading : UiState
+    data class Success(val items: List&lt;String&gt;) : UiState
+    data object Empty : UiState
+    data class Error(val message: String) : UiState
+}
+
+class Repo(private val cache: MutableList&lt;String&gt; = mutableListOf()) {
+    fun cached(): List&lt;String&gt; = cache.toList()
+    // Merge a successful network list into the cache (skip duplicates),
+    // then return the FULL cache as the result. Pass failures through.
+    fun refresh(network: Result&lt;List&lt;String&gt;&gt;): Result&lt;List&lt;String&gt;&gt; {
+        // YOUR CODE: on success, add each new item not already cached.
+        // ____________________________________________
+        // Then return network.map { the full current cache }.
+        return network.map { /* YOUR CODE: return the cache list */ TODO() }
+    }
+}
+
+// YOUR CODE: success-with-rows -&gt; Success, success-but-empty -&gt; Empty,
+//            failure -&gt; Error(message). Use result.fold { ... }.
+fun mapToUiState(result: Result&lt;List&lt;String&gt;&gt;): UiState {
+    TODO("fold the Result into one of the four UiState branches")
+}
+
+// Compose: emit Loading, refresh through the repo, map the result.
+fun load(repo: Repo, network: Result&lt;List&lt;String&gt;&gt;): UiState {
+    val loading: UiState = UiState.Loading
+    require(loading is UiState.Loading)        // UDF: load always starts here
+    return mapToUiState(repo.refresh(network))
+}
+
+// ----------------- TEST HARNESS (do not edit) -----------------
+fun main() {
+    var pass = 0; var fail = 0
+    fun check(name: String, cond: Boolean, expected: String, got: String) {
+        if (cond) { pass++; println("✓ passed: $name") }
+        else { fail++; println("✗ FAILED: $name — expected $expected, got $got") }
+    }
+
+    val a = load(Repo(), Result.success(listOf("Kotlin", "Compose")))
+    check("rows -&gt; Success", a == UiState.Success(listOf("Kotlin", "Compose")),
+        "Success([Kotlin, Compose])", a.toString())
+
+    val b = load(Repo(), Result.success(emptyList()))
+    check("empty -&gt; Empty", b == UiState.Empty, "Empty", b.toString())
+
+    val c = load(Repo(), Result.failure(IOException("offline")))
+    check("failure -&gt; Error", c is UiState.Error, "Error(...)", c.toString())
+
+    val warm = Repo(mutableListOf("Cached"))
+    load(warm, Result.success(listOf("Cached", "Fresh")))   // merge, de-dup
+    check("merge de-dups cache", warm.cached() == listOf("Cached", "Fresh"),
+        "[Cached, Fresh]", warm.cached().toString())
+
+    val merged = load(Repo(mutableListOf("Old")), Result.success(listOf("New")))
+    check("refresh returns full cache", merged == UiState.Success(listOf("Old", "New")),
+        "Success([Old, New])", merged.toString())
+
+    println(if (fail == 0) "ALL TESTS PASSED 🎉" else "$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Hint — what goes in each blank</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><strong><code>refresh</code>:</strong> use <code>network.onSuccess { fresh -&gt; ... }</code> to add items, guard each with <code>if (it !in cache)</code>. Then <code>return network.map { cache.toList() }</code> so the result carries the merged cache.</li>
+<li><strong><code>mapToUiState</code>:</strong> <code>result.fold(onSuccess = { if (it.isEmpty()) UiState.Empty else UiState.Success(it) }, onFailure = { UiState.Error(it.message ?: "Unknown error") })</code>.</li>
+<li>Remember: a successful-but-empty list is <code>Empty</code>, never <code>Error</code>. That distinction is the whole point of the four-state model.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Reference solution (try the challenge first)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun refresh(network: Result&lt;List&lt;String&gt;&gt;): Result&lt;List&lt;String&gt;&gt; {
+    network.onSuccess { fresh -&gt; for (t in fresh) if (t !in cache) cache.add(t) }
+    return network.map { cache.toList() }
+}
+
+fun mapToUiState(result: Result&lt;List&lt;String&gt;&gt;): UiState =
+    result.fold(
+        onSuccess = { if (it.isEmpty()) UiState.Empty else UiState.Success(it) },
+        onFailure = { UiState.Error(it.message ?: "Unknown error") }
+    )</code></pre></div>
+<p class="muted">In a real app, <code>cache</code> is a Room <code>Flow&lt;List&lt;Entity&gt;&gt;</code> and <code>network</code> is a Retrofit <code>suspend</code> call wrapped in <code>runCatching { }</code>. The shape — merge, then map a <code>Result</code> to one of four states — is identical.</p>
+</div></div>
+</div>
+</div>
+<!-- ---------- MISCONCEPTIONS ---------- -->
+<h3 id="master-misconceptions">Common misconceptions &amp; pitfalls</h3>
+<p class="muted">These are the wrong mental models that survive all the way to a final project demo. Each one has a specific symptom you can recognize.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">"The capstone project is a brand-new pattern I haven't learned yet."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> the final app is some advanced thing beyond the weekly material.</p>
+<p><strong>Why it's wrong:</strong> the project is <em>composition</em>, not invention. It is Session 8's <code>reduce</code>/StateFlow, Session 9's Room <code>Flow</code>, Session 10's Retrofit + four-state map, and Session 11's repository — wired together. There is no new concept; there is only assembly.</p>
+<p><strong>Correct model:</strong> draw the data path before coding — <em>Retrofit/Room → Repository (Result) → ViewModel (reduce → UiState) → Compose (when)</em>. Every feature is a new instance of that same pipe.</p>
+<p><strong>Symptom:</strong> students who hold the wrong model freeze at the start and over-build; students who hold the right one ship a thin vertical slice (one screen, one API call, one table) on day one and grow it.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">"A network failure means there's nothing to show, so show an error."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> offline ⇒ blank/error screen, every time.</p>
+<p><strong>Why it's wrong:</strong> if the local database (the source of truth) already holds rows, a failed refresh should not wipe the screen. Conflating "the network call failed" with "there is no data" throws away the whole point of offline-first.</p>
+<p><strong>Correct model:</strong> the <strong>cache is the source of truth</strong>; the network only refreshes it. Render <code>Success(cache)</code> and surface the failure quietly (a snackbar), not as a full <code>Error</code> state that hides good data. Reserve <code>Error</code> for "failed <em>and</em> the cache is empty".</p>
+<p><strong>Symptom:</strong> the app shows a red error screen the instant Wi-Fi drops, even though it displayed a full list a second earlier.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">"My ViewModel can just call Retrofit / Room directly — a repository is ceremony."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> the repository is boilerplate I can skip on a small app.</p>
+<p><strong>Why it's wrong:</strong> when the ViewModel imports <code>retrofit2</code> and <code>androidx.room</code>, it now knows three jobs (where data lives, how to merge cache+network, and how to shape UI state). That class becomes impossible to reason about or test, and the cache-vs-network decision leaks into UI logic.</p>
+<p><strong>Correct model:</strong> the repository owns the data-source decision and returns a clean <code>Result&lt;DomainModel&gt;</code>; the ViewModel only reduces that into <code>UiState</code>. The ViewModel never imports Retrofit or Room.</p>
+<p><strong>Symptom:</strong> the ViewModel has <code>import retrofit2.*</code> at the top and 200 lines mixing JSON, SQL, and <code>when</code> branches. In a demo, the "where does your data come from?" question gets a tangled answer.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">"I store derived/UI state in the data layer so I don't recompute it."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> put a mutable <code>var isLoading</code> or a pre-formatted display string on the repository / entity.</p>
+<p><strong>Why it's wrong:</strong> the data layer must be a pure source of facts. Mutable presentation state living below the ViewModel means two screens observing the same repo fight over it, and Room/Flow emissions stop being trustworthy. Derived values belong where they're shown, computed from state.</p>
+<p><strong>Correct model:</strong> the data layer exposes immutable domain data; the ViewModel computes UI state (loading flags, formatted strings) when it reduces; Compose computes pure display values inline or with <code>derivedStateOf</code>.</p>
+<p><strong>Symptom:</strong> a value updates on one screen but is stale on another, or a "loading" flag gets stuck on because two callers toggled the same shared field.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">"The screen survives rotation because I save state in the Composable."</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> in-memory state held with plain <code>remember</code> (or a local <code>var</code>) lives through a configuration change.</p>
+<p><strong>Why it's wrong:</strong> rotation recreates the Activity and the whole composition; <code>remember</code> is rebuilt from scratch, so its value is gone. Only <code>rememberSaveable</code> (small UI state via Bundle) or a <strong>ViewModel</strong> (screen state, async work) outlives recreation.</p>
+<p><strong>Correct model:</strong> screen state and any in-flight network/DB work live in the ViewModel; the Composable merely <code>collectAsStateWithLifecycle()</code> and renders. You never write "save on rotate" code — you put state in the right layer and get correctness for free.</p>
+<p><strong>Symptom:</strong> the fetched list, the typed text, or the loading spinner vanishes and re-fetches every time the device rotates.</p>
+</div></div>
+</div>
+</div>
+<!-- ---------- IN PRODUCTION ---------- -->
+<h3 id="master-production">In production — how a senior engineer ships this</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">The idiomatic, current pattern</span>
+<p>A senior engineer builds the capstone as a <strong>thin vertical slice first</strong>: one screen, one endpoint, one Room table, wired end-to-end (network → repo → ViewModel → Compose) before adding a second feature. The repository is the <strong>single source of truth</strong> — it exposes a Room <code>Flow</code> via <code>stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial)</code> so the UI keeps its data across config changes but the upstream collection stops 5 seconds after the screen leaves the foreground. Network calls are wrapped in <code>runCatching { }</code> (or a typed <code>catch (IOException)</code> = retryable vs <code>catch (HttpException)</code> = don't blind-retry), returned as <code>Result&lt;T&gt;</code>, and the ViewModel reduces that into a sealed four-state <code>UiState</code> rendered by a single exhaustive <code>when</code>.</p>
+<p class="mt"><strong>One tasteful gotcha:</strong> the <code>5_000</code>ms in <code>WhileSubscribed</code> is not decoration. With <code>0</code>, a rotation momentarily unsubscribes and you re-run the whole upstream (re-query, re-fetch) on every rotate; with a too-long timeout you keep collectors alive and leak work after the user navigates away. The 5-second window is the idiomatic balance that survives a rotation without re-fetching. It is the kind of detail that separates "it works on my emulator" from "it's correct in production."</p>
+</div>
+</div>
+<!-- ---------- RETRIEVAL CHECK ---------- -->
+<h3 id="master-retrieval">Retrieval check — apply the whole arc</h3>
+<p class="muted">Six application questions spanning the full course. These are self-check practice, not a grade — answer from reasoning, then read every explanation.</p>
+<div data-quiz="rc-12" data-topic="project"></div>
+<script id="rc-12" type="application/json">
+        {
+          "title": "Course-synthesis retrieval check",
+          "intro": "Apply the pattern, don't recite it. Explanations appear after you submit. This is your own mastery practice.",
+          "passingScore": 0.7,
+          "shuffle": true,
+          "questions": [
+            {
+              "id": "rc12-where-merge",
+              "type": "single",
+              "prompt": "Your screen pulls a list from a REST API and also persists it in Room. The 'merge the network result into the cache and decide what to show' logic should live in...",
+              "options": [
+                { "id": "a", "text": "The Composable, so it can react to the latest data" },
+                { "id": "b", "text": "The repository, which owns the cache-vs-network decision" },
+                { "id": "c", "text": "The Retrofit interface, next to the @GET" },
+                { "id": "d", "text": "The Room @Dao, since it touches the database" }
+              ],
+              "correct": ["b"],
+              "explanation": "Deciding where data comes from and merging cache+network is the repository's single job. The DAO only runs SQL, the API only declares endpoints, and the Composable only renders state. Putting merge logic anywhere else leaks the data-source decision into a layer that shouldn't know about it."
+            },
+            {
+              "id": "rc12-empty-vs-error",
+              "type": "single",
+              "prompt": "Your API call succeeds (HTTP 200) but returns an empty JSON array. What UiState should the screen show?",
+              "options": [
+                { "id": "a", "text": "Error — there was no data" },
+                { "id": "b", "text": "Loading — keep waiting for data" },
+                { "id": "c", "text": "Empty — a distinct state for 'loaded fine, zero rows'" },
+                { "id": "d", "text": "Success with a fake placeholder row" }
+              ],
+              "correct": ["c"],
+              "explanation": "A successful-but-empty response is the Empty state, not Error. Error is for failures (offline, 4xx/5xx). Collapsing Empty into Error shows a scary 'something broke' screen when nothing broke — the user just has no saved items yet. This is exactly why the four-state model exists."
+            },
+            {
+              "id": "rc12-offline-cache",
+              "type": "single",
+              "prompt": "The user opens a screen whose Room cache already has 10 rows. The background refresh fails because the phone is offline. The best behavior is to...",
+              "options": [
+                { "id": "a", "text": "Replace the list with a full-screen Error" },
+                { "id": "b", "text": "Show the 10 cached rows and surface the failure quietly (e.g. a snackbar)" },
+                { "id": "c", "text": "Clear the cache so the data isn't stale" },
+                { "id": "d", "text": "Block the UI with a spinner until the network returns" }
+              ],
+              "correct": ["b"],
+              "explanation": "Offline-first: the database is the source of truth, the network only refreshes it. A failed refresh on top of a populated cache is not a user-facing error — render the cache and surface the failure non-destructively. Wiping good data or blocking the UI defeats the entire offline-first design."
+            },
+            {
+              "id": "rc12-rotation-survive",
+              "type": "multi",
+              "prompt": "Which approaches keep a fetched list on screen after the device rotates? (Select all that apply.)",
+              "options": [
+                { "id": "a", "text": "Hold the list in a ViewModel exposed as StateFlow" },
+                { "id": "b", "text": "Hold it in a plain remember { mutableStateOf(...) } in the Composable" },
+                { "id": "c", "text": "Hold it in a local var inside the Composable" },
+                { "id": "d", "text": "Back it by a Room Flow collected in the ViewModel" }
+              ],
+              "correct": ["a", "d"],
+              "explanation": "Rotation recreates the Activity and the composition, so plain remember and local vars are rebuilt and lost. A ViewModel survives configuration changes (option a), and a Room Flow is durable storage the ViewModel re-collects (option d). The fix is always 'put state in a layer that outlives the UI', never 'write save-on-rotate code'."
+            },
+            {
+              "id": "rc12-thread",
+              "type": "single",
+              "prompt": "In your final project, where does the suspend Retrofit call actually get launched?",
+              "options": [
+                { "id": "a", "text": "Directly in the Composable body so the UI can await it" },
+                { "id": "b", "text": "On the main thread inside onClick, since Retrofit is fast" },
+                { "id": "c", "text": "In viewModelScope.launch, off the main thread, with the error path handled" },
+                { "id": "d", "text": "In the @Composable's remember block" }
+              ],
+              "correct": ["c"],
+              "explanation": "Network I/O runs in the ViewModel via viewModelScope.launch (a suspend call hops to a background dispatcher). Launching from a Composable body re-runs on every recomposition and isn't lifecycle-safe; blocking the main thread freezes the UI and risks an ANR. The error path (try/catch or runCatching into UiState) is mandatory because connectivity drops constantly."
+            },
+            {
+              "id": "rc12-reduce-pure",
+              "type": "truefalse",
+              "prompt": "Because reduce(state, event) is a pure function, you can verify your screen's full behavior with plain Kotlin tests — no emulator, no Compose, no coroutines.",
+              "correct": true,
+              "explanation": "True, and it's the reason to keep logic out of the Composable. When state transitions live in a pure reducer (and mapping lives in mapToUiState), you can drive every case — loading, success, empty, error, merge — with ordinary function calls, exactly like the challenge harness on this page does."
+            }
+          ]
+        }
+        </script>
+<!-- ---------- DELIBERATE PRACTICE ---------- -->
+<h3 id="master-practice">Deliberate practice — what to do next</h3>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Your next reps (in this order)</span>
+<p>Reading this section builds recognition; the reps below build the engineer. Do them deliberately, watching the cases turn green:</p>
+<ol style="margin:.4em 0 .2em">
+<li><strong>Finish the <code>s12-capstone</code> challenge above</strong> until you see <code>ALL TESTS PASSED 🎉</code>, then mark it solved to log it toward your mastery.</li>
+<li><strong><a href="../practice/challenges.html">practice/challenges.html</a></strong> → run the <em>project</em> ladder: domain model + sealed UiState → in-memory repo CRUD → <code>reduce</code> UDF → network parse + four-state map → the offline-first cache+network merge capstone. This is the same five-step assembly, drilled to fluency.</li>
+<li><strong><a href="../practice/debug-drills.html">practice/debug-drills.html</a></strong> → hit the networking and data drills: main-thread Room, "returns List not Flow", missing Loading/Error/Empty, IOException-vs-HttpException. Find the bug before you read the fix.</li>
+<li><strong><a href="../practice/spaced-repetition.html">practice/spaced-repetition.html</a></strong> → run the spaced deck across all topics so the whole arc stays retrievable, not just freshly-read.</li>
+<li><strong><a href="../path.html">path.html</a></strong> → open the skill map to see which nodes are passed vs. still locked, and let it route your next session. The capstone node lights up only when the upstream skills are green.</li>
+</ol>
+</div>
+</div>
+</section>
+</div><!-- /.layout-2col__main -->
+</div><!-- /.layout-2col -->
+</main>
+<!-- ====================================================================
+       FOOTER
+       ==================================================================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span>
+<div class="muted">Keiser University · B.S. Software Engineering · Session 12 of 12 — Capstone &amp; Wrap-Up</div>
+</div>
+<div class="row no-print">
+<a href="../index.html">Course Hub</a>
+<a href="../sessions/session-11.html">‹ Session 11</a>
+<a href="../assessments/post-test.html">Post-Test</a>
+</div>
+<div class="muted">Built with Kotlin + Jetpack Compose (Material 3) · Official Android Developer docs</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

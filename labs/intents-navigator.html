@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Explicit vs Implicit Intents Explorer. An interactive tool contrasting explicit intents (target a named Activity/class) with implicit intents (declare an action + data and let Android resolve which installed app can handle it). Pick an action — VIEW a URL, DIAL a number, SEND/share text, VIEW a map geo: URI — and watch the system resolve candidate apps via intent filters, with the equivalent Kotlin shown live." name="description"/>
+<title>Explicit vs Implicit Intents Explorer — COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+  /* Page-specific tweaks only — all chrome uses the shared design system. */
+  .lede { font-size: var(--fs-lg); color: var(--muted); max-width: 72ch; }
+
+  /* Explorer layout */
+  .explorer { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); align-items: start; }
+  @media (max-width: 940px) { .explorer { grid-template-columns: 1fr; } }
+
+  /* Mode switch (explicit / implicit) */
+  .modeswitch { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px; gap: 4px; }
+  .modeswitch button {
+    appearance: none; border: none; background: none; font: inherit; font-weight: 700;
+    font-size: var(--fs-sm); color: var(--muted); padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .modeswitch button[aria-pressed="true"] { background: var(--green); color: var(--teal); box-shadow: var(--shadow); }
+
+  /* Action chooser */
+  .actiongrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin: var(--space-4) 0; }
+  .actionbtn {
+    appearance: none; text-align: left; cursor: pointer; font: inherit;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: 4px;
+    transition: border-color .15s ease, background .15s ease, transform .1s ease;
+  }
+  .actionbtn:hover { border-color: var(--green); transform: translateY(-1px); }
+  .actionbtn[aria-pressed="true"] { border-color: var(--green-dark); background: color-mix(in srgb, var(--green) 12%, var(--surface)); box-shadow: var(--shadow); }
+  .actionbtn .ab-glyph { font-size: 1.4rem; line-height: 1; }
+  .actionbtn .ab-name { font-weight: 800; font-size: var(--fs-sm); }
+  .actionbtn .ab-const { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted); }
+
+  /* Editable data field */
+  .datafield { display: grid; gap: 6px; margin: var(--space-4) 0; }
+  .datafield label { font-weight: 700; font-size: var(--fs-sm); color: var(--teal-2); }
+  [data-theme="dark"] .datafield label { color: var(--green); }
+  .datafield input, .datafield select {
+    width: 100%; padding: var(--space-3); border: 1px solid var(--line);
+    border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit;
+    font-family: var(--font-mono); font-size: var(--fs-sm);
+  }
+  .datafield input:focus, .datafield select:focus { outline: none; box-shadow: var(--focus); }
+  .datafield .hint { font-size: var(--fs-xs); color: var(--muted); }
+
+  /* The phone "screen" that simulates resolution */
+  .phone {
+    border: 10px solid var(--teal); border-radius: 30px; background: var(--surface-2);
+    padding: 0; overflow: hidden; box-shadow: var(--shadow-lg); max-width: 360px; margin: 0 auto;
+  }
+  .phone__bar {
+    background: linear-gradient(135deg, var(--teal), var(--teal-2)); color: #DDF6F2;
+    font-size: var(--fs-xs); font-weight: 700; padding: 6px 14px; display: flex; justify-content: space-between;
+    font-family: var(--font-mono);
+  }
+  .phone__screen { background: var(--surface); padding: var(--space-4); min-height: 320px; }
+
+  /* Chooser sheet visualization */
+  .sheet__head { font-weight: 800; font-size: var(--fs-md); margin: 0 0 var(--space-3); display: flex; align-items: center; gap: 8px; }
+  .sheet__sub { font-size: var(--fs-xs); color: var(--muted); margin: 0 0 var(--space-3); }
+  .applist { display: grid; gap: var(--space-2); list-style: none; padding: 0; margin: 0; }
+  .appitem {
+    display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3);
+    border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface);
+    animation: tg-fade .3s ease backwards;
+  }
+  .appitem .app-glyph {
+    width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center;
+    font-size: 1.3rem; flex: 0 0 auto; color: #fff;
+  }
+  .appitem .app-name { font-weight: 700; font-size: var(--fs-sm); }
+  .appitem .app-pkg { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .appitem--target { border-color: var(--green-dark); border-width: 2px; background: color-mix(in srgb, var(--green) 12%, var(--surface)); }
+  .appitem--badge { margin-left: auto; }
+
+  .resolve-note {
+    margin-top: var(--space-3); padding: var(--space-3); border-radius: var(--radius-sm);
+    font-size: var(--fs-sm); border-left: 3px solid var(--info);
+    background: color-mix(in srgb, var(--info) 8%, var(--surface));
+  }
+  .resolve-note--warn { border-left-color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, var(--surface)); }
+  .resolve-note--ok { border-left-color: var(--green-dark); background: color-mix(in srgb, var(--green) 10%, var(--surface)); }
+
+  /* Extras editor for explicit mode */
+  .extras { display: grid; gap: var(--space-2); margin: var(--space-3) 0; }
+  .extra-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--space-2); align-items: center; }
+  .extra-row input {
+    padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--ink); font-family: var(--font-mono); font-size: var(--fs-xs); width: 100%;
+  }
+  .extra-row .extra-del {
+    appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+    border-radius: var(--radius-sm); cursor: pointer; padding: 6px 10px; font-weight: 700;
+  }
+  .extra-row .extra-del:hover { color: var(--danger); border-color: var(--danger); }
+
+  /* Comparison table */
+  .cmp-table { width: 100%; border-collapse: collapse; margin: var(--space-3) 0; font-size: var(--fs-sm); }
+  .cmp-table th, .cmp-table td { text-align: left; padding: var(--space-3); border-bottom: 1px solid var(--line); vertical-align: top; }
+  .cmp-table thead th { color: #DDF6F2; background: var(--teal); font-weight: 700; }
+  .cmp-table thead th:first-child { border-top-left-radius: var(--radius-sm); }
+  .cmp-table thead th:last-child { border-top-right-radius: var(--radius-sm); }
+  .cmp-table tbody tr:nth-child(even) { background: var(--surface-2); }
+  .cmp-table .cmp-dim { color: var(--muted); font-weight: 700; white-space: nowrap; }
+  .cmp-table code { white-space: normal; }
+
+  /* Intent filter manifest highlight panel */
+  .filter-flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-3); align-items: center; margin: var(--space-3) 0; }
+  @media (max-width: 700px) { .filter-flow { grid-template-columns: 1fr; } .filter-flow .flow-arrow { transform: rotate(90deg); justify-self: center; } }
+  .flow-box { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-3); background: var(--surface); }
+  .flow-box h5, .flow-box__title { margin: 0 0 6px; font-size: var(--fs-sm); font-weight: 700; }
+  .flow-arrow { font-size: 1.6rem; color: var(--green-dark); font-weight: 800; }
+
+  .key-val { font-family: var(--font-mono); font-size: var(--fs-sm); }
+  .key-val .kv-key { color: var(--teal-2); }
+  [data-theme="dark"] .key-val .kv-key { color: var(--green); }
+
+  .layout-toc { display: grid; grid-template-columns: 230px 1fr; gap: var(--space-6); align-items: start; }
+  .layout-toc__rail { position: sticky; top: 76px; }
+  .layout-toc__rail .card { padding: var(--space-4); }
+  @media (max-width: 980px) { .layout-toc { grid-template-columns: 1fr; } .layout-toc__rail { display: none; } }
+</style>
+</head>
+<body>
+<!-- ========================= TOP NAV ========================= -->
+<header>
+<div class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">⚛</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="../sessions/session-09.html">‹ Navigation (S9)</a>
+<a aria-current="page" href="intents-navigator.html">Intents Explorer</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</div>
+</header>
+<main id="main">
+<div class="wrap">
+<!-- ========================= HERO ========================= -->
+<section aria-labelledby="hero-title" class="hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:var(--space-3)">
+<span class="pill pill--green">Concept Tool</span>
+<span class="pill">Intents &amp; the Android Ecosystem</span>
+<span class="pill">Works offline (file://)</span>
+</div>
+<h1 class="hero-title" id="hero-title">Explicit vs Implicit Intents Explorer</h1>
+<p class="hero-sub">An <em>Intent</em> is a message that asks the Android system to do something. Pick an action, edit the data, and watch the system either go straight to a named class (<strong>explicit</strong>) or resolve which installed app can handle it via <strong>intent filters</strong> (<strong>implicit</strong>) — with the equivalent Kotlin generated live.</p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 1</span>
+<span class="clo-tag">CLO 2</span>
+<span class="clo-tag">CLO 5</span>
+<span class="pill pill--accent">Supports Session 9 (Navigation) &amp; Session 5 (Components)</span>
+<span class="pill">Kotlin · Android SDK</span>
+</div>
+<p class="muted" style="color:#CFEFE2;margin:var(--space-4) 0 0;max-width:70ch;">
+<strong style="color:#fff;">Why it matters:</strong> Intents are how an app starts its own screens <em>and</em> how it taps the wider device — open a webpage, dial a number, share text, drop a map pin. Understanding explicit vs implicit resolution is foundational for in-app navigation, deep links, and integrating system/cloud services later in the course.
+    </p>
+</section>
+<div class="layout-toc">
+<!-- Sticky section index rail -->
+<aside aria-label="On this page" class="layout-toc__rail no-print">
+<div class="card">
+<div class="card__title">On this page</div>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+</aside>
+<div>
+<!-- ========================= HOW TO USE ========================= -->
+<section aria-labelledby="howto-title" class="slide">
+<div class="card card--accent">
+<h2 class="card__title" id="howto-title">💡 How to use this explorer</h2>
+<ol>
+<li><strong>Pick a mode</strong> — <em>Explicit</em> (you name the destination class) or <em>Implicit</em> (you declare an action + data and let Android find a handler).</li>
+<li><strong>Choose an action</strong> from the tiles (View a URL, Dial, Share text, View a map location, or — in explicit mode — open one of your own Activities).</li>
+<li><strong>Edit the data</strong> field (URL, phone number, message, coordinates) or the <em>extras</em>. The simulated phone screen and the Kotlin update instantly.</li>
+<li><strong>Read the "phone"</strong> on the right: implicit intents show the system <em>resolving</em> candidate apps via their intent filters; explicit intents go straight to the one named target.</li>
+<li><strong>Copy the Kotlin</strong> with the Copy button and try it in an Android Studio project on an emulator.</li>
+</ol>
+<p class="muted">Your last mode, action, and edits are saved in this browser, so you can demo, reset, and return to where you were.</p>
+</div>
+</section>
+<!-- ========================= THE EXPLORER ========================= -->
+<section aria-labelledby="explorer-title" class="slide">
+<h2 id="explorer-title">🧩 Interactive intent explorer</h2>
+<div class="row mb" style="justify-content:space-between;">
+<div aria-label="Intent mode" class="modeswitch" role="group">
+<button aria-pressed="false" id="mode-explicit" type="button">Explicit</button>
+<button aria-pressed="true" id="mode-implicit" type="button">Implicit</button>
+</div>
+<button class="btn btn--ghost btn--sm no-print" id="explorer-reset" type="button">↺ Reset explorer</button>
+</div>
+<p class="muted" id="mode-explainer" style="margin-top:0;"></p>
+<div class="explorer">
+<!-- LEFT: controls -->
+<div class="card">
+<div class="card__title">
+<span id="builder-title">Build the intent</span>
+<span class="badge" id="builder-mode-badge">implicit</span>
+</div>
+<p class="muted" style="margin-top:0;font-size:var(--fs-sm);">Pick an action:</p>
+<div aria-label="Choose an intent action" class="actiongrid" id="action-grid" role="group"></div>
+<!-- Data field (implicit) -->
+<div class="datafield" id="data-field-wrap">
+<label for="data-field" id="data-field-label">Data URI</label>
+<input autocomplete="off" id="data-field" spellcheck="false" type="text"/>
+<span class="hint" id="data-field-hint"></span>
+</div>
+<!-- Extras editor (explicit) -->
+<div class="hidden" id="extras-wrap">
+<label style="font-weight:700;font-size:var(--fs-sm);color:var(--teal-2);">Extras (key → value passed to the target)</label>
+<div class="extras" id="extras-list"></div>
+<button class="btn btn--ghost btn--sm" id="extra-add" type="button">+ Add extra</button>
+</div>
+</div>
+<!-- RIGHT: phone simulation -->
+<div>
+<div aria-live="polite" class="phone">
+<div class="phone__bar">
+<span id="phone-mode">Implicit intent</span>
+<span>📱 100%</span>
+</div>
+<div class="phone__screen" id="phone-screen"></div>
+</div>
+</div>
+</div>
+<!-- Generated Kotlin -->
+<h3 id="generated-kotlin">Equivalent Kotlin</h3>
+<p class="muted" style="margin-top:0;">This is the real code your selection produces. Copy it into an Activity or a Composable's <code>onClick</code> (passing a <code>Context</code>) and run it on an emulator.</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin</span>
+<pre><code id="kotlin-output">// pick an action above</code></pre>
+</div>
+<div class="callout callout--warn" id="resolve-tip">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Always handle "no app found"</span>
+<p>An implicit intent can fail if <em>no</em> installed app declares a matching intent filter (common on bare emulators with no browser, dialer, or maps app). Calling <code>startActivity()</code> blindly throws <code>ActivityNotFoundException</code> and crashes your app. Guard it — see the <code>try/catch</code> or <code>resolveActivity()</code> pattern in the generated code.</p>
+</div>
+</div>
+</section>
+<!-- ========================= HOW IMPLICIT RESOLUTION WORKS ========================= -->
+<section aria-labelledby="resolution-title" class="slide">
+<h2 id="resolution-title">🔎 How the system "resolves" an implicit intent</h2>
+<p>When you call <code>startActivity(intent)</code> with an <strong>implicit</strong> intent, you do not name a class. Instead, the Android <strong>Package Manager</strong> compares your intent's <strong>action</strong>, <strong>data</strong> (URI scheme + MIME type), and <strong>categories</strong> against the <code>&lt;intent-filter&gt;</code> elements every installed app declared in its manifest. Apps that match are <em>candidates</em>.</p>
+<div class="filter-flow">
+<div class="flow-box">
+<p class="flow-box__title">Your intent</p>
+<div class="key-val"><span class="kv-key">action</span> = VIEW</div>
+<div class="key-val"><span class="kv-key">data</span> = https://...</div>
+<div class="key-val"><span class="kv-key">category</span> = DEFAULT</div>
+</div>
+<div aria-hidden="true" class="flow-arrow">→</div>
+<div class="flow-box">
+<p class="flow-box__title">An app's intent-filter (manifest)</p>
+<div class="key-val"><span class="kv-key">action</span> VIEW</div>
+<div class="key-val"><span class="kv-key">category</span> DEFAULT, BROWSABLE</div>
+<div class="key-val"><span class="kv-key">data</span> scheme="https"</div>
+</div>
+</div>
+<p>All three tests must pass for a filter to match:</p>
+<ul>
+<li><strong>Action test</strong> — the filter must list your action (e.g. <code>android.intent.action.VIEW</code>), or list none.</li>
+<li><strong>Category test</strong> — every category in your intent must appear in the filter. Implicit intents launched via <code>startActivity()</code> implicitly add <code>CATEGORY_DEFAULT</code>, so the target's filter must include it.</li>
+<li><strong>Data test</strong> — the URI <em>scheme</em> (<code>https</code>, <code>tel</code>, <code>geo</code>, <code>mailto</code>…), host, path, and/or MIME type must match the filter's <code>&lt;data&gt;</code> rules.</li>
+</ul>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">One match vs many</span>
+<p>If exactly one app matches (or the user set a default), Android launches it directly. If several match, the system shows a <strong>disambiguation dialog</strong> ("Open with…"). You can <em>force</em> that chooser every time — useful for "Share via" — by wrapping your intent in <code>Intent.createChooser(intent, "Share via")</code>.</p>
+</div>
+</div>
+</section>
+<!-- ========================= COMPARISON TABLE ========================= -->
+<section aria-labelledby="compare-title" class="slide">
+<h2 id="compare-title">⚖️ Explicit vs Implicit — side by side</h2>
+<div style="overflow-x:auto;">
+<table class="cmp-table">
+<thead>
+<tr>
+<th scope="col">Dimension</th>
+<th scope="col">Explicit intent</th>
+<th scope="col">Implicit intent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="cmp-dim">What you specify</td>
+<td>An exact component: a <code>Class</code> (or component name) you own.</td>
+<td>An <strong>action</strong> + optional <strong>data</strong>/<strong>category</strong>; no class.</td>
+</tr>
+<tr>
+<td class="cmp-dim">Who handles it</td>
+<td>Exactly the named <code>Activity</code> / <code>Service</code> / <code>BroadcastReceiver</code>.</td>
+<td>Any app whose <code>&lt;intent-filter&gt;</code> matches — chosen by the system or the user.</td>
+</tr>
+<tr>
+<td class="cmp-dim">Typical use</td>
+<td>Navigating <em>within your own app</em> (screen → screen), starting your own service.</td>
+<td>Delegating to <em>other apps</em>: open web, dial, share, map, pick a photo, send email.</td>
+</tr>
+<tr>
+<td class="cmp-dim">Constructor</td>
+<td><code>Intent(context, TargetActivity::class.java)</code></td>
+<td><code>Intent(Intent.ACTION_VIEW, uri)</code></td>
+</tr>
+<tr>
+<td class="cmp-dim">Can it fail to resolve?</td>
+<td>No — the class always exists (it is yours, in your app).</td>
+<td>Yes — if no app matches, <code>startActivity()</code> throws <code>ActivityNotFoundException</code>.</td>
+</tr>
+<tr>
+<td class="cmp-dim">User chooser</td>
+<td>Never (no ambiguity).</td>
+<td>Shown when multiple match; can be forced with <code>createChooser()</code>.</td>
+</tr>
+<tr>
+<td class="cmp-dim">Security note</td>
+<td>Stays inside your process/app sandbox.</td>
+<td>Hands data to another app — never send secrets; validate returned data.</td>
+</tr>
+<tr>
+<td class="cmp-dim">Compose habit</td>
+<td>For in-app screens, prefer <strong>Navigation-Compose</strong> routes over launching Activities.</td>
+<td>Still the right tool to reach <em>outside</em> your app from a Composable's <code>onClick</code>.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Rule of thumb</span>
+<p>Staying <em>inside</em> your app? In modern Compose apps you usually use <strong>Navigation-Compose</strong> (routes), not explicit Intents — but explicit Intents are still correct for launching a specific Activity, Service, or another module you own. Leaving your app to use a device capability (browser, dialer, maps, share sheet, camera)? Use an <strong>implicit</strong> Intent — and always guard it.</p>
+</div>
+</div>
+</section>
+<!-- ========================= WHEN TO USE WHICH ========================= -->
+<section aria-labelledby="guidance-title" class="slide">
+<h2 id="guidance-title">🧠 When to reach for each — and common pitfalls</h2>
+<div class="accordion">
+<div class="accordion__item is-open">
+<button class="accordion__head" type="button">Use an EXPLICIT intent when…</button>
+<div class="accordion__body">
+<ul>
+<li>You are starting a screen <strong>in your own app</strong> (a settings screen, a detail Activity) and you are <em>not</em> using Navigation-Compose for it.</li>
+<li>You are starting <strong>your own</strong> <code>Service</code> (e.g. a foreground download service) or sending an internal broadcast.</li>
+<li>You need to pass data with <code>putExtra()</code> to a destination whose contract you control.</li>
+<li>Security matters: an explicit intent cannot be intercepted by another app, so it is the safe choice for internal messaging.</li>
+</ul>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin</span>
+<pre><code>// From a Composable button, navigating to your own DetailActivity
+val context = LocalContext.current
+Button(onClick = {
+    val intent = Intent(context, DetailActivity::class.java).apply {
+        putExtra("ITEM_ID", 42)
+        putExtra("ITEM_TITLE", "Trail Runner")
+    }
+    context.startActivity(intent)
+}) {
+    Text("Open details")
+}
+
+// In modern Compose apps, prefer Navigation-Compose for in-app screens:
+navController.navigate("detail/42")</code></pre>
+</div>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Use an IMPLICIT intent when…</button>
+<div class="accordion__body">
+<ul>
+<li>You want to <strong>open a website</strong> in whatever browser the user prefers (<code>ACTION_VIEW</code> + <code>https:</code> URI).</li>
+<li>You want to <strong>dial / call</strong> a number (<code>ACTION_DIAL</code> + <code>tel:</code> — no permission; or <code>ACTION_CALL</code> which needs <code>CALL_PHONE</code>).</li>
+<li>You want to <strong>share text or a file</strong> to any app via the system share sheet (<code>ACTION_SEND</code> + a MIME type, wrapped in <code>createChooser()</code>).</li>
+<li>You want to <strong>show a map location</strong> in any maps app (<code>ACTION_VIEW</code> + <code>geo:</code> URI).</li>
+<li>You want to <strong>compose an email</strong> (<code>ACTION_SENDTO</code> + <code>mailto:</code>), pick a contact, or capture a photo.</li>
+</ul>
+<p class="muted">These delegate to apps you do not own. Always assume the handler app might be missing or might return unexpected data.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Common pitfalls (and the fix)</button>
+<div class="accordion__body">
+<ul>
+<li><strong>Crash: <code>ActivityNotFoundException</code></strong> — you called <code>startActivity()</code> on an implicit intent with no handler. <em>Fix:</em> wrap in <code>try/catch</code>, or check <code>intent.resolveActivity(packageManager) != null</code> first (mind the API 30+ <code>&lt;queries&gt;</code> caveat).</li>
+<li><strong>"ACTION_CALL needs a permission"</strong> — <code>ACTION_CALL</code> places the call immediately and requires the <code>CALL_PHONE</code> runtime permission. <em>Fix:</em> use <code>ACTION_DIAL</code>, which just opens the dialer pre-filled and needs <strong>no</strong> permission.</li>
+<li><strong>Share sheet not appearing</strong> — you launched <code>ACTION_SEND</code> directly, so a saved default skipped the chooser. <em>Fix:</em> wrap with <code>Intent.createChooser(sendIntent, "Share via")</code>.</li>
+<li><strong>geo: opens nothing on emulator</strong> — a bare emulator image may have no maps app. <em>Fix:</em> use an emulator with Google Play / Google APIs, or guard with a fallback to <code>https://www.google.com/maps</code>.</li>
+<li><strong>Wrong text not shared</strong> — you set the data URI instead of <code>EXTRA_TEXT</code>. <em>Fix:</em> for <code>ACTION_SEND</code>, the payload goes in <code>putExtra(Intent.EXTRA_TEXT, ...)</code> with <code>type = "text/plain"</code>.</li>
+</ul>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Getting a result back (the modern Activity Result API)</button>
+<div class="accordion__body">
+<p style="margin-top:0">So far each intent is fire-and-forget. Often you need a <em>result</em> back — pick a photo, take a
+              picture, choose a contact. The modern way is the <strong>Activity Result API</strong>:
+              <code>rememberLauncherForActivityResult</code> in Compose, which <strong>replaces the deprecated</strong>
+              <code>startActivityForResult()</code> / <code>onActivityResult()</code> pair. It is type-safe (the contract
+              declares the input and result types), survives configuration changes, and keeps the launch + callback in one
+              place instead of a far-away override.</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin</span>
+<pre><code>// MODERN: get a result back without startActivityForResult / onActivityResult
+@Composable
+fun PickPhotoButton(onPicked: (Uri?) -&gt; Unit) {
+    // GetContent() is a built-in ActivityResultContract; the lambda is the callback.
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? -&gt; onPicked(uri) }   // uri is null if the user backs out
+
+    Button(onClick = { launcher.launch("image/*") }) {   // launch the implicit pick intent
+        Text("Choose a photo")
+    }
+}
+
+// LEGACY (do NOT use in new code) — split across two methods, not type-safe:
+//   startActivityForResult(intent, REQUEST_PICK)              // deprecated
+//   override fun onActivityResult(req, res, data) { ... }     // deprecated</code></pre>
+</div>
+<p class="muted" style="margin-bottom:0">There are ready-made contracts for the common jobs (<code>GetContent</code>,
+              <code>TakePicture</code>, <code>PickContact</code>, <code>RequestPermission</code>), and
+              <code>StartActivityForResult()</code> for an arbitrary <code>Intent</code> — but you call
+              <code>.launch()</code> on a launcher, never the old <code>startActivityForResult()</code> method.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================= MANIFEST: MAKING YOUR APP A TARGET ========================= -->
+<section aria-labelledby="manifest-title" class="slide">
+<h2 id="manifest-title">📄 Bonus: make YOUR app a candidate (declare an intent filter)</h2>
+<p>The flip side of resolution: if you want <em>your</em> Activity to appear in the "Open with…" list — for example, to handle <code>https://yourapp.example.com</code> deep links — you declare an <code>&lt;intent-filter&gt;</code> in <code>AndroidManifest.xml</code>. This is the manifest your app exposes to the Package Manager.</p>
+<div class="codeblock">
+<span class="codeblock__lang">xml</span>
+<pre><code>&lt;!-- AndroidManifest.xml — make DetailActivity handle https deep links --&gt;
+&lt;activity
+    android:name=".DetailActivity"
+    android:exported="true"&gt;   &lt;!-- exported=true is REQUIRED for filters that other apps trigger --&gt;
+
+    &lt;intent-filter android:autoVerify="true"&gt;
+        &lt;action android:name="android.intent.action.VIEW" /&gt;
+
+        &lt;!-- BROWSABLE lets a web link launch it; DEFAULT lets startActivity() reach it --&gt;
+        &lt;category android:name="android.intent.category.DEFAULT" /&gt;
+        &lt;category android:name="android.intent.category.BROWSABLE" /&gt;
+
+        &lt;data
+            android:scheme="https"
+            android:host="yourapp.example.com"
+            android:pathPrefix="/item" /&gt;
+    &lt;/intent-filter&gt;
+&lt;/activity&gt;</code></pre>
+</div>
+<p>Read incoming intent data in the launched Activity:</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin</span>
+<pre><code>class DetailActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Came from a deep link? intent.data holds the matched Uri.
+        val deepLink: Uri? = intent.data
+        val itemId = deepLink?.lastPathSegment       // e.g. "/item/42" -&gt; "42"
+
+        // Or extras passed by an explicit intent inside our own app:
+        val titleFromExtra = intent.getStringExtra("ITEM_TITLE")
+
+        setContent {
+            DetailScreen(itemId = itemId, title = titleFromExtra)
+        }
+    }
+}</code></pre>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">android:exported is mandatory</span>
+<p>Since Android 12 (API 31), any component with an <code>&lt;intent-filter&gt;</code> <strong>must</strong> explicitly set <code>android:exported="true"</code> (reachable by other apps) or <code>"false"</code>. Omitting it is a build error. Only export what genuinely needs to be reached from outside.</p>
+</div>
+</div>
+</section>
+<!-- ========================= QUICK CHECK QUIZ ========================= -->
+<section aria-labelledby="check-title" class="slide">
+<h2 id="check-title">✅ 3 quick check questions</h2>
+<p class="muted" style="margin-top:0;">Answer, then submit to see explanations. You need 67% (2 of 3) to pass.</p>
+<div data-quiz="quiz-intents" data-topic="architecture"></div>
+<script id="quiz-intents" type="application/json">
+        {
+          "title": "Intents: explicit vs implicit",
+          "intro": "Three questions to confirm you can tell the two apart and use them safely.",
+          "passingScore": 0.67,
+          "questions": [
+            {
+              "id": "q1",
+              "type": "single",
+              "prompt": "Your app needs to open a user-tapped web URL in whatever browser the user prefers. Which intent is correct?",
+              "options": [
+                { "id": "a", "text": "Explicit: Intent(context, BrowserActivity::class.java)" },
+                { "id": "b", "text": "Implicit: Intent(Intent.ACTION_VIEW, Uri.parse(url))" },
+                { "id": "c", "text": "Explicit: Intent(context, MainActivity::class.java).putExtra(\"url\", url)" },
+                { "id": "d", "text": "Neither — you must embed a WebView and never leave the app" }
+              ],
+              "correct": ["b"],
+              "explanation": "Opening a URL in the user's preferred browser is a job for another app, so it is an IMPLICIT intent: declare ACTION_VIEW with the https Uri and let the system resolve a browser. You do not (and cannot) name a browser class explicitly."
+            },
+            {
+              "id": "q2",
+              "type": "truefalse",
+              "prompt": "Calling startActivity() on an implicit intent can crash with ActivityNotFoundException if no installed app declares a matching intent filter.",
+              "correct": true,
+              "explanation": "True. An implicit intent only works if some app's <intent-filter> matches the action + data + category. With no match (e.g. a bare emulator missing a browser), startActivity() throws ActivityNotFoundException. Always guard with try/catch or check resolveActivity() first."
+            },
+            {
+              "id": "q3",
+              "type": "single",
+              "prompt": "Which line makes the system ALWAYS show the 'Share via…' chooser instead of jumping to a saved default?",
+              "options": [
+                { "id": "a", "text": "startActivity(sendIntent)" },
+                { "id": "b", "text": "startActivity(Intent.createChooser(sendIntent, \"Share via\"))" },
+                { "id": "c", "text": "sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)" },
+                { "id": "d", "text": "sendIntent.setPackage(\"com.android.share\")" }
+              ],
+              "correct": ["b"],
+              "explanation": "Intent.createChooser() forces the disambiguation dialog every time, bypassing any saved default app. setPackage() would do the opposite — pin it to one app — and NEW_TASK is just a launch flag."
+            }
+          ]
+        }
+        </script>
+</section>
+<!-- ========================= FLASHCARDS ========================= -->
+<section aria-labelledby="flash-title" class="slide">
+<h2 id="flash-title">🃏 Review flashcards</h2>
+<p class="muted" style="margin-top:0;">Flip each card; mark "Got it" to remove it from the deck or "Review again" to keep cycling.</p>
+<div data-flashcards="cards-intents"></div>
+<script id="cards-intents" type="application/json">
+        [
+          { "front": "What is an Intent?", "back": "A messaging object that requests an action from another app component (an Activity, Service, or BroadcastReceiver) — possibly in another app. It can carry data (a Uri) and extras (a Bundle).", "tag": "definition" },
+          { "front": "Explicit intent — one-line definition", "back": "Targets a specific component by its class/component name. Used to navigate within your own app. Example: Intent(context, DetailActivity::class.java).", "tag": "explicit" },
+          { "front": "Implicit intent — one-line definition", "back": "Declares an action + data and lets the system resolve which installed app can handle it via matching <intent-filter>s. Example: Intent(ACTION_VIEW, Uri.parse(url)).", "tag": "implicit" },
+          { "front": "The three resolution tests for an implicit intent", "back": "1) Action test — filter lists your action. 2) Category test — filter lists every category you set (DEFAULT is auto-added by startActivity). 3) Data test — URI scheme/host/path and/or MIME type match.", "tag": "resolution" },
+          { "front": "ACTION_DIAL vs ACTION_CALL", "back": "ACTION_DIAL opens the dialer pre-filled with the number — NO permission needed. ACTION_CALL places the call immediately and requires the CALL_PHONE runtime permission. Prefer DIAL.", "tag": "actions" },
+          { "front": "How do you force the 'Open with / Share via' chooser?", "back": "Wrap the intent: startActivity(Intent.createChooser(intent, \"Share via\")). This shows the disambiguation dialog every time, ignoring any saved default.", "tag": "chooser" },
+          { "front": "How do you avoid an ActivityNotFoundException crash?", "back": "Guard implicit intents: wrap startActivity() in try/catch, or check intent.resolveActivity(packageManager) != null first (remembering the API 30+ <queries> visibility rule).", "tag": "safety" },
+          { "front": "What must an Activity declare to be a candidate for an implicit intent?", "back": "An <intent-filter> in AndroidManifest.xml listing the action, category DEFAULT (and BROWSABLE for web links), and matching <data>. Plus android:exported=\"true\" (required since API 31).", "tag": "manifest" },
+          { "front": "geo: URI format for a map pin", "back": "geo:LAT,LNG?q=LAT,LNG(Label) — e.g. geo:25.7617,-80.1918?q=25.7617,-80.1918(Miami). Launch with ACTION_VIEW.", "tag": "actions" },
+          { "front": "In a Compose app, what do you usually use for in-app screen navigation instead of explicit Intents?", "back": "Navigation-Compose: a NavController + NavHost with string routes, e.g. navController.navigate(\"detail/42\"). Explicit Intents are still valid for launching a whole Activity/Service you own.", "tag": "compose" },
+          { "front": "How do you get a RESULT back from an intent (e.g. pick a photo) in modern Android?", "back": "The Activity Result API: rememberLauncherForActivityResult(contract) { result -> ... } in Compose, then launcher.launch(input). It REPLACES the deprecated startActivityForResult() / onActivityResult() pair — type-safe and config-change safe.", "tag": "results" }
+        ]
+        </script>
+</section>
+<!-- ========================= RESOURCES ========================= -->
+<section aria-labelledby="res-title" class="slide">
+<h2 id="res-title">📚 Official references</h2>
+<div class="grid grid-2">
+<div class="card">
+<div class="card__title">Android Developer docs</div>
+<ul>
+<li><a href="https://developer.android.com/guide/components/intents-filters" rel="noopener" target="_blank">Intents and intent filters</a> — the authoritative guide.</li>
+<li><a href="https://developer.android.com/training/basics/intents/sending" rel="noopener" target="_blank">Send the user to another app</a> — implicit intents in practice.</li>
+<li><a href="https://developer.android.com/training/package-visibility" rel="noopener" target="_blank">Package visibility (API 30+)</a> — the <code>&lt;queries&gt;</code> rule.</li>
+<li><a href="https://developer.android.com/training/app-links/deep-linking" rel="noopener" target="_blank">Create deep links to app content</a> — making your app a target.</li>
+<li><a href="https://developer.android.com/training/basics/intents/result" rel="noopener" target="_blank">Get a result from an activity</a> — the modern Activity Result API (replaces <code>startActivityForResult</code>).</li>
+</ul>
+</div>
+<div class="card">
+<div class="card__title">Course context</div>
+<ul>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-4" rel="noopener" target="_blank">Android Basics with Compose — Unit 4</a> (Navigation &amp; app architecture).</li>
+<li><a href="../sessions/session-09.html">Session 9 — Navigation &amp; multi-screen apps</a> (this tool supports it).</li>
+<li><a href="https://developer.android.com/guide/components/activities/activity-lifecycle" rel="noopener" target="_blank">Activity lifecycle</a> — what runs when an intent launches an Activity.</li>
+<li><a href="../index.html">← Back to the course hub</a></li>
+</ul>
+</div>
+</div>
+</section>
+<!-- ========================= DRILLS (deliberate practice) ========================= -->
+<section aria-labelledby="drills-title" class="card slide">
+<h2 class="card__title" id="drills-title">🏋️ Drills — decide, debug, and contrast</h2>
+<p class="muted" style="margin-top:0;max-width:74ch;">
+        The explorer above builds intuition. These drills turn it into <em>skill</em>: first decide
+        <strong>explicit vs implicit</strong> under pressure, then fix three real intent bugs with instant pass/fail
+        feedback, then nail the call most people get wrong — <strong>classic Intent vs Navigation-Compose</strong> for
+        in-app screens. The code drills run a <code>fun main()</code> harness: you've got it when every case prints
+        <strong>✓ passed</strong> and you see <strong>ALL TESTS PASSED 🎉</strong>.
+      </p>
+<p class="muted" style="margin-top:0;">
+        Because the Android SDK isn't on the live Kotlin runner's classpath, each "fix the intent" drill models the
+        exact decision in pure Kotlin — the same logic your real <code>Intent</code> code depends on. The fix you
+        make here is the fix you'd make in Android Studio.
+      </p>
+<!-- ---------------- 1. DECISION DRILL: explicit vs implicit ---------------- -->
+<h3 id="drills-decision">1 · Decision drill — explicit or implicit?</h3>
+<p>For each scenario, pick the intent a senior engineer would reach for. The rule under test:
+        <strong>staying inside your own app</strong> (a named component you own) → <em>explicit</em>;
+        <strong>delegating to a device capability</strong> (browser, dialer, maps, share) → <em>implicit</em>.</p>
+<div data-quiz="quiz-intent-decision" data-topic="architecture"></div>
+<script id="quiz-intent-decision" type="application/json">
+        {
+          "title": "Which intent? — explicit vs implicit",
+          "intro": "Five real decisions. Name the destination yourself, or let the system resolve a handler?",
+          "passingScore": 0.8,
+          "questions": [
+            {
+              "id": "d1",
+              "type": "single",
+              "prompt": "A list item is tapped; you want to open YOUR own DetailActivity and pass it an item id. Which intent?",
+              "options": [
+                { "id": "a", "text": "Explicit — Intent(context, DetailActivity::class.java).putExtra(\"ITEM_ID\", id)" },
+                { "id": "b", "text": "Implicit — Intent(Intent.ACTION_VIEW, Uri.parse(\"detail/$id\"))" },
+                { "id": "c", "text": "Implicit — Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_TEXT, id)" }
+              ],
+              "correct": ["a"],
+              "explanation": "DetailActivity is a component YOU own, so name it directly with an explicit intent. No resolution, no chooser, and it can't be hijacked. (In a Compose-only app you'd usually navController.navigate(\"detail/$id\") instead of launching a whole Activity.)"
+            },
+            {
+              "id": "d2",
+              "type": "single",
+              "prompt": "The user taps a phone number and you want to open the dialer with it pre-filled — without requesting any permission. Which intent?",
+              "options": [
+                { "id": "a", "text": "Explicit — Intent(context, DialerActivity::class.java) (DialerActivity is the system dialer's class)" },
+                { "id": "b", "text": "Implicit — Intent(Intent.ACTION_DIAL, Uri.parse(\"tel:+13055551234\"))" },
+                { "id": "c", "text": "Implicit — Intent(Intent.ACTION_CALL, Uri.parse(\"tel:+13055551234\"))" }
+              ],
+              "correct": ["b"],
+              "explanation": "You don't own the dialer and can't name its class, so it must be implicit. ACTION_DIAL just opens the dialer pre-filled — NO permission. ACTION_CALL would place the call immediately and needs the CALL_PHONE runtime permission; prefer DIAL."
+            },
+            {
+              "id": "d3",
+              "type": "single",
+              "prompt": "You want to let the user share a quote to ANY app they choose, with the picker always appearing. Which is right?",
+              "options": [
+                { "id": "a", "text": "Implicit — startActivity(Intent.createChooser(sendIntent, \"Share via\"))" },
+                { "id": "b", "text": "Implicit — startActivity(sendIntent) directly (lets a saved default skip the chooser)" },
+                { "id": "c", "text": "Explicit — Intent(context, ShareActivity::class.java)" }
+              ],
+              "correct": ["a"],
+              "explanation": "Sharing delegates to other apps → implicit (ACTION_SEND + type=\"text/plain\"). Wrapping in createChooser() forces the 'Share via…' picker every time instead of jumping to a saved default."
+            },
+            {
+              "id": "d4",
+              "type": "single",
+              "prompt": "You're moving from a Login screen to a Home screen inside a modern single-Activity Compose app. What's the idiomatic choice?",
+              "options": [
+                { "id": "a", "text": "Implicit — Intent(Intent.ACTION_VIEW, Uri.parse(\"home\"))" },
+                { "id": "b", "text": "Explicit — Intent(context, HomeActivity::class.java)" },
+                { "id": "c", "text": "Neither Intent — navController.navigate(\"home\") via Navigation-Compose" }
+              ],
+              "correct": ["c"],
+              "explanation": "Both screens are composables in ONE Activity. You don't need an Intent at all — Navigation-Compose swaps the destination inside the same NavHost. Explicit Intents are still valid to launch a whole separate Activity you own, but route-based nav is the in-app default."
+            },
+            {
+              "id": "d5",
+              "type": "truefalse",
+              "prompt": "Because an explicit intent names a class in your own app, it can never fail to resolve — so it never needs a try/catch around startActivity for 'no handler found'.",
+              "correct": true,
+              "explanation": "True for the 'no handler' case: the named class lives in your app, so there's no ActivityNotFoundException from missing intent filters. (Implicit intents are the ones that can throw — always guard those.)"
+            }
+          ]
+        }
+        </script>
+<!-- ---------------- 2. FIX-THE-INTENT DEBUG CHALLENGES ---------------- -->
+<h3 id="drills-fix">2 · Fix the intent — three auto-checked bug hunts</h3>
+<p class="muted" style="margin-top:0;">Each block ships with a broken decision and a <code>// YOUR CODE</code> region. Run it, watch it fail,
+        fix the model, and run again until you see <strong>ALL TESTS PASSED 🎉</strong>. Reveal the Hint or Reference
+        solution only after you've tried.</p>
+<!-- BUG 1: missing resolve guard -> crash -->
+<h4>Bug 1 — the unguarded implicit intent that crashes</h4>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Wrong mental model → why it bites in production</span>
+<p>"An implicit intent always finds an app, so I can just call <code>startActivity()</code>." On a bare emulator
+            (or a locked-down device) <em>no</em> app may declare a matching filter — and an unguarded launch throws
+            <code>ActivityNotFoundException</code> and crashes. Model the guard: if nothing handles the action, fall back
+            instead of blowing up.</p>
+</div>
+</div>
+<div class="codeblock" data-challenge="lab-intents-guard" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge — never crash on a missing handler</div>
+<pre><code>// Models startActivity() for an implicit intent: pick the handler, or a safe fallback.
+val installedHandlers = mapOf(
+    "VIEW" to "Browser",
+    "DIAL" to "Dialer"
+    // note: no app handles "SEND" on this device
+)
+
+// Return the app that launches, or — if nothing matches — the SAFE FALLBACK
+// "showToast" instead of crashing (the model of a try/catch or resolveActivity guard).
+fun launch(action: String): String {
+    // ----- YOUR CODE -----
+    // Look up `action` in installedHandlers.
+    // If an app handles it, return that app's name.
+    // If NOT, return "showToast" (do NOT crash / throw).
+    return installedHandlers[action]!!   // BUG: !! crashes when there is no handler
+    // ----- END YOUR CODE -----
+}
+
+// ---------- test harness (do not edit) ----------
+fun main() {
+    val cases = listOf(
+        "VIEW" to "Browser",
+        "DIAL" to "Dialer",
+        "SEND" to "showToast"   // nothing handles SEND -&gt; must fall back, not crash
+    )
+    var allPass = true
+    for ((action, expected) in cases) {
+        val got = try { launch(action) } catch (e: Exception) { "CRASH(${e::class.simpleName})" }
+        if (got == expected) {
+            println("✓ passed: $action -&gt; $got")
+        } else {
+            allPass = false
+            println("✗ FAILED: $action -&gt; expected $expected, got $got")
+        }
+    }
+    println(if (allPass) "ALL TESTS PASSED 🎉" else "Keep going — what happens when nothing handles the action?")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body">
+<p style="margin-top:0">The <code>!!</code> operator is the bug: it throws when the lookup is <code>null</code> — exactly the
+              crash an unguarded <code>startActivity()</code> would cause. Swap it for the Elvis operator so a missing
+              handler becomes the fallback: <code>installedHandlers[action] ?: "showToast"</code>. That <code>?:</code>
+              is the pure-Kotlin model of <code>if (intent.resolveActivity(packageManager) != null) … else fallback</code>.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin — reference</div>
+<pre><code>fun launch(action: String): String {
+    // No handler? Fall back gracefully instead of throwing.
+    return installedHandlers[action] ?: "showToast"
+}</code></pre>
+</div>
+<p class="muted" style="margin-bottom:0">In real Compose this is the guard you wrap every implicit intent in:
+              <code>try { context.startActivity(intent) } catch (e: ActivityNotFoundException) { /* toast */ }</code>.
+              The <code>?:</code> branch <em>is</em> the crash you're preventing.</p>
+</div>
+</div>
+</div>
+<!-- BUG 2: payload in the data Uri instead of EXTRA_TEXT -->
+<h4>Bug 2 — ACTION_SEND text in the wrong place</h4>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Wrong mental model → why it bites in production</span>
+<p>"For a share intent, the text I want to send is the intent's <em>data</em>." It isn't. For
+            <code>ACTION_SEND</code> the payload lives in <code>putExtra(Intent.EXTRA_TEXT, …)</code> with
+            <code>type = "text/plain"</code>; the data <code>Uri</code> is for <em>file/content</em> shares. Put the
+            message in the wrong slot and the receiving app shares an empty or wrong payload. Build the SEND spec
+            correctly below.</p>
+</div>
+</div>
+<div class="codeblock" data-challenge="lab-intents-send" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge — put the payload in EXTRA_TEXT</div>
+<pre><code>// A tiny model of an ACTION_SEND intent: its action, MIME type, and a bag of extras.
+data class SendIntent(
+    val action: String,
+    val type: String?,
+    val extras: Map&lt;String, String&gt;
+)
+
+const val EXTRA_TEXT = "android.intent.extra.TEXT"
+
+// Build a correct "share plain text" intent for the given message.
+fun buildShare(message: String): SendIntent {
+    // ----- YOUR CODE -----
+    // The intent must have:
+    //   action = "SEND"
+    //   type   = "text/plain"
+    //   extras = the message stored under the EXTRA_TEXT key (NOT in a data Uri)
+    return SendIntent(action = "SEND", type = null, extras = emptyMap()) // BUG: no type, no payload
+    // ----- END YOUR CODE -----
+}
+
+// ---------- test harness (do not edit) ----------
+fun main() {
+    val msg = "I shipped my first Android app! 🚀"
+    val i = buildShare(msg)
+    var allPass = true
+    fun check(name: String, cond: Boolean, expected: String, got: String) {
+        if (cond) println("✓ passed: $name")
+        else { allPass = false; println("✗ FAILED: $name -&gt; expected $expected, got $got") }
+    }
+    check("action is SEND", i.action == "SEND", "SEND", i.action)
+    check("type is text/plain", i.type == "text/plain", "text/plain", "${i.type}")
+    check("payload in EXTRA_TEXT", i.extras[EXTRA_TEXT] == msg, msg, "${i.extras[EXTRA_TEXT]}")
+    println(if (allPass) "ALL TESTS PASSED 🎉" else "Keep going — where does ACTION_SEND text belong?")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body">
+<p style="margin-top:0">Two fixes: set <code>type = "text/plain"</code> so resolution can match text apps, and store the
+              message under the <code>EXTRA_TEXT</code> key: <code>extras = mapOf(EXTRA_TEXT to message)</code>. In real
+              Kotlin this is <code>Intent(ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, message) }</code>.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin — reference</div>
+<pre><code>fun buildShare(message: String): SendIntent {
+    return SendIntent(
+        action = "SEND",
+        type = "text/plain",
+        extras = mapOf(EXTRA_TEXT to message)   // payload goes in EXTRA_TEXT, not a data Uri
+    )
+}</code></pre>
+</div>
+<p class="muted" style="margin-bottom:0">Then wrap it: <code>startActivity(Intent.createChooser(sendIntent, "Share via"))</code>
+              so the picker always appears.</p>
+</div>
+</div>
+</div>
+<!-- BUG 3: implicit where explicit is required -->
+<h4>Bug 3 — implicit where you needed explicit (in-app navigation)</h4>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Wrong mental model → why it bites in production</span>
+<p>"Any time I leave a screen I should declare an action and let the system resolve it." When the destination is a
+            component <em>you own</em>, an implicit intent is wrong: it may resolve to another app, pop a chooser, or fail
+            — and it's a security hole (another app could register the same action). Name your own component
+            <strong>explicitly</strong>. Classify each route correctly below.</p>
+</div>
+</div>
+<div class="codeblock" data-challenge="lab-intents-classify" data-run="kotlin" data-topic="architecture">
+<div class="codeblock__lang">Kotlin · runnable challenge — explicit for in-app, implicit for the device</div>
+<pre><code>// Each Destination is either a component WE own (explicit) or a device capability (implicit).
+sealed interface Destination {
+    data class OwnScreen(val activity: String) : Destination          // ours -&gt; EXPLICIT
+    data class DeviceCapability(val action: String) : Destination     // theirs -&gt; IMPLICIT
+}
+
+// Return "explicit:&lt;activity&gt;" for our own screens,
+// or "implicit:&lt;action&gt;" for device capabilities.
+fun route(dest: Destination): String {
+    // ----- YOUR CODE -----
+    // Use an exhaustive `when` over the sealed type.
+    // OwnScreen        -&gt; "explicit:" + its activity
+    // DeviceCapability -&gt; "implicit:" + its action
+    TODO("classify each destination")
+    // ----- END YOUR CODE -----
+}
+
+// ---------- test harness (do not edit) ----------
+fun main() {
+    val cases = listOf(
+        Destination.OwnScreen("DetailActivity")     to "explicit:DetailActivity",
+        Destination.OwnScreen("SettingsActivity")   to "explicit:SettingsActivity",
+        Destination.DeviceCapability("VIEW")        to "implicit:VIEW",   // open a URL in a browser
+        Destination.DeviceCapability("DIAL")        to "implicit:DIAL"    // open the dialer
+    )
+    var allPass = true
+    for ((dest, expected) in cases) {
+        val got = route(dest)
+        if (got == expected) {
+            println("✓ passed: $dest -&gt; $got")
+        } else {
+            allPass = false
+            println("✗ FAILED: $dest -&gt; expected $expected, got $got")
+        }
+    }
+    println(if (allPass) "ALL TESTS PASSED 🎉" else "Keep going — own screen = explicit, device = implicit.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body">
+<p style="margin-top:0">A sealed interface makes the <code>when</code> exhaustive — no <code>else</code> needed, and Kotlin smart-casts
+              each branch so you can read <code>dest.activity</code> / <code>dest.action</code> directly:</p>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin</div>
+<pre><code>when (dest) {
+    is Destination.OwnScreen        -&gt; "explicit:${dest.activity}"
+    is Destination.DeviceCapability -&gt; "implicit:${dest.action}"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin — reference</div>
+<pre><code>fun route(dest: Destination): String = when (dest) {
+    is Destination.OwnScreen        -&gt; "explicit:${dest.activity}"
+    is Destination.DeviceCapability -&gt; "implicit:${dest.action}"
+}</code></pre>
+</div>
+<p class="muted" style="margin-bottom:0">"Own component → explicit" isn't just style: an explicit intent stays in your sandbox and can't be
+              intercepted. Implicit is for reaching the device (browser, dialer, maps, share) — never for your own screens.</p>
+</div>
+</div>
+</div>
+<!-- ---------------- 3. CONTRAST: classic Intents vs Navigation-Compose ---------------- -->
+<h3 id="drills-contrast">3 · Classic Intents vs Navigation-Compose</h3>
+<p>Intents launch <em>components</em> (whole Activities, or other apps). <strong>Navigation-Compose</strong> swaps
+        <em>composable destinations</em> inside a single Activity using string <strong>routes</strong> — no new Activity,
+        no Intent, no system resolution. The most common real-world mistake is reaching for an Intent when a route is the
+        right tool (and vice-versa). This table is the decision you make on almost every screen change.</p>
+<div style="overflow-x:auto;">
+<table class="cmp-table">
+<thead>
+<tr>
+<th scope="col">Dimension</th>
+<th scope="col">Classic Intent</th>
+<th scope="col">Navigation-Compose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="cmp-dim">Unit of navigation</td>
+<td>An <code>Activity</code> (or another app) — a whole new screen + lifecycle.</td>
+<td>A <strong>composable destination</strong> inside one Activity's <code>NavHost</code>.</td>
+</tr>
+<tr>
+<td class="cmp-dim">How you trigger it</td>
+<td><code>context.startActivity(Intent(context, Screen::class.java))</code></td>
+<td><code>navController.navigate("detail/42")</code></td>
+</tr>
+<tr>
+<td class="cmp-dim">Passing data</td>
+<td><code>putExtra(...)</code> → read back with <code>intent.getStringExtra(...)</code>.</td>
+<td>Typed <strong>route arguments</strong>: <code>navigate("detail/$id")</code>, read via <code>navArgument</code> / <code>backStackEntry</code>.</td>
+</tr>
+<tr>
+<td class="cmp-dim">Back stack</td>
+<td>Managed by the OS task/back stack of Activities.</td>
+<td>Managed by the <code>NavController</code> in-process; <code>popBackStack()</code>, <code>launchSingleTop</code>, etc.</td>
+</tr>
+<tr>
+<td class="cmp-dim">Best for</td>
+<td>Leaving your app (browser, dialer, maps, share) <em>or</em> launching a separate Activity/module you own.</td>
+<td>Moving between screens <em>within</em> one Compose app — the in-app default.</td>
+</tr>
+<tr>
+<td class="cmp-dim">Resolution</td>
+<td>Explicit = direct; implicit = system resolves via intent filters (can fail → guard it).</td>
+<td>No system resolution — routes are looked up in your own <code>NavHost</code>; a bad route fails fast in dev.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">The decision you make in production</span>
+<p>Modern Compose apps are usually <strong>single-Activity</strong>: nearly every in-app screen change is a
+          <code>navController.navigate(route)</code>, not a new Activity. You still drop to a <strong>classic Intent</strong>
+          for exactly two jobs: (1) <em>leaving</em> your app to use a device capability (implicit), or (2) launching a
+          whole separate Activity/module you own when routes aren't enough (explicit). Picking the wrong tool isn't a
+          style nit — using an Activity where a route belongs bloats your back stack and lifecycle; using a route where
+          you needed to leave the app simply can't reach the browser or dialer.</p>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Misconception: "Navigation-Compose uses Intents under the hood, so it's the same thing"</span>
+<p>It isn't. A <code>NavController</code> swaps composables inside one Activity — no <code>Intent</code>, no
+          <code>startActivity</code>, no Package Manager resolution. That's why an in-app route can't "fail to resolve"
+          the way an implicit Intent can, and why route navigation is faster and lighter than spinning up a new Activity.
+          Intents and routes solve different problems: <em>components/other apps</em> vs <em>composable screens in your app</em>.</p>
+</div>
+</div>
+<p>Here's the same "go to a detail screen" idea expressed both ways — a single-Activity Compose app that navigates
+        by <strong>route</strong>, with a comment showing where a classic explicit Intent would be used instead. This is a
+        <strong>reference snippet for Android Studio</strong>, not a runnable in-browser demo: Navigation-Compose ships in
+        the Android SDK, which isn't on the live Kotlin runner's classpath. Read it, predict what each destination renders,
+        then paste it into a real Compose project to see it work.</p>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · Compose — Navigation-Compose vs a classic Intent (Android Studio)</div>
+<pre><code>// Android imports — Navigation-Compose lives in the Android SDK (not the web runner).
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+
+@Composable
+fun App() {
+    MaterialTheme {
+        // ONE Activity. The NavController swaps composable destinations by ROUTE —
+        // no Intent, no startActivity, no system resolution.
+        val nav = rememberNavController()
+        NavHost(navController = nav, startDestination = "list") {
+
+            composable("list") {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Items", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { nav.navigate("detail/42") }) {
+                        Text("Open item 42 (route navigation)")
+                    }
+                    // Classic Intent would instead be:
+                    //   context.startActivity(Intent(context, DetailActivity::class.java)
+                    //       .putExtra("ITEM_ID", 42))
+                    // …but that launches a whole new Activity. Inside one Compose app, prefer the route above.
+                }
+            }
+
+            composable(
+                route = "detail/{itemId}",
+                arguments = listOf(navArgument("itemId") { type = NavType.IntType })
+            ) { backStackEntry -&gt;
+                val id = backStackEntry.arguments?.getInt("itemId") ?: 0
+                Column(Modifier.padding(16.dp)) {
+                    Text("Detail for item #$id", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { nav.popBackStack() }) { Text("Back") }
+                }
+            }
+        }
+    }
+}</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">You've mastered this section when…</span>
+<p>You can (1) classify any scenario as explicit / implicit / route on sight, (2) guard every implicit intent so a
+          missing handler never crashes, and (3) put a share payload in <code>EXTRA_TEXT</code> and reach for
+          <code>navController.navigate(...)</code> — not a new Activity — for in-app screens. Mark the drills above solved
+          as each one goes green; your progress is tracked across the course.</p>
+</div>
+</div>
+</section>
+<!-- print-only summary for handouts -->
+<section class="print-only">
+<h2>Summary (handout)</h2>
+<p><strong>Explicit intent:</strong> <code>Intent(context, Target::class.java)</code> — names a specific component you own; for in-app navigation. Cannot fail to resolve.</p>
+<p><strong>Implicit intent:</strong> <code>Intent(ACTION_VIEW, uri)</code> — declares an action + data; the system resolves a handler via intent filters. Can throw <code>ActivityNotFoundException</code>; always guard it.</p>
+</section>
+</div><!-- /col -->
+</div><!-- /layout-toc -->
+</div><!-- /wrap -->
+</main>
+<!-- ========================= FOOTER ========================= -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Keiser University · B.S. Software Engineering
+      <div class="muted">Teaching guide concept tool · Explicit vs Implicit Intents Explorer · Built for live, hands-on instruction.</div>
+</div>
+<div class="muted">Kotlin · Jetpack Compose · Material 3 · No frameworks, works from disk.</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+<!-- ========================= PAGE-SPECIFIC INTERACTIVITY ========================= -->
+<script>
+(function () {
+  "use strict";
+
+  // ---- App "registry" used to simulate intent resolution on a device ----
+  // Each app declares the intent filters (action + scheme/type) it can handle.
+  var INSTALLED_APPS = [
+    { name: "Chrome",        pkg: "com.android.chrome",            glyph: "🌐", color: "#4285F4", handles: { actions: ["VIEW"], schemes: ["http", "https"] } },
+    { name: "Firefox",       pkg: "org.mozilla.firefox",           glyph: "🦊", color: "#FF7139", handles: { actions: ["VIEW"], schemes: ["http", "https"] } },
+    { name: "Phone",         pkg: "com.android.dialer",            glyph: "📞", color: "#34A853", handles: { actions: ["DIAL", "CALL"], schemes: ["tel"] } },
+    { name: "Google Maps",   pkg: "com.google.android.apps.maps",  glyph: "📍", color: "#34A853", handles: { actions: ["VIEW"], schemes: ["geo"] } },
+    { name: "Waze",          pkg: "com.waze",                      glyph: "🚗", color: "#33CCFF", handles: { actions: ["VIEW"], schemes: ["geo"] } },
+    { name: "Gmail",         pkg: "com.google.android.gm",         glyph: "✉️", color: "#EA4335", handles: { actions: ["SEND", "SENDTO"], schemes: ["mailto"], types: ["text/plain"] } },
+    { name: "Messages",      pkg: "com.google.android.apps.messaging", glyph: "💬", color: "#1A73E8", handles: { actions: ["SEND", "SENDTO"], schemes: ["sms"], types: ["text/plain"] } },
+    { name: "Slack",         pkg: "com.Slack",                     glyph: "💬", color: "#611f69", handles: { actions: ["SEND"], types: ["text/plain"] } },
+    { name: "X",             pkg: "com.twitter.android",           glyph: "🐦", color: "#000000", handles: { actions: ["SEND"], types: ["text/plain"] } }
+  ];
+
+  // Your own app's activities (for explicit mode)
+  var MY_ACTIVITIES = [
+    { name: "DetailActivity",   cls: "DetailActivity",   glyph: "📄", desc: "Shows one item's details" },
+    { name: "SettingsActivity", cls: "SettingsActivity", glyph: "⚙️", desc: "App preferences screen" },
+    { name: "SecondActivity",   cls: "SecondActivity",   glyph: "🧭", desc: "A generic second screen" }
+  ];
+
+  // ---- Action catalog (implicit) ----
+  var ACTIONS = {
+    view_url: {
+      label: "View a URL",
+      glyph: "🌐",
+      constant: "Intent.ACTION_VIEW",
+      action: "VIEW",
+      dataLabel: "Web URL",
+      placeholder: "https://developer.android.com",
+      defaultData: "https://developer.android.com/guide/components/intents-filters",
+      hint: "scheme: https — a browser will handle it.",
+      scheme: function (v) { return /^https?:/i.test(v) ? (v.toLowerCase().split(":")[0]) : "https"; },
+      type: null
+    },
+    dial: {
+      label: "Dial a number",
+      glyph: "📞",
+      constant: "Intent.ACTION_DIAL",
+      action: "DIAL",
+      dataLabel: "Phone number (tel:)",
+      placeholder: "tel:+13055551234",
+      defaultData: "tel:+13055551234",
+      hint: "scheme: tel — opens the dialer pre-filled. No permission needed.",
+      scheme: function () { return "tel"; },
+      type: null
+    },
+    share_text: {
+      label: "Share text",
+      glyph: "📤",
+      constant: "Intent.ACTION_SEND",
+      action: "SEND",
+      dataLabel: "Text to share (EXTRA_TEXT)",
+      placeholder: "Check out COP4667!",
+      defaultData: "I just shipped my first Android app in COP4667! 🚀",
+      hint: "type: text/plain — wrapped in createChooser() so the share sheet always appears.",
+      scheme: function () { return null; },
+      type: "text/plain"
+    },
+    view_map: {
+      label: "View a map location",
+      glyph: "📍",
+      constant: "Intent.ACTION_VIEW",
+      action: "VIEW",
+      dataLabel: "Map location (geo:)",
+      placeholder: "geo:25.7617,-80.1918?q=25.7617,-80.1918(Miami)",
+      defaultData: "geo:25.7617,-80.1918?q=25.7617,-80.1918(Keiser University Miami)",
+      hint: "scheme: geo — any maps app can handle it.",
+      scheme: function () { return "geo"; },
+      type: null
+    }
+  };
+
+  var ACTION_ORDER = ["view_url", "dial", "share_text", "view_map"];
+
+  // ---- DOM refs ----
+  var modeExplicitBtn = document.getElementById("mode-explicit");
+  var modeImplicitBtn = document.getElementById("mode-implicit");
+  var modeExplainer   = document.getElementById("mode-explainer");
+  var actionGrid      = document.getElementById("action-grid");
+  var dataWrap        = document.getElementById("data-field-wrap");
+  var dataLabel       = document.getElementById("data-field-label");
+  var dataField       = document.getElementById("data-field");
+  var dataHint        = document.getElementById("data-field-hint");
+  var extrasWrap      = document.getElementById("extras-wrap");
+  var extrasList      = document.getElementById("extras-list");
+  var extraAddBtn     = document.getElementById("extra-add");
+  var phoneScreen     = document.getElementById("phone-screen");
+  var phoneMode       = document.getElementById("phone-mode");
+  var kotlinOut       = document.getElementById("kotlin-output");
+  var builderBadge    = document.getElementById("builder-mode-badge");
+  var resetBtn        = document.getElementById("explorer-reset");
+
+  // ---- Persisted state ----
+  var STORE_KEY = "explorer:intents";
+  var DEFAULT_STATE = {
+    mode: "implicit",          // "implicit" | "explicit"
+    action: "view_url",        // implicit action key
+    data: ACTIONS.view_url.defaultData,
+    activity: "DetailActivity",// explicit target class
+    extras: [{ key: "ITEM_ID", val: "42" }, { key: "ITEM_TITLE", val: "Trail Runner" }]
+  };
+  var state = loadState();
+
+  function loadState() {
+    try {
+      if (window.TG && TG.store) {
+        var s = TG.store.get(STORE_KEY, null);
+        if (s) return Object.assign({}, DEFAULT_STATE, s);
+      }
+    } catch (e) {}
+    return Object.assign({}, DEFAULT_STATE);
+  }
+  function saveState() {
+    try { if (window.TG && TG.store) TG.store.set(STORE_KEY, state); } catch (e) {}
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  // ---- Render the action chooser tiles ----
+  function renderActionGrid() {
+    actionGrid.innerHTML = "";
+    if (state.mode === "implicit") {
+      ACTION_ORDER.forEach(function (key) {
+        var a = ACTIONS[key];
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "actionbtn";
+        btn.setAttribute("aria-pressed", state.action === key ? "true" : "false");
+        btn.innerHTML =
+          '<span class="ab-glyph" aria-hidden="true">' + a.glyph + "</span>" +
+          '<span class="ab-name">' + esc(a.label) + "</span>" +
+          '<span class="ab-const">' + esc(a.constant) + "</span>";
+        btn.addEventListener("click", function () {
+          state.action = key;
+          state.data = ACTIONS[key].defaultData;
+          saveState();
+          renderAll();
+        });
+        actionGrid.appendChild(btn);
+      });
+    } else {
+      // explicit: choose one of YOUR activities
+      MY_ACTIVITIES.forEach(function (act) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "actionbtn";
+        btn.setAttribute("aria-pressed", state.activity === act.cls ? "true" : "false");
+        btn.innerHTML =
+          '<span class="ab-glyph" aria-hidden="true">' + act.glyph + "</span>" +
+          '<span class="ab-name">' + esc(act.name) + "</span>" +
+          '<span class="ab-const">' + esc(act.desc) + "</span>";
+        btn.addEventListener("click", function () {
+          state.activity = act.cls;
+          saveState();
+          renderAll();
+        });
+        actionGrid.appendChild(btn);
+      });
+    }
+  }
+
+  // ---- Render the data field (implicit) / hide it (explicit) ----
+  function renderDataField() {
+    if (state.mode === "implicit") {
+      dataWrap.classList.remove("hidden");
+      extrasWrap.classList.add("hidden");
+      var a = ACTIONS[state.action];
+      dataLabel.textContent = a.dataLabel;
+      dataField.placeholder = a.placeholder;
+      dataHint.textContent = a.hint;
+      if (dataField.value !== state.data) dataField.value = state.data;
+    } else {
+      dataWrap.classList.add("hidden");
+      extrasWrap.classList.remove("hidden");
+      renderExtras();
+    }
+  }
+
+  // ---- Extras editor (explicit) ----
+  function renderExtras() {
+    extrasList.innerHTML = "";
+    state.extras.forEach(function (ex, i) {
+      var row = document.createElement("div");
+      row.className = "extra-row";
+      var k = document.createElement("input");
+      k.type = "text"; k.value = ex.key; k.placeholder = "KEY";
+      k.setAttribute("aria-label", "Extra key " + (i + 1));
+      var v = document.createElement("input");
+      v.type = "text"; v.value = ex.val; v.placeholder = "value";
+      v.setAttribute("aria-label", "Extra value " + (i + 1));
+      var del = document.createElement("button");
+      del.type = "button"; del.className = "extra-del"; del.textContent = "✕";
+      del.setAttribute("aria-label", "Remove extra " + (i + 1));
+      k.addEventListener("input", function () { state.extras[i].key = k.value; saveState(); renderOutput(); });
+      v.addEventListener("input", function () { state.extras[i].val = v.value; saveState(); renderOutput(); });
+      del.addEventListener("click", function () { state.extras.splice(i, 1); saveState(); renderExtras(); renderOutput(); });
+      row.appendChild(k); row.appendChild(v); row.appendChild(del);
+      extrasList.appendChild(row);
+    });
+  }
+
+  // ---- Resolve candidate apps for an implicit intent ----
+  function resolveCandidates() {
+    var a = ACTIONS[state.action];
+    var scheme = a.scheme ? a.scheme(state.data) : null;
+    var type = a.type;
+    return INSTALLED_APPS.filter(function (app) {
+      var h = app.handles;
+      if (h.actions.indexOf(a.action) === -1) return false;       // action test
+      var schemeOk = true, typeOk = true;
+      if (scheme) schemeOk = (h.schemes || []).indexOf(scheme) !== -1; // data scheme test
+      if (type)   typeOk   = (h.types || []).indexOf(type) !== -1;     // MIME type test
+      // For SEND we match by type; for scheme-based actions we match by scheme.
+      if (type && scheme) return schemeOk && typeOk;
+      if (type) return typeOk;
+      if (scheme) return schemeOk;
+      return true;
+    });
+  }
+
+  // ---- Render the simulated phone screen ----
+  function renderPhone() {
+    phoneScreen.innerHTML = "";
+    if (state.mode === "implicit") {
+      phoneMode.textContent = "Implicit intent";
+      var candidates = resolveCandidates();
+      var a = ACTIONS[state.action];
+
+      var head = document.createElement("div");
+      head.innerHTML =
+        '<div class="sheet__head">' + a.glyph + " System is resolving …</div>" +
+        '<div class="sheet__sub">action = <strong>' + esc(a.action) + "</strong>" +
+        (a.scheme && a.scheme(state.data) ? " · scheme = <strong>" + esc(a.scheme(state.data)) + "</strong>" : "") +
+        (a.type ? " · type = <strong>" + esc(a.type) + "</strong>" : "") +
+        "</div>";
+      phoneScreen.appendChild(head);
+
+      if (candidates.length === 0) {
+        var none = document.createElement("div");
+        none.className = "resolve-note resolve-note--warn";
+        none.innerHTML = "<strong>No app can handle this.</strong> No installed app declares a matching " +
+          "<code>&lt;intent-filter&gt;</code>. <code>startActivity()</code> would throw " +
+          "<code>ActivityNotFoundException</code> — guard it!";
+        phoneScreen.appendChild(none);
+        return;
+      }
+
+      var titleEl = document.createElement("p");
+      titleEl.className = "sheet__sub";
+      titleEl.style.fontWeight = "700";
+      titleEl.style.color = "var(--ink)";
+      titleEl.innerHTML = candidates.length === 1
+        ? "1 app matches → launches directly:"
+        : candidates.length + " apps match → system shows a chooser:";
+      phoneScreen.appendChild(titleEl);
+
+      var ul = document.createElement("ul");
+      ul.className = "applist";
+      candidates.forEach(function (app, i) {
+        var li = document.createElement("li");
+        li.className = "appitem";
+        li.style.animationDelay = (i * 60) + "ms";
+        li.innerHTML =
+          '<span class="app-glyph" style="background:' + app.color + '">' + app.glyph + "</span>" +
+          "<span><span class=\"app-name\">" + esc(app.name) + "</span><br>" +
+          '<span class="app-pkg">' + esc(app.pkg) + "</span></span>" +
+          (candidates.length === 1 ? '<span class="badge badge--green appitem--badge">launched</span>' : "");
+        ul.appendChild(li);
+      });
+      phoneScreen.appendChild(ul);
+
+      var note = document.createElement("div");
+      note.className = "resolve-note resolve-note--ok";
+      note.innerHTML = candidates.length === 1
+        ? "Exactly one match (or a saved default) → Android opens it immediately."
+        : "Multiple matches → the user picks. Use <code>Intent.createChooser()</code> to force this every time.";
+      phoneScreen.appendChild(note);
+
+    } else {
+      // explicit
+      phoneMode.textContent = "Explicit intent";
+      var act = MY_ACTIVITIES.filter(function (x) { return x.cls === state.activity; })[0] || MY_ACTIVITIES[0];
+      var headE = document.createElement("div");
+      headE.innerHTML =
+        '<div class="sheet__head">🎯 Direct delivery — no resolution</div>' +
+        '<div class="sheet__sub">You named the exact class. The system does not consult intent filters.</div>';
+      phoneScreen.appendChild(headE);
+
+      var ulE = document.createElement("ul");
+      ulE.className = "applist";
+      var li = document.createElement("li");
+      li.className = "appitem appitem--target";
+      li.innerHTML =
+        '<span class="app-glyph" style="background:var(--green-dark)">' + act.glyph + "</span>" +
+        "<span><span class=\"app-name\">" + esc(act.name) + "</span><br>" +
+        '<span class="app-pkg">your app · ' + esc(act.cls) + ".class</span></span>" +
+        '<span class="badge badge--green appitem--badge">launched</span>';
+      ulE.appendChild(li);
+      phoneScreen.appendChild(ulE);
+
+      var extrasPreview = state.extras.filter(function (e) { return e.key; });
+      var noteE = document.createElement("div");
+      noteE.className = "resolve-note resolve-note--ok";
+      if (extrasPreview.length) {
+        var rows = extrasPreview.map(function (e) {
+          return '<div class="key-val"><span class="kv-key">' + esc(e.key) + "</span> = " + esc(e.val) + "</div>";
+        }).join("");
+        noteE.innerHTML = "Carries " + extrasPreview.length + " extra" + (extrasPreview.length > 1 ? "s" : "") +
+          " in the Bundle:" + rows;
+      } else {
+        noteE.innerHTML = "No extras attached. Add some on the left to pass data to <strong>" + esc(act.name) + "</strong>.";
+      }
+      phoneScreen.appendChild(noteE);
+    }
+  }
+
+  // ---- Generate the Kotlin snippet ----
+  function renderOutput() {
+    var code;
+    if (state.mode === "implicit") {
+      var a = ACTIONS[state.action];
+      if (state.action === "view_url") {
+        var url = state.data || "https://example.com";
+        code =
+"// IMPLICIT: open a URL in the user's browser of choice\n" +
+"val url = \"" + url + "\"\n" +
+"val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))\n\n" +
+"// Guard against \"no browser installed\" so we never crash:\n" +
+"try {\n" +
+"    context.startActivity(intent)\n" +
+"} catch (e: ActivityNotFoundException) {\n" +
+"    Toast.makeText(context, \"No app can open this link\", Toast.LENGTH_SHORT).show()\n" +
+"}";
+      } else if (state.action === "dial") {
+        var num = state.data || "tel:+10000000000";
+        code =
+"// IMPLICIT: open the dialer pre-filled (ACTION_DIAL needs NO permission)\n" +
+"val intent = Intent(Intent.ACTION_DIAL, Uri.parse(\"" + num + "\"))\n\n" +
+"try {\n" +
+"    context.startActivity(intent)\n" +
+"} catch (e: ActivityNotFoundException) {\n" +
+"    Toast.makeText(context, \"No dialer app available\", Toast.LENGTH_SHORT).show()\n" +
+"}\n\n" +
+"// NOTE: ACTION_CALL would place the call directly but requires the\n" +
+"//       CALL_PHONE runtime permission. Prefer ACTION_DIAL.";
+      } else if (state.action === "share_text") {
+        var msg = (state.data || "").replace(/"/g, "\\\"").replace(/\n/g, "\\n");
+        code =
+"// IMPLICIT: share plain text via the system share sheet\n" +
+"val sendIntent = Intent(Intent.ACTION_SEND).apply {\n" +
+"    type = \"text/plain\"\n" +
+"    putExtra(Intent.EXTRA_TEXT, \"" + msg + "\")\n" +
+"}\n\n" +
+"// createChooser() forces the \"Share via…\" sheet every time:\n" +
+"val chooser = Intent.createChooser(sendIntent, \"Share via\")\n" +
+"context.startActivity(chooser)";
+      } else { // view_map
+        var geo = state.data || "geo:0,0";
+        // Pull lat,lng out of the geo: URI so the web fallback matches the chosen pin
+        // (e.g. "geo:25.76,-80.19?q=..." -> "25.76,-80.19"). Default to Miami if parsing fails.
+        var coordMatch = String(geo).match(/geo:\s*(-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?)/i);
+        var webQuery = coordMatch ? coordMatch[1].replace(/\s+/g, "") : "25.7617,-80.1918";
+        code =
+"// IMPLICIT: show a location in any installed maps app\n" +
+"val intent = Intent(Intent.ACTION_VIEW, Uri.parse(\"" + geo + "\"))\n\n" +
+"// On API 30+ resolveActivity needs a <queries> entry in the manifest, else it returns null.\n" +
+"// resolveActivity() lets us fall back to a web map if no maps app exists:\n" +
+"if (intent.resolveActivity(context.packageManager) != null) {\n" +
+"    context.startActivity(intent)\n" +
+"} else {\n" +
+"    val web = Intent(Intent.ACTION_VIEW,\n" +
+"        Uri.parse(\"https://www.google.com/maps/search/?api=1&query=" + webQuery + "\"))\n" +
+"    context.startActivity(web)\n" +
+"}";
+      }
+    } else {
+      // explicit
+      var act = MY_ACTIVITIES.filter(function (x) { return x.cls === state.activity; })[0] || MY_ACTIVITIES[0];
+      var putLines = state.extras.filter(function (e) { return e.key; }).map(function (e) {
+        var raw = e.val;
+        // emit an Int literal if it looks numeric, else a quoted String
+        var asInt = /^-?\d+$/.test(String(raw).trim());
+        var literal = asInt ? raw : "\"" + String(raw).replace(/"/g, "\\\"") + "\"";
+        return "    putExtra(\"" + String(e.key).replace(/"/g, "\\\"") + "\", " + literal + ")";
+      }).join("\n");
+      code =
+"// EXPLICIT: launch a specific Activity you own (no resolution needed)\n" +
+"val intent = Intent(context, " + act.cls + "::class.java)" +
+(putLines ? ".apply {\n" + putLines + "\n}" : "") + "\n" +
+"context.startActivity(intent)\n\n" +
+"// In " + act.cls + ".onCreate(), read the extras back:\n" +
+(state.extras.filter(function (e) { return e.key; }).length
+  ? state.extras.filter(function (e) { return e.key; }).map(function (e) {
+      var asInt = /^-?\d+$/.test(String(e.val).trim());
+      return asInt
+        ? "// val " + camel(e.key) + " = intent.getIntExtra(\"" + e.key + "\", 0)"
+        : "// val " + camel(e.key) + " = intent.getStringExtra(\"" + e.key + "\")";
+    }).join("\n")
+  : "// (no extras attached)") + "\n\n" +
+"// In a Compose app, in-app screen changes usually use Navigation-Compose:\n" +
+"// navController.navigate(\"" + routeName(act.cls) + "\")";
+    }
+    kotlinOut.textContent = code;
+    refreshCopyButton();
+  }
+
+  function camel(s) {
+    var parts = String(s).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    return parts.map(function (p, i) { return i === 0 ? p : p.charAt(0).toUpperCase() + p.slice(1); }).join("") || "value";
+  }
+  function routeName(cls) {
+    return String(cls).replace(/Activity$/, "").toLowerCase() || "screen";
+  }
+
+  // Re-run the shared Copy-button initializer so the freshly-rendered code block copies cleanly.
+  function refreshCopyButton() {
+    try { if (window.TG && TG.initCopyButtons) TG.initCopyButtons(); } catch (e) {}
+  }
+
+  // ---- Mode switching ----
+  function setMode(mode) {
+    state.mode = mode;
+    saveState();
+    renderAll();
+  }
+  function renderModeChrome() {
+    var isImpl = state.mode === "implicit";
+    modeImplicitBtn.setAttribute("aria-pressed", isImpl ? "true" : "false");
+    modeExplicitBtn.setAttribute("aria-pressed", isImpl ? "false" : "true");
+    builderBadge.textContent = state.mode;
+    builderBadge.className = "badge " + (isImpl ? "badge--green" : "badge--teal");
+    modeExplainer.innerHTML = isImpl
+      ? "<strong>Implicit:</strong> you declare an <em>action</em> + <em>data</em> and let Android resolve which installed app can handle it. You do <em>not</em> name a class."
+      : "<strong>Explicit:</strong> you name an exact component (a class in your own app). The system delivers straight to it — no resolution, no chooser.";
+  }
+
+  function renderAll() {
+    renderModeChrome();
+    renderActionGrid();
+    renderDataField();
+    renderPhone();
+    renderOutput();
+  }
+
+  // ---- Wire up events ----
+  modeImplicitBtn.addEventListener("click", function () { setMode("implicit"); });
+  modeExplicitBtn.addEventListener("click", function () { setMode("explicit"); });
+
+  dataField.addEventListener("input", function () {
+    state.data = dataField.value;
+    saveState();
+    renderPhone();
+    renderOutput();
+  });
+
+  extraAddBtn.addEventListener("click", function () {
+    state.extras.push({ key: "", val: "" });
+    saveState();
+    renderExtras();
+    renderOutput();
+  });
+
+  resetBtn.addEventListener("click", function () {
+    state = Object.assign({}, DEFAULT_STATE, { extras: DEFAULT_STATE.extras.map(function (e) { return { key: e.key, val: e.val }; }) });
+    saveState();
+    renderAll();
+  });
+
+  // Initial paint (after shared app.js has likely run; if not, our calls are still safe)
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", renderAll);
+  } else {
+    renderAll();
+  }
+})();
+</script>
+</body>
+</html>

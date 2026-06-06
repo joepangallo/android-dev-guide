@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Session 11 — Data Persistence + Integration &amp; Final Project Build | COP4667</title>
+<meta content="COP4667 Android Development — Session 11 of 12: combine Retrofit + Room into a repository, build an offline-first cache exposed as Flow, and run an extended final-project build studio." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* Page-specific tweaks only — chrome uses the design-system classes. */
+    .obj-list { display: grid; gap: var(--space-3); padding-left: 0; list-style: none; }
+    .obj-list > li { display: grid; grid-template-columns: 1fr auto; gap: var(--space-3); align-items: start;
+      background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-3) var(--space-4); }
+    .obj-list > li > .clo-tag { align-self: center; }
+    .layer-flow { display: grid; gap: var(--space-2); margin: var(--space-4) 0; }
+    .layer-flow .layer { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green);
+      border-radius: var(--radius-sm); padding: var(--space-3) var(--space-4); }
+    .layer-flow .layer b { color: var(--teal-2); }
+    [data-theme="dark"] .layer-flow .layer b { color: var(--green); }
+    .layer-flow .layer--arrow { border: none; background: none; text-align: center; color: var(--muted);
+      font-family: var(--font-mono); font-weight: 700; padding: 0; }
+    .state-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: var(--space-3); margin: var(--space-4) 0; }
+    .state-grid .state-card { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-3) var(--space-4); background: var(--surface-2); }
+    .state-grid .state-card .state-card__title { margin: 0 0 4px; font-size: var(--fs-md); }
+    .runsheet { font-size: var(--fs-sm); }
+    .timeblock--break .timeblock__time { background: linear-gradient(135deg, var(--accent), #E08900); color: var(--teal); }
+    .pitfall { display: grid; grid-template-columns: auto 1fr; gap: var(--space-3); align-items: baseline; margin: var(--space-2) 0; }
+    .pitfall .badge { align-self: start; }
+  </style>
+</head>
+<body>
+<!-- ===================================================================== -->
+<!--  TOP NAVIGATION                                                       -->
+<!-- ===================================================================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">⌬</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-10.html">‹ Prev</a>
+<a aria-current="page" class="active" href="session-11.html">S11</a>
+<a href="session-12.html">Next ›</a>
+<a href="../labs/retrofit-flow.html">Lab: Retrofit+Flow</a>
+<a href="../labs/sqlite-crud-sim.html">Lab: SQLite CRUD</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- =================================================================== -->
+<!--  SESSION HERO                                                       -->
+<!-- =================================================================== -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:var(--space-3)">
+<span class="pill pill--green">Session 11 of 12</span>
+<span class="pill">Week 4</span>
+<span class="pill pill--accent">Networking, APIs &amp; the Final Project</span>
+<span class="pill">Unit 6</span>
+</div>
+<h1 class="hero-title" id="hero-title">Data Persistence + Integration &amp; Final Project Build</h1>
+<p class="hero-sub">
+        Today the layers come together: we wire a <strong>repository</strong> that fetches over the network with Retrofit,
+        caches into Room, and exposes a <strong>Flow</strong> to the ViewModel — an <strong>offline-first</strong> app that
+        shows cached data instantly and refreshes when the network is available. The back half is an extended
+        <strong>build studio</strong> where students integrate nav + Compose state + persistence + network into one project and hit the feature checklist.
+      </p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 4</span>
+<span class="clo-tag">CLO 5</span>
+<span class="clo-tag">CLO 6</span>
+<span class="pill">Today in a nutshell: <em>fetch → cache → observe → ship.</em></span>
+</div>
+</section>
+<!-- On-page section index -->
+<section aria-label="On this page" class="card no-print">
+<h2 class="card__title" style="margin-top:0">On this page</h2>
+<nav aria-label="Table of contents" data-toc="main"></nav>
+</section>
+<!-- =================================================================== -->
+<!--  LEARNING OBJECTIVES                                                -->
+<!-- =================================================================== -->
+<section aria-labelledby="obj-h" class="card card--accent slide">
+<h2 class="card__title" id="obj-h">🎯 Learning Objectives</h2>
+<p class="muted">By the end of Session 11 students can do the following. Each objective maps to a course-level outcome (CLO).</p>
+<ul class="obj-list">
+<li>
+<span><strong>Explain the repository pattern</strong> and why the ViewModel should talk to a single repository instead of to Retrofit and Room directly.</span>
+<span class="clo-tag">CLO 4</span>
+</li>
+<li>
+<span><strong>Combine a remote data source (Retrofit) and a local cache (Room)</strong> behind one repository function that returns a <code>Flow</code>.</span>
+<span class="clo-tag">CLO 5</span>
+</li>
+<li>
+<span><strong>Implement an offline-first read path</strong>: emit cached data immediately, then trigger a network refresh that updates the cache (and therefore the UI).</span>
+<span class="clo-tag">CLO 4</span>
+</li>
+<li>
+<span><strong>Use HTTP correctly over the network</strong>: GET with Retrofit + a JSON converter, handle non-2xx responses and <code>IOException</code>, and require the <code>INTERNET</code> permission.</span>
+<span class="clo-tag">CLO 6</span>
+</li>
+<li>
+<span><strong>Model UI state as Loading / Success / Error / Empty</strong> with a sealed interface and render each branch in Compose.</span>
+<span class="clo-tag">CLO 5</span>
+</li>
+<li>
+<span><strong>Self-audit the final project</strong> against the required feature checklist and fix the most common integration bugs.</span>
+<span class="clo-tag">CLO 4</span>
+</li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧭</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p>Session 11 lives in <strong>Week 4 — Networking, APIs &amp; the Final Project</strong> and draws together
+          <strong>CLO4</strong> (local storage / database), <strong>CLO5</strong> (integrating APIs / cloud data), and
+          <strong>CLO6</strong> (network protocols for backend communication). Reading anchor:
+          <a href="https://developer.android.com/courses/android-basics-compose/unit-6" rel="noopener" target="_blank">Android Basics with Compose — Unit 6 (Data persistence)</a>,
+          building on <a href="https://developer.android.com/courses/android-basics-compose/unit-5" rel="noopener" target="_blank">Unit 5 (Connect to the internet)</a>
+          and <a href="https://developer.android.com/courses/android-basics-compose/unit-4" rel="noopener" target="_blank">Unit 4 (Navigation &amp; app architecture)</a>.</p>
+</div>
+</div>
+</section>
+<!-- =================================================================== -->
+<!-- =================================================================== -->
+<!-- =================================================================== -->
+<!-- =================================================================== -->
+<!-- =================================================================== -->
+<!--  LECTURE / CONCEPT NOTES                                            -->
+<!-- =================================================================== -->
+<section aria-labelledby="lecture-h" class="slide">
+<h2 id="lecture-h">📚 Lecture / Concept Notes</h2>
+<p class="muted">Substantial teaching content. Big ideas expanded with analogies and copyable, current Kotlin + Compose (Material 3) code.</p>
+<!-- BIG IDEA 1 -->
+<h3 id="idea-repo">1 · The repository pattern — one front door for data <span class="clo-tag">CLO 4</span></h3>
+<p>
+        Until now the ViewModel might call Retrofit directly. That works for one screen, but it couples your UI logic to a specific network library and gives you nowhere to add caching, retries, or a second data source. The <strong>repository</strong> is a plain Kotlin class that sits between the ViewModel and the data sources. The ViewModel asks the repository for data and <em>does not know or care</em> whether it came from the network or the local database.
+      </p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🏪</span>
+<div class="callout__body">
+<span class="callout__label">Analogy</span>
+<p>Think of the repository as the <strong>front desk of a library</strong>. You ask for a book; the desk decides whether to hand you one off the local shelf (Room cache) or order it from another branch (network). You never walk into the stockroom yourself. Swap the stockroom and the front desk's interface to you stays identical.</p>
+</div>
+</div>
+<div aria-label="Data layering diagram" class="layer-flow">
+<div class="layer"><b>Compose UI</b> — observes <code>uiState</code>, renders Loading/Success/Error/Empty, sends events up.</div>
+<div class="layer layer--arrow">↑ StateFlow&lt;UiState&gt; ↓ events</div>
+<div class="layer"><b>ViewModel</b> — holds UI state, calls the repository, maps domain data → UI state.</div>
+<div class="layer layer--arrow">↑ Flow&lt;List&gt; ↓ refresh()</div>
+<div class="layer"><b>Repository</b> — single front door. Reads from Room, refreshes from network, writes back to Room.</div>
+<div class="layer layer--arrow">↕</div>
+<div class="layer"><b>Local: Room DAO</b> (cache, source of truth)  ·  <b>Remote: Retrofit API</b> (network)</div>
+</div>
+<p>A minimal repository interface plus an implementation that holds the two data sources:</p>
+<div class="codeblock"><span class="codeblock__lang">kotlin</span><pre><code>// Domain model the rest of the app uses (independent of network/db shapes).
+data class Article(val id: Long, val title: String, val body: String)
+
+// The contract the ViewModel depends on — easy to fake in tests.
+interface ArticleRepository {
+    fun observeArticles(): Flow&lt;List&lt;Article&gt;&gt;   // stream from the local cache
+    suspend fun refresh()                          // pull network -&gt; write cache
+}
+
+// The real implementation owns BOTH data sources. Constructor injection
+// keeps it testable: pass fakes in unit tests, real ones in the app.
+class DefaultArticleRepository(
+    private val api: ArticleApiService,   // Retrofit (remote)
+    private val dao: ArticleDao,          // Room (local cache)
+) : ArticleRepository {
+
+    // Read path: UI observes the database. The DB is the single source of truth.
+    override fun observeArticles(): Flow&lt;List&lt;Article&gt;&gt; =
+        dao.observeAll().map { entities -&gt; entities.map { it.toDomain() } }
+
+    // Write path: fetch from network, then overwrite the cache.
+    override suspend fun refresh() {
+        val networkArticles = api.getArticles()          // suspend GET
+        dao.upsertAll(networkArticles.map { it.toEntity() })
+    }
+}</code></pre></div>
+<!-- BIG IDEA 2 -->
+<h3 id="idea-offline">2 · Offline-first: Room is the source of truth, network is a refresher <span class="clo-tag">CLO 4</span> <span class="clo-tag">CLO 6</span></h3>
+<p>
+        "Offline-first" means the UI <strong>always reads from the local database</strong>, never directly from the network. The network's only job is to keep the database fresh. The payoff: open the app with no signal and you still see your last data instantly; when the network returns, the cache updates and — because the UI observes the database via <code>Flow</code> — the screen updates automatically. No manual "now re-fetch and setState."
+      </p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">📰</span>
+<div class="callout__body">
+<span class="callout__label">Analogy</span>
+<p>It's a <strong>newspaper on your doorstep</strong>. You always read the paper that's there (the cache). A delivery person quietly swaps in a fresher edition when one is available (the network refresh). You never stand on the curb waiting for the printing press.</p>
+</div>
+</div>
+<p>Why <strong>Flow</strong> is the right pipe between Room and the UI: a Room DAO query that returns <code>Flow</code> <em>re-emits automatically</em> every time the underlying table changes. So our two paths are decoupled — <code>refresh()</code> just writes to the table; the read path notices and pushes new data downstream.</p>
+<div aria-label="Old approach versus offline-first" class="tabs" role="tablist">
+<button class="tab" data-tab="naive">Network-only (fragile)</button>
+<button class="tab" data-tab="offline">Offline-first (robust)</button>
+</div>
+<div class="tabpanel" data-tabpanel="naive">
+<div class="codeblock"><span class="codeblock__lang">kotlin · don't do this for real apps</span><pre><code>// ViewModel calls the network directly and stores the result in memory only.
+class FeedViewModel(private val api: ArticleApiService) : ViewModel() {
+    var articles by mutableStateOf&lt;List&lt;Article&gt;&gt;(emptyList())
+        private set
+
+    fun load() {
+        viewModelScope.launch {
+            articles = api.getArticles().map { it.toDomain() }  // gone on process death
+        }
+    }
+}
+// Problems: blank screen with no network; data lost when the OS kills the
+// process; every screen re-implements its own fetch + error handling.</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="offline">
+<div class="codeblock"><span class="codeblock__lang">kotlin · offline-first</span><pre><code>// UI observes the DB (always something to show). Network only refreshes cache.
+class FeedViewModel(private val repo: ArticleRepository) : ViewModel() {
+
+    // Cached stream -&gt; mapped into UI state -&gt; exposed as StateFlow for Compose.
+    val uiState: StateFlow&lt;FeedUiState&gt; =
+        repo.observeArticles()
+            .map { list -&gt; if (list.isEmpty()) FeedUiState.Empty else FeedUiState.Success(list) }
+            .catch { e -&gt; emit(FeedUiState.Error(e.message ?: "Unknown error")) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = FeedUiState.Loading,
+            )
+
+    init { refresh() }
+
+    fun refresh() {
+        viewModelScope.launch {
+            try { repo.refresh() }              // updates cache -&gt; UI updates itself
+            catch (e: IOException) { /* keep showing cache; surface a snackbar */ }
+        }
+    }
+}</code></pre></div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Why <code>stateIn(WhileSubscribed)</code>?</span>
+<p><code>stateIn</code> turns a cold <code>Flow</code> into a hot <code>StateFlow</code> with a current value Compose can read immediately. <code>WhileSubscribed(5_000)</code> keeps the upstream alive for 5 seconds after the last collector leaves, so a quick rotation doesn't restart the database query. <code>initialValue = Loading</code> gives the UI something to show on the very first frame.</p>
+<p style="margin-bottom:0"><strong>Read the two error paths carefully.</strong> The <code>.catch</code> above guards the <em>cache/DB read path</em> (<code>repo.observeArticles()</code>) — a failure reading the database becomes <code>Error</code>. A failed <em>network refresh</em> is caught separately inside <code>refresh()</code> and deliberately does <strong>not</strong> replace cached data — that is the offline-first invariant. Don't read <code>.catch</code> as "this handles network errors"; it doesn't.</p>
+</div>
+</div>
+<!-- BIG IDEA 3 -->
+<h3 id="idea-state">3 · Loading / Success / Error / Empty — model state, don't guess it <span class="clo-tag">CLO 5</span></h3>
+<p>
+        A polished app never shows a blank white screen. Every screen that loads data has at least four states. Model them explicitly with a <strong>sealed interface</strong> so the compiler forces you to handle each branch in your <code>when</code>. This is the single biggest UX upgrade most student projects need before the final demo.
+      </p>
+<div class="state-grid">
+<div class="state-card"><p class="state-card__title"><strong>Loading</strong></p><span class="muted">First load, nothing cached yet. Show a spinner or skeleton.</span></div>
+<div class="state-card"><p class="state-card__title"><strong>Success</strong></p><span class="muted">We have data. Render the list/detail.</span></div>
+<div class="state-card"><p class="state-card__title"><strong>Empty</strong></p><span class="muted">Request succeeded but there's nothing to show. Friendly "no items" message — <em>not</em> a spinner forever.</span></div>
+<div class="state-card"><p class="state-card__title"><strong>Error</strong></p><span class="muted">Request failed. Show the reason + a Retry button. Keep cached data if you have it.</span></div>
+</div>
+<div class="codeblock"><span class="codeblock__lang">kotlin</span><pre><code>// One sealed type the UI can exhaustively switch on.
+sealed interface FeedUiState {
+    data object Loading : FeedUiState
+    data object Empty : FeedUiState
+    data class Success(val articles: List&lt;Article&gt;) : FeedUiState
+    data class Error(val message: String) : FeedUiState
+}</code></pre></div>
+<p>Rendering each branch in Compose — note the <code>when</code> has no <code>else</code>, so adding a new state later is a compile error until you handle it:</p>
+<div class="codeblock"><span class="codeblock__lang">kotlin · compose · material3</span><pre><code>@Composable
+fun FeedScreen(
+    uiState: FeedUiState,
+    onRetry: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+) {
+    when (uiState) {
+        FeedUiState.Loading -&gt; Box(modifier.fillMaxSize(), Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        FeedUiState.Empty -&gt; Box(modifier.fillMaxSize(), Alignment.Center) {
+            Text("Nothing here yet.", style = MaterialTheme.typography.bodyLarge)
+        }
+        is FeedUiState.Error -&gt; Column(
+            modifier.fillMaxSize().padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Couldn't load: ${uiState.message}")
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = onRetry) { Text("Retry") }
+        }
+        is FeedUiState.Success -&gt; LazyColumn(modifier.fillMaxSize()) {
+            items(uiState.articles, key = { it.id }) { article -&gt;
+                ListItem(
+                    headlineContent = { Text(article.title) },
+                    supportingContent = { Text(article.body, maxLines = 2) },
+                )
+                HorizontalDivider()
+            }
+        }
+    }
+}</code></pre></div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common misconception</span>
+<p>Students conflate "Loading" with "Empty." A finished request that returns zero rows is <strong>Empty</strong>, not Loading — showing a spinner forever is the #1 "my app is frozen" bug report. Make the distinction explicit: Loading ends the moment the first emission arrives, even if that emission is an empty list.</p>
+</div>
+</div>
+<!-- BIG IDEA 4 -->
+<h3 id="idea-checklist">4 · Final-project integration checklist &amp; common pitfalls <span class="clo-tag">CLO 4</span> <span class="clo-tag">CLO 5</span> <span class="clo-tag">CLO 6</span></h3>
+<p>The final project must demonstrate <strong>all five required features (a)–(e)</strong>. This is the exact checklist students self-audit against during the studio; it mirrors the <strong>Final Project rubric</strong> demoed in Session 12. The studio steps below are labelled by the same letters so a student can map "what I just built" straight to "what the rubric grades."</p>
+<h4>The five required features the final project must demonstrate</h4>
+<div class="pitfall"><span class="badge badge--green">a</span><div><strong>Multi-screen Compose UI with navigation + a real back stack.</strong> At least two destinations (e.g. a list and a detail), wired with a NavHost so the system <kbd>Back</kbd> button returns the user the way they came. <span class="clo-tag">CLO 5</span></div></div>
+<div class="pitfall"><span class="badge badge--green">b</span><div><strong>State-driven rendering — Loading / Success / Error / Empty.</strong> The screen never shows a blank frame: every data path is one of the four modelled states, rendered from a sealed <code>UiState</code> with an exhaustive <code>when</code>. <span class="clo-tag">CLO 5</span></div></div>
+<div class="pitfall"><span class="badge badge--green">c</span><div><strong>Local persistence (Room or DataStore).</strong> At least one piece of data survives a process restart — a cached list in Room, or a key piece of state in DataStore. Prove it: kill and relaunch the app, the data is still there. <span class="clo-tag">CLO 4</span></div></div>
+<div class="pitfall"><span class="badge badge--green">d</span><div><strong>Network / API call via Retrofit.</strong> A real <code>suspend</code> GET against a live (or mock) endpoint, parsed into a DTO with a JSON converter, with the <code>INTERNET</code> permission declared. <span class="clo-tag">CLO 6</span></div></div>
+<div class="pitfall"><span class="badge badge--green">e</span><div><strong>A repository tying the data sources together.</strong> One repository class is the single front door: the ViewModel depends on it (no Retrofit/Room imports in the ViewModel), and it reads from the cache while refreshing from the network. <span class="clo-tag">CLO 4</span></div></div>
+<h4>The five integration pitfalls that eat student time</h4>
+<div class="pitfall"><span class="badge badge--danger">1</span><div><strong>Forgot <code>INTERNET</code> permission.</strong> Symptom: <code>SecurityException: Permission denied (missing INTERNET permission?)</code>. Fix: add <code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code> to <code>AndroidManifest.xml</code>.</div></div>
+<div class="pitfall"><span class="badge badge--danger">2</span><div><strong>Networking on the main thread / NetworkOnMainThreadException.</strong> Fix: Retrofit <code>suspend</code> functions called inside <code>viewModelScope.launch</code> (a background dispatcher). Never block the UI thread.</div></div>
+<div class="pitfall"><span class="badge badge--danger">3</span><div><strong>JSON field names don't match the data class.</strong> Symptom: every field is null/default. Fix: match property names to the JSON, or annotate (<code>@SerialName</code> / <code>@Json(name=...)</code>). Log the raw body once to compare.</div></div>
+<div class="pitfall"><span class="badge badge--danger">4</span><div><strong>Room schema changed without a migration.</strong> Symptom: <code>IllegalStateException: Room cannot verify the data integrity</code>. For coursework, <code>.fallbackToDestructiveMigration()</code> is acceptable; explain that production needs real migrations.</div></div>
+<div class="pitfall"><span class="badge badge--danger">5</span><div><strong>Collecting a Flow wrong in Compose.</strong> Fix: <code>val state by viewModel.uiState.collectAsStateWithLifecycle()</code> — lifecycle-aware, stops collecting when the screen is in the background.</div></div>
+<!-- BIG IDEA 5 -->
+<h3 id="idea-studio">5 · Studio mindset <span class="clo-tag">CLO 4</span></h3>
+<p>The second half of class is not a lecture — it's a guided work session. Your job shifts from "explainer" to "unblocker." The most valuable thing you do is keep students <em>moving</em>: a 20-minute goal, a clean build, a committed checkpoint, repeat.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">The "next smallest demo-able step" rule</span>
+<p>When a student is overwhelmed, ask: <em>"What is the smallest thing you can add that you could demo in 60 seconds?"</em> Usually that's "render the list from the network" or "make one button save to Room." Shrinking scope to a demoable increment is the single most useful coaching move for the final-project stretch.</p>
+</div>
+</div>
+</section>
+<!-- =================================================================== -->
+<!--  GUIDED LIVE-CODING                                                 -->
+<!-- =================================================================== -->
+<section aria-labelledby="live-h" class="slide">
+<h2 id="live-h">⌨️ Guided Live-Coding — Build the Retrofit → Room → Flow repository</h2>
+<p class="muted">Goal: a tiny repo that fetches a list over the network, caches it in Room, and exposes a <code>Flow</code> the ViewModel observes. Build &amp; run after each step. Companion lab: <a href="../labs/retrofit-flow.html">Retrofit + Flow</a>.</p>
+<ol class="stepper">
+<li class="step">
+<h4>Add the dependencies &amp; the INTERNET permission</h4>
+<p>In the module <code>build.gradle.kts</code>. Then add the permission to the manifest and <kbd>Sync</kbd>.</p>
+<div class="codeblock"><span class="codeblock__lang">kotlin · build.gradle.kts</span><pre><code>dependencies {
+    // Networking — Retrofit 3.x is binary-compatible with 2.x and now declares a
+    // transitive Kotlin/OkHttp dependency, so most projects just bump the number.
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:3.0.0")
+
+    // Local cache (Room 2.8.x — stay on 2.8 for the course; androidx.room3 isn't stable yet)
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")   // Flow + suspend support
+    ksp("androidx.room:room-compiler:2.8.4")
+
+    // Lifecycle / Compose state
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+}</code></pre></div>
+<div class="codeblock"><span class="codeblock__lang">xml · AndroidManifest.xml</span><pre><code>&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+    &lt;application ... &gt; ... &lt;/application&gt;
+&lt;/manifest&gt;</code></pre></div>
+<p><strong>You should see:</strong> Gradle syncs with no errors. Make sure the KSP plugin is applied at the top of the file (<code>id("com.google.devtools.ksp")</code>) — remember the KSP version prefix must match your Kotlin version (e.g. Kotlin <code>2.2.20</code> → KSP <code>2.2.20-2.0.2</code>).</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🧭</span>
+<div class="callout__body">
+<span class="callout__label">Version note (mid-2026)</span>
+<p style="margin-bottom:0">We pin <strong>Retrofit 3.0.0</strong> (binary-compatible with 2.x — the bump is usually just the number) and <strong>Room 2.8.4</strong> with <strong>KSP, not kapt</strong>. Room is being modernized as <code>androidx.room3</code> (Kotlin-only, KMP, coroutine-first), but it isn't stable yet, so the course stays on the 2.8.x line — don't migrate your lab to room3.</p>
+</div>
+</div>
+</li>
+<li class="step">
+<h4>Define the network DTO + Retrofit service</h4>
+<p>The DTO mirrors the JSON exactly. The service exposes a <code>suspend</code> GET.</p>
+<div class="codeblock"><span class="codeblock__lang">kotlin</span><pre><code>@Serializable
+data class ArticleDto(
+    val id: Long,
+    val title: String,
+    val body: String,
+)
+
+interface ArticleApiService {
+    @GET("articles")
+    suspend fun getArticles(): List&lt;ArticleDto&gt;
+}</code></pre></div>
+<p><strong>You should see:</strong> nothing visual yet — but focus on the <code>suspend</code> keyword. That single word is what keeps the network call off the main thread.</p>
+</li>
+<li class="step">
+<h4>Define the Room entity, DAO (returning Flow), and database</h4>
+<p>The DAO's <code>observeAll()</code> returns a <code>Flow</code> — this is the live pipe. <code>@Upsert</code> inserts new rows and updates existing ones.</p>
+<div class="codeblock"><span class="codeblock__lang">kotlin</span><pre><code>@Entity(tableName = "articles")
+data class ArticleEntity(
+    @PrimaryKey val id: Long,
+    val title: String,
+    val body: String,
+)
+
+@Dao
+interface ArticleDao {
+    @Query("SELECT * FROM articles ORDER BY title")
+    fun observeAll(): Flow&lt;List&lt;ArticleEntity&gt;&gt;     // re-emits on every table change
+
+    @Upsert
+    suspend fun upsertAll(items: List&lt;ArticleEntity&gt;)
+}
+
+@Database(entities = [ArticleEntity::class], version = 1, exportSchema = false)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun articleDao(): ArticleDao
+}</code></pre></div>
+<p><strong>You should see:</strong> the project still builds. Open the <strong>Database Inspector</strong> placeholder so you know where to watch rows appear.</p>
+</li>
+<li class="step">
+<h4>Write the mappers (DTO ↔ Entity ↔ Domain)</h4>
+<p>Keep network shapes, DB shapes, and the domain model separate. Mappers are boring on purpose — they're the seams that let each layer change independently.</p>
+<div class="codeblock"><span class="codeblock__lang">kotlin</span><pre><code>fun ArticleDto.toEntity() = ArticleEntity(id = id, title = title, body = body)
+fun ArticleEntity.toDomain() = Article(id = id, title = title, body = body)</code></pre></div>
+<p><strong>You should see:</strong> these resolve the <code>toEntity()</code> / <code>toDomain()</code> references used by the repository in the next step.</p>
+</li>
+<li class="step">
+<h4>Assemble the repository</h4>
+<p>This is the heart of the lesson. Read from Room as a <code>Flow</code>; refresh by fetching from the network and upserting into Room.</p>
+<div class="codeblock"><span class="codeblock__lang">kotlin</span><pre><code>class DefaultArticleRepository(
+    private val api: ArticleApiService,
+    private val dao: ArticleDao,
+) : ArticleRepository {
+
+    override fun observeArticles(): Flow&lt;List&lt;Article&gt;&gt; =
+        dao.observeAll().map { rows -&gt; rows.map { it.toDomain() } }
+
+    override suspend fun refresh() {
+        val fromNetwork = api.getArticles()
+        dao.upsertAll(fromNetwork.map { it.toEntity() })
+        // No UI call needed — observeAll() re-emits because the table changed.
+    }
+}</code></pre></div>
+<p><strong>You should see:</strong> the comment is the "aha" — writing to the cache is what updates the UI. Say it out loud until it sticks.</p>
+</li>
+<li class="step">
+<h4>ViewModel: turn the cache stream into UI state</h4>
+<p>Map the domain list into <code>FeedUiState</code> and expose a <code>StateFlow</code>. Kick off a refresh in <code>init</code>.</p>
+<div class="codeblock"><span class="codeblock__lang">kotlin</span><pre><code>class FeedViewModel(private val repo: ArticleRepository) : ViewModel() {
+
+    val uiState: StateFlow&lt;FeedUiState&gt; =
+        repo.observeArticles()
+            .map { if (it.isEmpty()) FeedUiState.Empty else FeedUiState.Success(it) }
+            .catch { e -&gt; emit(FeedUiState.Error(e.message ?: "Unknown error")) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FeedUiState.Loading)
+
+    init { refresh() }
+
+    fun refresh() = viewModelScope.launch {
+        try { repo.refresh() }
+        catch (e: IOException) { /* offline: keep showing cache */ }
+        catch (e: HttpException) { /* non-2xx: log + optional snackbar */ }
+    }
+}</code></pre></div>
+<p><strong>You should see:</strong> still no UI — but notice that on a cold start the list is empty, so the very first state is <code>Empty</code> until the network call lands, then it flips to <code>Success</code>.</p>
+</li>
+<li class="step">
+<h4>Wire it into Compose &amp; run</h4>
+<p>Collect the state lifecycle-aware and feed <code>FeedScreen</code> from the previous section.</p>
+<div class="codeblock"><span class="codeblock__lang">kotlin · compose</span><pre><code>@Composable
+fun FeedRoute(viewModel: FeedViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    FeedScreen(uiState = uiState, onRetry = viewModel::refresh)
+}</code></pre></div>
+<p><strong>You should see:</strong> a spinner/empty for a beat, then the list fills in. Open the <strong>Database Inspector</strong> — rows are now in the <code>articles</code> table.</p>
+</li>
+<li class="step">
+<h4>Prove offline-first (the payoff demo)</h4>
+<p>With data loaded: toggle <strong>airplane mode</strong> inside the emulator, kill and relaunch the app. The list is <em>still there</em> — served from Room with no network. Turn airplane mode off, pull to refresh / hit Retry, and watch fresh rows replace the cache automatically.</p>
+</li>
+</ol>
+</section>
+<!-- =================================================================== -->
+<!--  HANDS-ON LAB                                                       -->
+<!-- =================================================================== -->
+<section aria-labelledby="lab-h" class="slide">
+<h2 id="lab-h">🛠️ Hands-On Lab — Final Project Build Studio</h2>
+<p class="muted">Supported work time on the student's own final project. Apply today's pattern; meet the feature checklist. Companion labs: <a href="../labs/retrofit-flow.html">Retrofit + Flow</a> and <a href="../labs/sqlite-crud-sim.html">SQLite CRUD simulator</a>.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Lab goal</span>
+<p>By the end of the studio, the student's app should fetch data from a web API, cache it locally, and render it through a state-driven Compose screen with navigation — i.e. features (a)–(e) wired together, even if minimally. Quality polish (Loading/Error/Empty) is the stretch.</p>
+</div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Confirm a clean baseline &amp; set a 20-minute goal</h4>
+<p>Pull/commit so you start green. Write your single next goal on a sticky note, e.g. <em>"Render the API list in a LazyColumn."</em></p>
+<p><strong>Starter hint:</strong> if your build is red right now, fix that before adding anything new. A red build at minute 0 becomes a panicked build at minute 60.</p>
+</li>
+<li class="step">
+<h4>Stand up the network layer (feature d)</h4>
+<p>Create your DTO + Retrofit service for your real API. Add the <code>INTERNET</code> permission. Log the raw response once to confirm field names match your DTO.</p>
+<p><strong>Expected result:</strong> a unit-of-work that returns a non-empty <code>List&lt;Dto&gt;</code> in Logcat.</p>
+</li>
+<li class="step">
+<h4>Add the local cache (feature c)</h4>
+<p>Define your entity + DAO (<code>observeAll(): Flow&lt;…&gt;</code> and an <code>@Upsert</code>). Build your <code>AppDatabase</code>. If you're using DataStore instead of Room for a smaller app, persist your key piece of state there and confirm it survives a restart.</p>
+<p><strong>Expected result:</strong> rows visible in the Database Inspector after one refresh.</p>
+</li>
+<li class="step">
+<h4>Glue them with a repository (feature e)</h4>
+<p>Write the repository that reads from the cache and refreshes from the network, exactly like the live demo. Inject both data sources via the constructor.</p>
+<p><strong>Expected result:</strong> ViewModel depends only on the repository — no Retrofit/Room imports in the ViewModel.</p>
+</li>
+<li class="step">
+<h4>Drive the UI from state across ≥ 2 screens (features a + b)</h4>
+<p>Expose <code>StateFlow&lt;UiState&gt;</code>, collect with <code>collectAsStateWithLifecycle()</code>, and render. Confirm navigation between a list screen and a detail screen works with a real back stack.</p>
+<p><strong>Expected result:</strong> tapping an item navigates to detail; back returns to the list with state intact.</p>
+</li>
+<li class="step">
+<h4>Self-audit against the checklist &amp; commit a checkpoint</h4>
+<p>Walk the <a href="#idea-checklist">feature checklist</a> above. When (a)–(e) are all checked, commit a checkpoint with a clear message.</p>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting (read this before raising your hand)</span>
+<ul style="margin:0">
+<li><strong>SecurityException / permission denied:</strong> missing <code>INTERNET</code> permission in the manifest.</li>
+<li><strong>NetworkOnMainThreadException:</strong> your network call isn't <code>suspend</code> or isn't inside <code>viewModelScope.launch</code>.</li>
+<li><strong>All fields null after parsing:</strong> JSON key names ≠ data-class property names. Log the raw body and add <code>@SerialName</code>/<code>@Json</code>.</li>
+<li><strong>Room "cannot verify data integrity":</strong> you changed the schema; for coursework add <code>.fallbackToDestructiveMigration()</code> to the builder.</li>
+<li><strong>UI never updates after refresh:</strong> your DAO query returns <code>List</code> instead of <code>Flow&lt;List&gt;</code>, or you collected without lifecycle awareness.</li>
+<li><strong>Cleartext HTTP blocked:</strong> use <code>https://</code>. Plain <code>http://</code> is blocked by default on modern Android.</li>
+</ul>
+</div>
+</div>
+<div class="grid grid-2">
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Stretch goal</span>
+<ul style="margin:0">
+<li>Add pull-to-refresh (<code>PullToRefreshBox</code>) wired to <code>viewModel.refresh()</code>.</li>
+<li>Show a one-time snackbar when a refresh fails but cached data is shown ("Showing saved data — you're offline").</li>
+<li>Add a search/filter field that queries Room with a <code>LIKE</code> and re-emits via Flow.</li>
+<li>Write one unit test for the repository using a fake DAO + fake API (see <a href="../labs/sqlite-crud-sim.html">SQLite CRUD lab</a>).</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<!-- =================================================================== -->
+<!--  ASSESSMENTS TODAY                                                  -->
+<!-- =================================================================== -->
+<section aria-labelledby="assess-h" class="slide">
+<h2 id="assess-h">📋 Assessments Today</h2>
+<p class="muted">Two things to work on today: Assignment 4 (Unit 6) and a progress check toward the final project.</p>
+<div class="grid grid-2">
+<div class="card card--teal">
+<h3 class="card__title">Assignment 4 — Data Persistence (Unit 6)</h3>
+<p>Assigned today, due before next session. Students apply Unit 6 persistence to their own project: cache network data in Room (or persist state in DataStore) and prove it survives a restart.</p>
+<p><strong>Submit via the LMS:</strong> Assignments (the code/APK) + Discussion Board + Exercises.</p>
+<p><a href="https://developer.android.com/courses/android-basics-compose/unit-6" rel="noopener" target="_blank">Reading: Android Basics — Unit 6 (Data persistence) ↗</a></p>
+</div>
+<div class="card card--amber">
+<h3 class="card__title">Project progress check (formative)</h3>
+<p>During the studio, check your own progress against the feature checklist below. Clearing it is the gate to a smooth Final Project demo next session.</p>
+<p><span class="badge badge--amber">Feeds</span> Final Project, demoed Week 4.</p>
+<p><a href="#idea-checklist">Open the feature checklist (a)–(e) ↑</a> and tick off what your project already does.</p>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🔭</span>
+<div class="callout__body">
+<span class="callout__label">Looking ahead — Session 12</span>
+<p>Next session is <strong>Final Project demos</strong> and the <strong>Post-test</strong>. There is no new content to learn; today's integration work is the prep. Prioritize a working, demoable app over a perfect one.</p>
+</div>
+</div>
+</section>
+<!-- =================================================================== -->
+<!--  DISCUSSION BOARD PROMPT                                            -->
+<!-- =================================================================== -->
+<section aria-labelledby="disc-h" class="slide" id="discussion">
+<h2 id="disc-h">💬 Discussion Board Prompt</h2>
+<div class="card card--teal">
+<h3 class="card__title">This week's prompt — "Prove your state survived"</h3>
+<blockquote>
+<p>Pick <strong>one concrete piece of state</strong> in <em>your</em> final project (a cached list, a user setting,
+            a draft, a favorites flag — anything the user would be annoyed to lose). In your initial post:</p>
+<ol>
+<li>Name the piece of state and say <strong>where you persist it</strong> — Room or DataStore — and
+              <em>why that choice</em> (structured rows that the UI observes → Room; a few simple key/values → DataStore).</li>
+<li>Describe how your UI <strong>proves it survived a process restart</strong>: the exact steps you'd take to demo it
+              (e.g. "add an item, swipe the app away, relaunch — it's still there"), and which of the four states
+              (Loading / Success / Error / Empty) shows on that cold relaunch.</li>
+<li>Name <strong>one failure case</strong> (a refresh that throws, a 401, an empty response) and explain exactly
+              <strong>how your UI handles it</strong> without erasing the persisted data.</li>
+</ol>
+<p>Then reply to <strong>two classmates</strong>: point out one failure case they didn't cover, or suggest whether
+            Room vs DataStore was the better fit for their data.</p>
+</blockquote>
+</div>
+</section>
+<!-- =================================================================== -->
+<!--  HOMEWORK / NEXT CLASS                                              -->
+<!-- =================================================================== -->
+<section aria-labelledby="hw-h" class="slide">
+<h2 id="hw-h">🏠 Homework / Next Class</h2>
+<div class="grid grid-2">
+<div class="card">
+<h3 class="card__title">Due before Session 12</h3>
+<ul>
+<li><strong>Finish the final project build</strong> and prepare a <strong>5-minute demo</strong> for next session (live on emulator/device; have a backup screen recording in case of AVD trouble).</li>
+<li><strong>Complete Assignment 4 — Data persistence (Unit 6)</strong>: prove your data survives an app restart.</li>
+<li><strong>Discussion Board:</strong> initial post + two peer replies (prompt above).</li>
+</ul>
+</div>
+<div class="card">
+<h3 class="card__title">Readings / resources (official docs)</h3>
+<ul>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-6" rel="noopener" target="_blank">Unit 6 — Data persistence ↗</a> (Room, the cache pattern)</li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-5" rel="noopener" target="_blank">Unit 5 — Connect to the internet ↗</a> (Retrofit refresher)</li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-4" rel="noopener" target="_blank">Unit 4 — Navigation &amp; app architecture ↗</a> (repository + ViewModel)</li>
+<li><a href="https://developer.android.com/kotlin/flow" rel="noopener" target="_blank">Kotlin Flow on Android ↗</a></li>
+<li><a href="https://developer.android.com/training/data-storage/room" rel="noopener" target="_blank">Save data in a local database with Room ↗</a></li>
+</ul>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🎬</span>
+<div class="callout__body">
+<span class="callout__label">Demo-prep checklist (share with students)</span>
+<ul style="margin:0">
+<li><strong>Pre-launch and warm the emulator/device</strong> before you're called up — a cold AVD boot mid-demo eats two minutes you don't have.</li>
+<li><strong>Pre-seed your data</strong> so the list isn't empty on stage. Run one successful refresh beforehand; demoing an Empty state by accident reads as a broken app.</li>
+<li><strong>Rehearse the offline demo</strong>: toggle airplane mode, kill and relaunch, show the cached list is still there. This is your strongest 15 seconds — practice it.</li>
+<li><strong>Record a backup screen capture</strong> of the full flow in case the AVD misbehaves live; a recording beats a frozen emulator.</li>
+<li><strong>Write a 5-minute script</strong> and decide the <em>one</em> feature you lead with — the one that best shows fetch → cache → observe working end to end.</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- =================================================================== -->
+<!--  MASTER IT — worked example → fade, misconceptions, production,     -->
+<!--  retrieval check, deliberate practice (self-directed mastery)       -->
+<!-- =================================================================== -->
+<section aria-labelledby="master-h" class="card slide">
+<h2 class="card__title" id="master-h">🧠 Master it — the offline-first repository, end to end</h2>
+<p class="muted">
+        This is the keystone of the whole course: a <strong>repository</strong> that merges a network result into a local
+        cache and exposes the cache as the single source of truth, plus a clean <strong>Loading / Success / Error / Empty</strong>
+        state machine on top. Room and Retrofit aren't on this in-browser Kotlin runner, so we drill the
+        <strong>pure-Kotlin core</strong> — the exact reasoning that makes the Android version correct. Master this logic and
+        the framework code is just wiring.
+      </p>
+<!-- ----------------------------------------------------------------- -->
+<!--  WORKED EXAMPLE                                                    -->
+<!-- ----------------------------------------------------------------- -->
+<h3 id="master-we">Worked example — reason about it before you build it</h3>
+<p>
+        Picture the read path running while the user scrolls. <code>refresh()</code> writes new rows into the cache; the UI is
+        observing that cache; the screen updates itself. There is <em>no</em> "now go re-render" call. Walk the logic one
+        decision at a time — this is the mental model the compiler can't give you:
+      </p>
+<ol class="stepper">
+<li class="step">
+<h4>1 · The cache is the source of truth, not the network</h4>
+<p>The UI reads <strong>only</strong> from the cache. <code>refresh()</code>'s entire job is to <em>mutate the cache</em>. So
+          "did the screen update?" reduces to one question: "did the cache change?" Keep that invariant and offline-first falls
+          out for free — there is nothing on screen that the network owns directly.</p>
+</li>
+<li class="step">
+<h4>2 · Merge by key, don't blindly replace</h4>
+<p>A refresh that returns 3 fresh articles shouldn't wipe 50 cached ones. Upsert means <em>update existing rows by primary
+          key, insert the new ones</em>. In Room that's <code>@Upsert</code>; in pure Kotlin it's "build a map keyed by id, write
+          the network items over it, read the values back sorted." Same idea, no magic.</p>
+</li>
+<li class="step">
+<h4>3 · A failed refresh must never erase what you already showed</h4>
+<p>If the network throws, the cache is untouched, so the user keeps seeing yesterday's list. The error is a <em>signal to the
+          ViewModel</em> ("couldn't refresh"), not a reason to clear data. This is the difference between a resilient app and one
+          that flashes a blank screen the moment a tunnel eats the signal.</p>
+</li>
+<li class="step">
+<h4>4 · Classify the failure — not every error means "offline"</h4>
+<p><code>IOException</code> = the request never reached a healthy server (no signal, DNS, timeout) → <strong>retry is
+          reasonable</strong>. <code>HttpException</code> = you reached the server and it said <em>no</em> (404, 401, 500) →
+          blindly retrying just hammers it. Senior code branches these; junior code catches <code>Exception</code> and prints
+          "no internet" for a 401.</p>
+</li>
+<li class="step">
+<h4>5 · Reduce the result to exactly one UI state</h4>
+<p>Given "what the repository returned" you map to <strong>one</strong> of four states: a non-empty list → <code>Success</code>;
+          a successful-but-empty list → <code>Empty</code> (a friendly message, <em>not</em> a spinner forever); a failure →
+          <code>Error</code>; nothing decided yet → <code>Loading</code>. A sealed type makes the <code>when</code> exhaustive so
+          you physically cannot forget a branch.</p>
+</li>
+</ol>
+<p>Here is that reasoning as <strong>complete, runnable Kotlin</strong> — the same shape as the Android repository, minus the
+        framework. Predict the printed output, then press <strong>Run</strong> to confirm.</p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable — the repository core, no Android needed</div>
+<pre><code>// ---- Domain + the four-state model (identical to the real app) -------------
+data class Article(val id: Long, val title: String)
+
+sealed interface UiState {
+    data object Loading : UiState
+    data object Empty : UiState
+    data class Success(val articles: List&lt;Article&gt;) : UiState
+    data class Error(val message: String) : UiState
+}
+
+// A network result the repository hands back: success OR a classified failure.
+sealed interface NetResult {
+    data class Ok(val articles: List&lt;Article&gt;) : NetResult
+    data object Offline : NetResult        // IOException-style: never reached server
+    data class ServerError(val code: Int) : NetResult  // HttpException-style: reached, said no
+}
+
+// ---- The cache = single source of truth (stands in for Room) ---------------
+class Cache {
+    private val byId = linkedMapOf&lt;Long, Article&gt;()        // keyed by primary key
+    fun upsertAll(items: List&lt;Article&gt;) {                  // merge, don't replace
+        items.forEach { byId[it.id] = it }
+    }
+    fun observe(): List&lt;Article&gt; = byId.values.sortedBy { it.title }
+}
+
+// ---- The repository: refresh writes the cache; reads come from the cache ----
+class ArticleRepository(private val cache: Cache) {
+    // Returns whether the refresh succeeded; the CACHE is what actually updates the UI.
+    fun refresh(net: NetResult): Result&lt;Unit&gt; = when (net) {
+        is NetResult.Ok          -&gt; { cache.upsertAll(net.articles); Result.success(Unit) }
+        NetResult.Offline        -&gt; Result.failure(IllegalStateException("offline"))
+        is NetResult.ServerError -&gt; Result.failure(IllegalStateException("HTTP ${net.code}"))
+        // NOTE: on failure we DO NOT touch the cache — old data stays on screen.
+    }
+    fun observe(): List&lt;Article&gt; = cache.observe()
+}
+
+// ---- The ViewModel's job: turn "cache snapshot" into one UI state ----------
+fun mapToUiState(cached: List&lt;Article&gt;, refreshFailed: Boolean): UiState = when {
+    cached.isNotEmpty()  -&gt; UiState.Success(cached)   // always prefer showing data
+    refreshFailed        -&gt; UiState.Error("Couldn't reach the server")
+    else                 -&gt; UiState.Empty             // succeeded, but nothing came back
+}
+
+fun main() {
+    val repo = ArticleRepository(Cache())
+
+    // 1) Cold start, network OK -&gt; two articles, sorted by title -&gt; Success
+    repo.refresh(NetResult.Ok(listOf(Article(2, "Beta"), Article(1, "Alpha"))))
+    println(mapToUiState(repo.observe(), refreshFailed = false))
+
+    // 2) A later refresh goes offline -&gt; cache UNTOUCHED -&gt; still Success(Alpha, Beta)
+    val offline = repo.refresh(NetResult.Offline)
+    println("offline refresh failed? ${offline.isFailure} | still shows: ${mapToUiState(repo.observe(), refreshFailed = true)}")
+
+    // 3) Merge a fresh item by key -&gt; 3 articles, no data lost
+    repo.refresh(NetResult.Ok(listOf(Article(3, "Gamma"))))
+    println(mapToUiState(repo.observe(), refreshFailed = false))
+
+    // 4) Empty cache + a successful-but-empty response -&gt; Empty, NOT Loading forever
+    val fresh = ArticleRepository(Cache())
+    fresh.refresh(NetResult.Ok(emptyList()))
+    println(mapToUiState(fresh.observe(), refreshFailed = false))
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">📤 Expected output (open after you've predicted)</button>
+<div class="accordion__body">
+<p class="muted">Four <code>println</code> lines, in order. The list shapes are Kotlin's real <code>data class</code> <code>toString()</code> — note the full <code>Article(id=…, title=…)</code> form, and that the <code>Empty</code> object prints just its name:</p>
+<div class="codeblock"><span class="codeblock__lang">stdout</span><pre><code>Success(articles=[Article(id=1, title=Alpha), Article(id=2, title=Beta)])
+offline refresh failed? true | still shows: Success(articles=[Article(id=1, title=Alpha), Article(id=2, title=Beta)])
+Success(articles=[Article(id=1, title=Alpha), Article(id=2, title=Beta), Article(id=3, title=Gamma)])
+Empty</code></pre></div>
+<p class="muted" style="margin-bottom:0">If you predicted a blank or <code>Error</code> on line 2, re-read step 3 of the reasoning: a failed refresh never touches the cache.</p>
+</div>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🔎</span>
+<div class="callout__body">
+<span class="callout__label">What the output proves</span>
+<p>Step 2 is the whole point of offline-first: the refresh <em>fails</em> yet the screen still shows <code>Success</code> with the
+          cached list, because we never let a failure mutate the cache. Step 4 proves <code>Empty ≠ Loading</code> — a request that
+          succeeds with zero rows is a finished, empty state, not a frozen spinner.</p>
+</div>
+</div>
+<!-- ----------------------------------------------------------------- -->
+<!--  FADED CHALLENGE                                                   -->
+<!-- ----------------------------------------------------------------- -->
+<h3 id="master-challenge">Now you drive — faded challenge (auto-checked)</h3>
+<p>
+        The scaffolding is built and the test harness is written. <strong>You</strong> fill the two load-bearing pieces:
+        the cache's key-based merge and the result→state reducer. When every case prints green, you've internalized the
+        offline-first contract. Edit the <code>// YOUR CODE</code> regions, then press <strong>Run</strong>.
+      </p>
+<div class="codeblock" data-challenge="s11-repo-cache" data-run="kotlin" data-topic="project">
+<div class="codeblock__lang">Kotlin · runnable challenge — finish the repository core</div>
+<pre><code>data class Article(val id: Long, val title: String)
+
+sealed interface UiState {
+    data object Loading : UiState
+    data object Empty : UiState
+    data class Success(val articles: List&lt;Article&gt;) : UiState
+    data class Error(val message: String) : UiState
+}
+
+sealed interface NetResult {
+    data class Ok(val articles: List&lt;Article&gt;) : NetResult
+    data object Offline : NetResult
+    data class ServerError(val code: Int) : NetResult
+}
+
+class Cache {
+    private val byId = linkedMapOf&lt;Long, Article&gt;()
+
+    fun upsertAll(items: List&lt;Article&gt;) {
+        // YOUR CODE: merge each item into byId KEYED BY id (update existing, insert new).
+        // Do NOT clear the map first — a refresh must not delete cached rows.
+
+    }
+
+    fun observe(): List&lt;Article&gt; = byId.values.sortedBy { it.title }
+    fun size(): Int = byId.size
+}
+
+class ArticleRepository(private val cache: Cache) {
+    fun refresh(net: NetResult): Result&lt;Unit&gt; = when (net) {
+        is NetResult.Ok          -&gt; { cache.upsertAll(net.articles); Result.success(Unit) }
+        NetResult.Offline        -&gt; Result.failure(IllegalStateException("offline"))
+        is NetResult.ServerError -&gt; Result.failure(IllegalStateException("HTTP ${net.code}"))
+    }
+    fun observe(): List&lt;Article&gt; = cache.observe()
+}
+
+// Reduce "current cache + did the last refresh fail?" into exactly one UiState.
+fun mapToUiState(cached: List&lt;Article&gt;, refreshFailed: Boolean): UiState {
+    // YOUR CODE: return Success when there is data; Error when empty AND a refresh failed;
+    // otherwise Empty. (Loading is handled before any data exists; ignore it here.)
+
+}
+
+// ---------------------------- TEST HARNESS ---------------------------------
+fun main() {
+    var passed = 0
+    var failed = 0
+    fun check(name: String, cond: Boolean) {
+        if (cond) { println("✓ passed: $name"); passed++ }
+        else { println("✗ FAILED: $name"); failed++ }
+    }
+
+    // merge preserves existing rows + updates by key
+    val repo = ArticleRepository(Cache())
+    repo.refresh(NetResult.Ok(listOf(Article(2, "Beta"), Article(1, "Alpha"))))
+    check("first refresh caches 2 articles, sorted", repo.observe().map { it.title } == listOf("Alpha", "Beta"))
+
+    repo.refresh(NetResult.Ok(listOf(Article(3, "Gamma"))))
+    check("merge keeps old rows (now 3)", repo.observe().size == 3)
+
+    repo.refresh(NetResult.Ok(listOf(Article(1, "Alpha (edited)"))))
+    check("upsert updates existing row by id, no duplicate",
+        repo.observe().size == 3 &amp;&amp; repo.observe().any { it.id == 1L &amp;&amp; it.title == "Alpha (edited)" })
+
+    // offline refresh must not erase the cache
+    val before = repo.observe().size
+    val offline = repo.refresh(NetResult.Offline)
+    check("offline refresh fails", offline.isFailure)
+    check("offline refresh leaves cache intact", repo.observe().size == before)
+
+    // state reducer
+    check("data present -&gt; Success", mapToUiState(repo.observe(), refreshFailed = true) is UiState.Success)
+    check("empty + failed refresh -&gt; Error", mapToUiState(emptyList(), refreshFailed = true) is UiState.Error)
+    check("empty + clean refresh -&gt; Empty", mapToUiState(emptyList(), refreshFailed = false) is UiState.Empty)
+
+    println(if (failed == 0) "ALL TESTS PASSED 🎉" else "✗ $failed case(s) still failing — keep going")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">💡 Hint (open only if you're stuck)</button>
+<div class="accordion__body">
+<p><strong>upsertAll:</strong> a single loop — <code>items.forEach { byId[it.id] = it }</code>. Assigning by key is the merge:
+            an existing id is overwritten, a new id is added. Never call <code>byId.clear()</code>.</p>
+<p><strong>mapToUiState:</strong> a three-branch <code>when</code>. Prefer data first:
+            <code>cached.isNotEmpty() -&gt; Success(cached)</code>, then <code>refreshFailed -&gt; Error(...)</code>, then
+            <code>else -&gt; Empty</code>. Order matters — checking <code>refreshFailed</code> before data would hide a perfectly
+            good cached list behind an error.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock"><span class="codeblock__lang">kotlin</span><pre><code>fun upsertAll(items: List&lt;Article&gt;) {
+    items.forEach { byId[it.id] = it }   // update-or-insert, keyed by primary key
+}
+
+fun mapToUiState(cached: List&lt;Article&gt;, refreshFailed: Boolean): UiState = when {
+    cached.isNotEmpty() -&gt; UiState.Success(cached)
+    refreshFailed       -&gt; UiState.Error("Couldn't reach the server")
+    else                -&gt; UiState.Empty
+}</code></pre></div>
+<p class="muted">This is exactly the Android version with <code>@Upsert</code> and a <code>Flow</code> swapped in for the manual
+            map and list. The reasoning is identical; only the storage engine changes.</p>
+</div>
+</div>
+</div>
+<div class="callout callout--clo" style="margin-top:var(--space-4)">
+<span aria-hidden="true" class="callout__icon">🏁</span>
+<div class="callout__body">
+<span class="callout__label">You've got it when…</span>
+<p>every case prints <strong>✓ passed</strong> and the harness ends with <strong>ALL TESTS PASSED 🎉</strong>. Then mark it
+          solved below — it feeds your personal mastery for the <em>Project</em> track.</p>
+</div>
+</div>
+<!-- ----------------------------------------------------------------- -->
+<!--  MISCONCEPTIONS                                                    -->
+<!-- ----------------------------------------------------------------- -->
+<h3 id="master-misconceptions">Common misconceptions &amp; pitfalls</h3>
+<p class="muted">Each one is a real mental model students bring in — and the exact symptom it produces in a running app.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ "The network is the source of truth — the UI should show what the API returned."</button>
+<div class="accordion__body">
+<p><strong>Why it's wrong:</strong> if the UI reads from the network, then every screen needs its own fetch + loading + error
+            handling, and the moment the signal drops you have nothing to show. You also can't render anything until the round-trip
+            completes.</p>
+<p><strong>Correct model:</strong> the <strong>cache (Room) is the source of truth</strong>; the network's only job is to keep
+            the cache fresh. The UI observes the cache via <code>Flow</code> and updates itself whenever rows change.</p>
+<p><strong>Symptom you'd see:</strong> a blank screen on cold start with no signal; data that vanishes the instant the user
+            walks into an elevator; duplicated fetch/error code on every screen.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ "A DAO that returns <code>List</code> is fine — I'll just re-query after I insert."</button>
+<div class="accordion__body">
+<p><strong>Why it's wrong:</strong> a <code>suspend fun getAll(): List&lt;…&gt;</code> reads the table <em>once</em>. After
+            <code>refresh()</code> writes new rows, the screen has a stale list and no idea anything changed, so you bolt on manual
+            "now re-fetch and setState" calls everywhere — and forget half of them.</p>
+<p><strong>Correct model:</strong> return <code>Flow&lt;List&lt;…&gt;&gt;</code> from the DAO. Room re-emits the query result
+            automatically on every write to that table, so the write path (<code>refresh</code>) and the read path are fully
+            decoupled.</p>
+<p><strong>Symptom you'd see:</strong> "I refreshed but the list didn't change until I left the screen and came back."</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ "Catch <code>Exception</code> and show 'No internet' — a failure is a failure."</button>
+<div class="accordion__body">
+<p><strong>Why it's wrong:</strong> it conflates two opposite situations. <code>IOException</code> means the request never
+            reached a healthy server (offline, timeout) — retrying makes sense. <code>HttpException</code> means you <em>did</em>
+            reach the server and it returned a 4xx/5xx — retrying a 401 or 404 just hammers a broken request and lies to the user.</p>
+<p><strong>Correct model:</strong> branch the catch. <code>catch (e: IOException)</code> → offline/retryable; <code>catch (e:
+            HttpException)</code> → reached server, inspect <code>e.code()</code>, don't blind-retry; a generic <code>catch</code>
+            last for everything else. The repository surfaces a <code>Result&lt;T&gt;</code>; the ViewModel maps it to a state.</p>
+<p><strong>Symptom you'd see:</strong> a user with full bars getting "Check your internet connection" because their auth token
+            expired (a 401).</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ "An empty list just means it's still loading — keep the spinner up."</button>
+<div class="accordion__body">
+<p><strong>Why it's wrong:</strong> <code>Loading</code> and <code>Empty</code> are different facts. Loading = "I don't have an
+            answer yet." Empty = "I have an answer and it's zero rows." Treating empty as loading produces the #1 "my app is frozen"
+            bug report — a spinner that never stops.</p>
+<p><strong>Correct model:</strong> the moment the first emission arrives — <em>even if it's an empty list</em> — you leave
+            Loading. A non-empty list → <code>Success</code>; an empty one after a successful load → <code>Empty</code> with a
+            friendly message and (usually) a Retry.</p>
+<p><strong>Symptom you'd see:</strong> a perpetual spinner on a brand-new account that legitimately has no data yet.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button aria-expanded="false" class="accordion__head" type="button">❌ "Put the Retrofit call (or Room query) right in the ViewModel — a repository is extra ceremony."</button>
+<div class="accordion__body">
+<p><strong>Why it's wrong:</strong> the ViewModel becomes glued to a specific network library, can't be tested without a real
+            server, and has nowhere to add caching, retries, or a second data source. You also end up holding mutable cache state in
+            the data layer of every screen.</p>
+<p><strong>Correct model:</strong> the ViewModel depends on a <strong>single repository interface</strong> (no Retrofit/Room
+            imports in the ViewModel at all). The repository owns both data sources via constructor injection, so you can pass fakes
+            in a test and the real ones in the app. State flows <em>down</em> as an immutable <code>StateFlow&lt;UiState&gt;</code>;
+            events flow <em>up</em> as function calls.</p>
+<p><strong>Symptom you'd see:</strong> a ViewModel with <code>import retrofit2.*</code> at the top, untestable without a live
+            backend, and copy-pasted fetch logic across screens.</p>
+</div>
+</div>
+</div>
+<!-- ----------------------------------------------------------------- -->
+<!--  IN PRODUCTION                                                     -->
+<!-- ----------------------------------------------------------------- -->
+<h3 id="master-production">In production</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏗️</span>
+<div class="callout__body">
+<span class="callout__label">How a senior engineer actually wires this</span>
+<p>
+          The repository is <strong>constructor-injected</strong> with its data sources and is the <em>only</em> place that touches
+          Retrofit and Room. The read path is a <code>Flow</code> straight off the DAO, lifted into the ViewModel with
+          <code>stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)</code> so it survives configuration
+          changes but tears down a few seconds after the screen goes away. The write path (<code>refresh</code>) runs in
+          <code>viewModelScope.launch</code>, returns a <code>Result&lt;Unit&gt;</code>, and the ViewModel maps failures to a state —
+          it never mutates UI state by hand. Heavy work (the network call, the Room write) runs on
+          <code>Dispatchers.IO</code>; Retrofit's <code>suspend</code> functions and Room's <code>suspend</code>/<code>Flow</code>
+          APIs are already main-safe, so you rarely switch dispatchers yourself. Compose collects with
+          <code>collectAsStateWithLifecycle()</code> — never a bare <code>collectAsState()</code> — so it stops collecting in the
+          background.
+        </p>
+<p style="margin-bottom:0">
+<strong>The tasteful gotcha:</strong> pin <em>one</em> JSON converter coordinate and reuse it everywhere —
+          <code>com.squareup.retrofit2:converter-kotlinx-serialization</code> (shipped with Retrofit 3.x) with a single
+          <code>Json { ignoreUnknownKeys = true }</code> instance. Set <code>ignoreUnknownKeys = true</code> so a backend adding a
+          field next week doesn't crash your parser — but keep <code>explicitNulls</code> sane and prefer non-nullable fields with
+          defaults so a missing value is a compile-time decision, not a 2 a.m. <code>NullPointerException</code>. And remember the
+          unglamorous one: a <code>@GET("photos")</code> path with a <code>BASE_URL</code> that's missing its trailing slash silently
+          resolves to the wrong URL. Versions drift; accept Android Studio's stable bump when it offers one.
+        </p>
+</div>
+</div>
+<!-- ----------------------------------------------------------------- -->
+<!--  RETRIEVAL CHECK                                                   -->
+<!-- ----------------------------------------------------------------- -->
+<h3 id="master-retrieval">Retrieval check</h3>
+<p class="muted">
+        Close the notes and answer from your own model. These test <strong>application</strong>, not recall — this is self-check
+        practice, never a grade. Read every explanation, even when you're right.
+      </p>
+<div data-quiz="rc-11" data-topic="project"></div>
+<script id="rc-11" type="application/json">
+{
+  "title": "Retrieval check — offline-first repository & state",
+  "intro": "Apply the pattern. Pick the answer a senior engineer would defend in code review.",
+  "passingScore": 0.7,
+  "questions": [
+    {
+      "id": "rc11-source-of-truth",
+      "type": "single",
+      "prompt": "Your feed screen shows cached articles instantly, even with no signal. The user pulls to refresh and the request fails with an IOException. What should be on screen one second later?",
+      "options": [
+        { "id": "a", "text": "A blank screen, because the refresh failed" },
+        { "id": "b", "text": "The same cached articles — the failed refresh never touched the cache" },
+        { "id": "c", "text": "A spinner, until the next successful refresh" },
+        { "id": "d", "text": "An empty-state message saying there are no articles" }
+      ],
+      "correct": "b",
+      "explanation": "The cache is the source of truth and a failed refresh must not mutate it. The UI keeps showing the cached list; the failure becomes a transient signal (e.g. a snackbar), not a reason to clear data. That invariant IS offline-first."
+    },
+    {
+      "id": "rc11-list-vs-flow",
+      "type": "single",
+      "prompt": "After refresh() upserts new rows into Room, the screen doesn't change until you navigate away and back. The most likely cause?",
+      "options": [
+        { "id": "a", "text": "The DAO query returns List instead of Flow, so it read the table only once" },
+        { "id": "b", "text": "@Upsert is broken and didn't write the rows" },
+        { "id": "c", "text": "You forgot the INTERNET permission" },
+        { "id": "d", "text": "stateIn used WhileSubscribed instead of Eagerly" }
+      ],
+      "correct": "a",
+      "explanation": "A suspend fun returning List reads once. Return Flow<List<…>> and Room re-emits automatically on every write to that table, so the write path and read path decouple. Navigating away/back works only because it re-runs the one-shot query — the giveaway."
+    },
+    {
+      "id": "rc11-error-taxonomy",
+      "type": "single",
+      "prompt": "A refresh throws HttpException with code() == 401 (the auth token expired). Which handling is correct?",
+      "options": [
+        { "id": "a", "text": "Show 'No internet connection' and auto-retry" },
+        { "id": "b", "text": "Catch it the same as IOException — a failure is a failure" },
+        { "id": "c", "text": "Treat it as 'reached the server, it refused' — don't blind-retry; surface a real error / re-auth" },
+        { "id": "d", "text": "Clear the Room cache so the user re-downloads everything" }
+      ],
+      "correct": "c",
+      "explanation": "HttpException means the server WAS reached and returned a non-2xx. A 401 is an auth problem, not a connectivity one — blindly retrying hammers a request that will keep failing. Branch IOException (offline/retryable) vs HttpException (reached, inspect code()). And never clear the cache on failure."
+    },
+    {
+      "id": "rc11-empty-vs-loading",
+      "type": "single",
+      "prompt": "A brand-new user opens the app. The network call succeeds and returns an empty list. The screen should show…",
+      "options": [
+        { "id": "a", "text": "Loading — keep the spinner until data arrives" },
+        { "id": "b", "text": "Empty — a friendly 'nothing here yet' message" },
+        { "id": "c", "text": "Error — the request returned nothing" },
+        { "id": "d", "text": "Success with an invisible empty LazyColumn" }
+      ],
+      "correct": "b",
+      "explanation": "A successful response with zero rows is Empty, not Loading. Leaving the spinner up is the classic 'my app is frozen' bug. Loading ends at the first emission — even an empty one. Empty deserves its own friendly branch (and often a Retry)."
+    },
+    {
+      "id": "rc11-vm-deps",
+      "type": "single",
+      "prompt": "You open a teammate's FeedViewModel and see `import retrofit2.Retrofit` and `import androidx.room.*` at the top. The most accurate critique?",
+      "options": [
+        { "id": "a", "text": "Fine — fewer layers means less code" },
+        { "id": "b", "text": "The ViewModel is reaching past the repository into the data sources; it should depend on a single repository interface" },
+        { "id": "c", "text": "It needs a second ViewModel to separate network from database" },
+        { "id": "d", "text": "Move the imports into the Composable instead" }
+      ],
+      "correct": "b",
+      "explanation": "The ViewModel should talk to ONE repository interface — no Retrofit/Room imports. That keeps it testable with fakes, gives caching/retries a home, and lets data sources change without touching UI logic. Retrofit-or-Room imports in a ViewModel are a code smell."
+    },
+    {
+      "id": "rc11-statein",
+      "type": "single",
+      "prompt": "Why expose the UI state as `repo.observe().map { … }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)` rather than a plain cold Flow?",
+      "options": [
+        { "id": "a", "text": "stateIn makes the network call faster" },
+        { "id": "b", "text": "It gives Compose an immediate current value, keeps the upstream alive briefly across rotation, and seeds the first frame with Loading" },
+        { "id": "c", "text": "Cold Flows can't be collected in Compose at all" },
+        { "id": "d", "text": "WhileSubscribed disables caching so data is always fresh" }
+      ],
+      "correct": "b",
+      "explanation": "stateIn turns a cold Flow into a hot StateFlow with a readable current value (so Compose renders frame one), WhileSubscribed(5000) keeps the DB query alive ~5s after the last collector leaves (a quick rotation doesn't restart it), and initialValue=Loading seeds the very first state."
+    }
+  ]
+}
+</script>
+<!-- ----------------------------------------------------------------- -->
+<!--  SPACED RECALL DECK (auto-mounts via mastery.js)                   -->
+<!-- ----------------------------------------------------------------- -->
+<h3 id="master-recall">Spaced recall — keep it warm</h3>
+<p class="muted">
+        A few cards to bring back across days. Rate yourself honestly; the scheduler resurfaces the ones you find hard. This is the
+        cheapest way to keep the integration pattern in long-term memory.
+      </p>
+<div data-srs="srs-11"></div>
+<script id="srs-11" type="application/json">
+{
+  "id": "s11-deck",
+  "cards": [
+    { "id": "s11c1", "topic": "project",
+      "front": "In an offline-first app, what is the single source of truth for the UI?",
+      "back": "The <strong>local cache (Room)</strong>. The UI observes the cache via Flow; the network's only job is to keep the cache fresh." },
+    { "id": "s11c2", "topic": "project",
+      "front": "Why must a DAO read query return <code>Flow&lt;List&gt;</code> rather than a one-shot <code>List</code>?",
+      "back": "Room re-emits a <code>Flow</code> query automatically on every write to that table, so the screen updates itself after <code>refresh()</code> — no manual re-fetch." },
+    { "id": "s11c3", "topic": "networking",
+      "front": "<code>IOException</code> vs <code>HttpException</code> — what does each tell you?",
+      "back": "<code>IOException</code> = request never reached a healthy server (offline/timeout) → retry is reasonable. <code>HttpException</code> = reached the server, got a non-2xx (e.g. 401/404) → don't blind-retry; inspect <code>code()</code>." },
+    { "id": "s11c4", "topic": "networking",
+      "front": "Difference between the <strong>Loading</strong> and <strong>Empty</strong> UI states?",
+      "back": "<strong>Loading</strong> = no answer yet (spinner). <strong>Empty</strong> = a successful response with zero rows (friendly message). Loading ends at the first emission, even an empty one." },
+    { "id": "s11c5", "topic": "project",
+      "front": "What must a refresh do when the network call fails?",
+      "back": "<strong>Leave the cache untouched</strong> and surface the failure as a signal (snackbar / Error state if nothing is cached). Never clear cached data on a failed refresh." },
+    { "id": "s11c6", "topic": "architecture",
+      "front": "Why should the ViewModel depend on a repository <em>interface</em> instead of Retrofit + Room directly?",
+      "back": "Decoupling + testability: pass fakes in tests, swap data sources freely, and give caching/retries one home. No Retrofit/Room imports belong in a ViewModel." },
+    { "id": "s11c7", "topic": "architecture",
+      "front": "What does <code>stateIn(viewModelScope, WhileSubscribed(5000), Loading)</code> buy you?",
+      "back": "A hot <code>StateFlow</code> with an immediate value for Compose, upstream kept alive ~5s past the last collector (survives rotation), and a <code>Loading</code> seed for frame one." },
+    { "id": "s11c8", "topic": "networking",
+      "front": "Which Compose collector keeps you lifecycle-safe, and why does it matter?",
+      "back": "<code>collectAsStateWithLifecycle()</code> — it stops collecting when the screen is in the background, unlike a bare <code>collectAsState()</code>. Saves work and avoids stale-state bugs." }
+  ]
+}
+</script>
+<!-- ----------------------------------------------------------------- -->
+<!--  DELIBERATE PRACTICE                                               -->
+<!-- ----------------------------------------------------------------- -->
+<h3 id="master-practice">Deliberate practice — what to do next</h3>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Train this until it's automatic</span>
+<p>You don't master integration by reading it once — you master it by reproducing the pattern from blank, then fixing it
+          when it breaks. Do these in order:</p>
+<ol style="margin:0 0 var(--space-2)">
+<li><strong>Faded ladder:</strong> the auto-checked <a href="../practice/challenges.html">project &amp; networking
+            challenges</a> — work the <em>repo cache+network merge</em>, <em>four-state mapping</em>, and the
+            <em>IOException-vs-HttpException classifier</em> until each goes green from blank.</li>
+<li><strong>Debug drills:</strong> <a href="../practice/debug-drills.html">find-the-bug reps</a> — the "DAO returns List not
+            Flow," "no Loading/Error/Empty," and "main-thread network" seeds map straight to today's misconceptions.</li>
+<li><strong>Spaced repetition:</strong> the <a href="../practice/spaced-repetition.html">spaced deck</a> — add today's
+            cards and let the scheduler bring them back across the week so the pattern sticks past demo day.</li>
+<li><strong>See where you stand:</strong> the <a href="../path.html">skill-map / learning path</a> — the
+            <em>Project</em> node unlocks once Networking and Room/Flow are green. Aim to light it up before Session 12.</li>
+</ol>
+<p class="muted" style="margin-bottom:0">Solving the challenge above plus passing the retrieval check moves your
+          <em>Project</em> mastery — that's your own progress, tracked on this device, not a course grade.</p>
+</div>
+</div>
+<!-- Personal mastery snapshot (auto-renders streak + global % + solved count) -->
+<div class="card card--accent" style="margin-top:var(--space-5)">
+<h3 class="card__title" style="margin-top:0">📈 Your mastery snapshot</h3>
+<p class="muted">Your self-directed progress on this device — mastery %, study-day streak, and challenges solved. Pure
+        progress, never a grade.</p>
+<div data-mastery-stats=""></div>
+</div>
+</section>
+<!-- =================================================================== -->
+<!-- =================================================================== -->
+</main>
+<!-- ===================================================================== -->
+<!--  FOOTER                                                               -->
+<!-- ===================================================================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Session 11 of 12 ·
+        Week 4 — Networking, APIs &amp; the Final Project
+      </div>
+<div class="muted">
+        Keiser University · B.S. Software Engineering · 3.0 credit hours ·
+        <a href="../index.html">Course Hub</a> ·
+        <a href="session-12.html">Next: Final Demos &amp; Post-test ›</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

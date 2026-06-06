@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — your Mastery Map: a visual skill-tree from Kotlin to a full networked app, plus a deliberate-practice playbook for becoming the strongest engineer in your cohort." name="description"/>
+<title>Mastery Map — Your Learning Path | COP4667 Android Development</title>
+<link href="assets/style.css" rel="stylesheet"/>
+<link href="assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+
+    /* "Become the strongest engineer" playbook */
+    .playbook { display: grid; grid-template-columns: 1fr; gap: var(--space-4); margin: var(--space-4) 0 0; }
+    @media (min-width: 760px) { .playbook { grid-template-columns: 1fr 1fr; } }
+    .play {
+      display: grid; grid-template-columns: 44px 1fr; gap: var(--space-3); align-items: start;
+      padding: var(--space-4); background: var(--surface); border: 1px solid var(--line);
+      border-left: 4px solid var(--green); border-radius: var(--radius-sm);
+      transition: border-color .15s ease, transform .12s ease, box-shadow .15s ease;
+    }
+    .play:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .play__icon {
+      display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px;
+      font-size: 1.4rem; line-height: 1;
+      background: linear-gradient(135deg, var(--green), var(--green-dark)); color: var(--teal, #fff);
+    }
+    .play__title { font-weight: 800; font-size: var(--fs-lg); color: var(--ink); margin: 0 0 4px; line-height: 1.25; }
+    .play__title small { display: block; font-weight: 600; font-size: var(--fs-xs); color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+    .play__body { margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.55; }
+    .play__body strong { color: var(--ink); }
+    .play__body code { white-space: nowrap; }
+
+    /* The dashboard strip: overall mastery + due reviews + streak */
+    .map-dash { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); margin: var(--space-4) 0 0; }
+    .dash {
+      position: relative; overflow: hidden; padding: var(--space-4) var(--space-4) var(--space-5);
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .dash::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--green); }
+    .dash--due::before { background: var(--accent); }
+    .dash--streak::before { background: var(--teal-2); }
+    .dash__num { display: block; font-family: var(--font-mono); font-weight: 850; font-size: clamp(2rem, 5vw, 2.8rem);
+      letter-spacing: -.03em; line-height: 1; color: #178043; /* darker green: 4.99:1 on white, clears WCAG AA */ }
+    [data-theme="dark"] .dash__num { color: var(--green); }
+    .dash--due .dash__num { color: #8A5D00; /* amber text: 5.76:1 on white; --accent stays the ::before bar */ }
+    [data-theme="dark"] .dash--due .dash__num { color: var(--accent); }
+    .dash--streak .dash__num { color: var(--teal-2); }
+    .dash__label { display: block; margin-top: 6px; font-weight: 700; color: var(--ink); }
+    .dash__sub { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--muted); }
+    .dash__meter { margin-top: var(--space-3); height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+    .dash__fill { display: block; height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--green), var(--green-dark)); transition: width .4s ease; }
+    .dash__cta { margin-top: var(--space-3); }
+
+    /* Map scroller + frame */
+    .map-frame { border: 1px solid var(--line); border-radius: var(--radius); background:
+      linear-gradient(180deg, var(--surface-2), var(--surface)); padding: var(--space-3);
+      box-shadow: var(--shadow); }
+    .map-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: var(--space-2); }
+    .map-scroll #map { min-width: 0; }
+    .map-hint { color: var(--muted); font-size: var(--fs-sm); margin: 0 0 var(--space-2); display: flex;
+      align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    /* Topic deep-link table under the map */
+    .topo { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface);
+      border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    .topo th, .topo td { padding: var(--space-3) var(--space-4); text-align: left; border-top: 1px solid var(--line); vertical-align: top; }
+    .topo thead th { background: var(--teal); color: #DDF6F2; font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .04em; border-top: none; }
+    .topo tbody tr:nth-child(even) { background: var(--surface-2); }
+    .topo td .topo__links { display: flex; flex-wrap: wrap; gap: 6px; }
+    .topo__pct { font-family: var(--font-mono); font-weight: 800; }
+
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+    .section-head .muted { margin: 0; }
+  </style>
+</head>
+<body>
+<!-- ===================================================================== -->
+<!-- TOP NAV                                                               -->
+<!-- ===================================================================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 Android Development — home" class="brand" href="index.html">
+<span aria-hidden="true" class="brand__mark">🤖</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="index.html">Hub</a>
+<a href="schedule.html">Calendar</a>
+<a href="practice/challenges.html">Challenges</a>
+<a aria-current="page" href="path.html">Mastery Map</a>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+<button aria-label="Toggle dark theme" aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+</nav>
+</div>
+</header>
+<main id="main">
+<div class="wrap">
+<!-- ================================================================= -->
+<!-- HERO                                                              -->
+<!-- ================================================================= -->
+<section aria-labelledby="hero-title" class="hero slide">
+<p class="pill pill--green" style="margin-bottom: var(--space-3);">Your self-directed learning path</p>
+<h1 class="hero-title" id="hero-title">The Mastery Map</h1>
+<p class="hero-sub">
+        One road from <strong>your first <code>val</code></strong> to a <strong>full app that stores data
+        and talks to a web API</strong>. Each node lights up as <em>you</em> grow — solve the challenges,
+        clear the retrieval checks, and keep your spaced reviews. This map is a mirror of your own progress,
+        <strong>never a grade</strong>.
+      </p>
+<div class="hero-meta">
+<span class="pill">🧭 8 milestones · dependency-ordered</span>
+<span class="pill">🔓 Prereqs unlock the next skill</span>
+<span class="pill pill--accent">📈 Tracks mastery + spaced reviews</span>
+</div>
+</section>
+<!-- ================================================================= -->
+<!-- THE PLAYBOOK — how to become the strongest engineer in your cohort -->
+<!-- ================================================================= -->
+<section aria-labelledby="playbook-title" class="slide">
+<div class="section-head">
+<h2 id="playbook-title">How to become the strongest engineer in your cohort</h2>
+<p class="muted">Four habits, backed by how learning actually works. Run them every session.</p>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">⚡</span>
+<div class="callout__body">
+<strong class="callout__label">The whole secret in one line</strong>
+<p>Talent is just <em>compounded reps</em>. The strongest engineer in any room isn't the one with the
+          best memory — it's the one who practiced <strong>deliberately</strong>, recalled <strong>from
+          memory</strong>, spaced it <strong>over days</strong>, and <strong>shipped real things</strong>.
+          Do these four on this map and you will pull ahead.</p>
+</div>
+</div>
+<div class="playbook">
+<div class="play">
+<span aria-hidden="true" class="play__icon">🎯</span>
+<div>
+<h3 class="play__title"><small>Habit 1</small>Deliberate practice</h3>
+<p class="play__body">Don't re-read what's easy — attack the edge of what you <strong>can't quite do yet</strong>.
+            Pick the next <em>locked-feeling</em> node, do its <a href="practice/challenges.html">challenges</a>
+            until <code>ALL TESTS PASSED</code>, then make it harder: change a requirement, break it on
+            purpose, refactor it cleaner. Comfort is a signal to level up.</p>
+</div>
+</div>
+<div class="play">
+<span aria-hidden="true" class="play__icon">🧠</span>
+<div>
+<h3 class="play__title"><small>Habit 2</small>Retrieve, don't review</h3>
+<p class="play__body">Close the notes and <strong>pull the answer from memory</strong> — that struggle is what
+            builds the wiring. Predict the lifecycle callbacks before you run them; write the
+            <code>remember</code> line from scratch before you peek. Each quiz and flashcard here is a
+            <em>retrieval rep</em>, and your accuracy quietly feeds your mastery.</p>
+</div>
+</div>
+<div class="play">
+<span aria-hidden="true" class="play__icon">📆</span>
+<div>
+<h3 class="play__title"><small>Habit 3</small>Space it out</h3>
+<p class="play__body">Cramming feels productive and forgets fast. Touch each topic on <strong>several
+            different days</strong> — even 15 minutes. The spaced-repetition decks resurface a card right
+            as you're about to forget it, which is the single most efficient way to make knowledge
+            permanent. Watch your <strong>due reviews</strong> below; clearing them is the win.</p>
+</div>
+</div>
+<div class="play">
+<span aria-hidden="true" class="play__icon">🛠️</span>
+<div>
+<h3 class="play__title"><small>Habit 4</small>Build real things</h3>
+<p class="play__body">Tutorials teach recognition; <strong>projects teach engineering</strong>. After every node,
+            wire what you learned into a screen of <em>your own</em> app. The whole map points at one outcome —
+            a real Android app that stores data locally and talks to a live API. Ship small, ship often,
+            and let the <a href="sessions/session-11.html">final project</a> be the thing you actually defend.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ================================================================= -->
+<!-- LIVE DASHBOARD — overall mastery % + due reviews + streak         -->
+<!-- ================================================================= -->
+<section aria-labelledby="dash-title" class="slide">
+<div class="section-head">
+<h2 id="dash-title">Where you stand right now</h2>
+<p class="muted">Computed live from your own practice — yours alone, not a course grade.</p>
+</div>
+<div class="map-dash" id="dash">
+<div class="dash dash--mastery">
+<span class="dash__num" data-dash="mastery">0%</span>
+<span class="dash__label">Overall mastery</span>
+<span class="dash__sub" data-dash="mastery-sub">across the topics you've touched</span>
+<div class="dash__meter"><span class="dash__fill" data-dash="mastery-fill" style="width:0%"></span></div>
+</div>
+<div class="dash dash--due">
+<span class="dash__num" data-dash="due">0</span>
+<span class="dash__label">Reviews due now</span>
+<span class="dash__sub" data-dash="due-sub">spaced cards ready to resurface</span>
+<div class="dash__cta">
+<a class="btn btn--ghost btn--sm" href="practice/spaced-repetition.html">Clear reviews →</a>
+</div>
+</div>
+<div class="dash dash--streak">
+<span class="dash__num" data-dash="streak">0</span>
+<span class="dash__label">Day streak</span>
+<span class="dash__sub" data-dash="streak-sub">study today to keep it alive</span>
+<div class="dash__cta">
+<a class="btn btn--ghost btn--sm" href="practice/challenges.html">Practice today →</a>
+</div>
+</div>
+<div class="dash">
+<span class="dash__num" data-dash="solved">0</span>
+<span class="dash__label">Challenges solved</span>
+<span class="dash__sub" data-dash="solved-sub">your own reps, logged</span>
+</div>
+</div>
+</section>
+<!-- ================================================================= -->
+<!-- THE SKILL-TREE MAP                                                -->
+<!-- ================================================================= -->
+<section aria-labelledby="map-title" class="slide">
+<div class="section-head">
+<h2 id="map-title">The skill-tree</h2>
+<p class="muted">Follow the arrows. A node unlocks once its prerequisites hit mastery.</p>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<strong class="callout__label">How to read it</strong>
+<p>Nodes are coloured by <strong>your</strong> topic mastery: <em>locked</em> until its prereqs are
+          cleared, <em>in progress</em> as you practice, and <strong>mastered</strong> at 80%+. Click any
+          unlocked node to jump straight to its session. The columns left-to-right are the natural build
+          order: <strong>Kotlin → Compose UI → State → Lists → Navigation/Architecture → Data → Networking →
+          Final Project</strong>.</p>
+</div>
+</div>
+<div class="map-frame">
+<p class="map-hint no-print">
+<span aria-hidden="true">↔️</span> Scroll sideways to follow the whole road. Locked nodes show a
+          padlock — finish their prerequisites to open them.
+        </p>
+<div class="map-scroll">
+<div aria-label="Your Android development skill-tree" id="map"></div>
+</div>
+</div>
+<p aria-live="polite" class="muted mt" data-map-status="" id="map-status">
+        Your map updates as you practice — a text summary of mastered, in-progress, and next-up milestones appears here.
+      </p>
+</section>
+<!-- ================================================================= -->
+<!-- TOPIC DEEP-LINKS — each node, its session + its challenges        -->
+<!-- ================================================================= -->
+<section aria-labelledby="topo-title" class="slide">
+<div class="section-head">
+<h2 id="topo-title">Jump to any topic</h2>
+<p class="muted">Every milestone, its lesson, its drills, and your current mastery.</p>
+</div>
+<div style="overflow-x:auto">
+<table class="topo">
+<thead>
+<tr>
+<th scope="col">Milestone</th>
+<th scope="col">Learn it</th>
+<th scope="col">Practice it</th>
+<th scope="col" style="text-align:right">Your mastery</th>
+</tr>
+</thead>
+<tbody id="topo-body">
+<!-- rows injected from the same tree data, with live % from MASTERY -->
+</tbody>
+</table>
+</div>
+<p class="muted center no-print mt"><small>Mastery blends three personal signals — solved challenges,
+        spaced-review maturity, and retrieval-quiz accuracy. Nothing here is a grade; it is a measure of your
+        own growth.</small></p>
+</section>
+</div>
+</main>
+<!-- ===================================================================== -->
+<!-- THE LEARNING-PATH TREE (data) — covers in-scope topics in            -->
+<!-- dependency order; each node links its session + challenges anchor.   -->
+<!-- ===================================================================== -->
+<script id="tree" type="application/json">
+{
+  "nodes": [
+    {
+      "id": "kotlin",
+      "unit": "1",
+      "topic": "kotlin",
+      "label": "Kotlin Essentials",
+      "href": "sessions/session-02.html",
+      "challenges": "practice/challenges.html#t-kotlin",
+      "blurb": "vals/vars, null-safety, functions, classes, lambdas — the language everything else is written in.",
+      "prereqs": []
+    },
+    {
+      "id": "compose-ui",
+      "unit": "2",
+      "topic": "compose-ui",
+      "label": "Compose UI",
+      "href": "sessions/session-04.html",
+      "challenges": "practice/challenges.html#t-compose",
+      "blurb": "Composables, Column/Row/Box layout, and modifiers — describe UI as functions of data.",
+      "prereqs": ["kotlin"]
+    },
+    {
+      "id": "state",
+      "unit": "2",
+      "topic": "state",
+      "label": "State & Recomposition",
+      "href": "sessions/session-05.html",
+      "challenges": "practice/challenges.html#t-state",
+      "blurb": "remember, mutableStateOf, state hoisting — make the screen react to user input.",
+      "prereqs": ["compose-ui"]
+    },
+    {
+      "id": "lists",
+      "unit": "3",
+      "topic": "lists",
+      "label": "Lists & Components",
+      "href": "sessions/session-07.html",
+      "challenges": "practice/challenges.html#t-lists",
+      "blurb": "LazyColumn, cards, and Scaffold — render collections efficiently with Material 3.",
+      "prereqs": ["state"]
+    },
+    {
+      "id": "architecture",
+      "unit": "3",
+      "topic": "architecture",
+      "label": "Nav & Architecture",
+      "href": "sessions/session-08.html",
+      "challenges": "practice/challenges.html#t-nav",
+      "blurb": "NavHost routes, ViewModel, and UI/domain/data layers — structure an app that scales.",
+      "prereqs": ["lists"]
+    },
+    {
+      "id": "data",
+      "unit": "4",
+      "topic": "data",
+      "label": "Local Data",
+      "href": "sessions/session-09.html",
+      "challenges": "practice/challenges.html#t-data",
+      "blurb": "DataStore/SharedPreferences and Room/SQLite — persist state with full CRUD.",
+      "prereqs": ["architecture"]
+    },
+    {
+      "id": "networking",
+      "unit": "5",
+      "topic": "networking",
+      "label": "Networking & REST",
+      "href": "sessions/session-10.html",
+      "challenges": "practice/challenges.html#t-net",
+      "blurb": "HTTP, JSON, and Retrofit — fetch from a web API and map it into UI state.",
+      "prereqs": ["data"]
+    },
+    {
+      "id": "project",
+      "unit": "6",
+      "topic": "project",
+      "label": "Final Project",
+      "href": "sessions/session-11.html",
+      "challenges": "practice/challenges.html",
+      "blurb": "Integrate it all: a real app that stores data locally and talks to a live API.",
+      "prereqs": ["networking"]
+    }
+  ]
+}
+</script>
+<!-- ===================================================================== -->
+<!-- FOOTER                                                                -->
+<!-- ===================================================================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Mastery Map
+<div class="muted">Your self-directed learning path · Kotlin → Compose UI → State → Lists → Nav &amp; Architecture → Data → Networking → Final Project</div>
+</div>
+<div class="row">
+<a href="index.html">↩ Course hub</a>
+<a href="practice/challenges.html">Challenges</a>
+<a href="practice/spaced-repetition.html">Spaced reviews</a>
+<a href="schedule.html">Calendar</a>
+</div>
+</div>
+</footer>
+<script src="assets/app.js"></script>
+<script src="assets/mastery.js"></script>
+<script>
+  /* =====================================================================
+     Mount the skill-tree and wire the live dashboard + topic deep-links.
+     All numbers come straight from the shared MASTERY engine — never grades.
+     ===================================================================== */
+  (function () {
+    'use strict';
+
+    function ready(fn) {
+      if (document.readyState !== 'loading') { fn(); }
+      else { document.addEventListener('DOMContentLoaded', fn); }
+    }
+
+    // Pull the tree once so the dashboard table and map agree on topics.
+    function readTree() {
+      var node = document.getElementById('tree');
+      if (!node) { return { nodes: [] }; }
+      try { return JSON.parse(node.textContent); }
+      catch (e) { return { nodes: [] }; }
+    }
+
+    // Count spaced-repetition cards that are due now, straight from progress.
+    // Shape: progress.all().topics[topic].cards[id] = { due, interval, ... }
+    function dueReviewCount(MASTERY) {
+      var now = Date.now();
+      var topics;
+      try { topics = MASTERY.progress.all().topics || {}; }
+      catch (e) { return 0; }
+      var due = 0;
+      Object.keys(topics).forEach(function (t) {
+        var cards = (topics[t] && topics[t].cards) || {};
+        Object.keys(cards).forEach(function (id) {
+          var c = cards[id];
+          if (c && typeof c.due === 'number' && c.due <= now) { due++; }
+        });
+      });
+      return due;
+    }
+
+    function setText(key, val) {
+      var n = document.querySelector('[data-dash="' + key + '"]');
+      if (n) { n.textContent = val; }
+    }
+
+    function paintDashboard(MASTERY, tree) {
+      var p = MASTERY.progress;
+      var pct = p.globalPercent();
+      var st = p.streak();
+      var solved = p.solvedCount();
+      var due = dueReviewCount(MASTERY);
+
+      setText('mastery', pct + '%');
+      var fill = document.querySelector('[data-dash="mastery-fill"]');
+      if (fill) { fill.style.width = pct + '%'; }
+      setText('mastery-sub', pct >= 80 ? 'strong across the board — keep it sharp'
+        : (pct > 0 ? 'across the topics you’ve touched' : 'start a node below to begin'));
+
+      setText('due', String(due));
+      setText('due-sub', due > 0 ? 'spaced cards ready to resurface'
+        : 'all caught up — spacing is working');
+
+      setText('streak', String(st.current));
+      setText('streak-sub', st.today ? 'studied today ✓ · longest ' + st.longest + 'd'
+        : 'study today to keep it alive');
+
+      setText('solved', String(solved));
+      setText('solved-sub', solved === 1 ? '1 rep logged' : solved + ' reps logged');
+    }
+
+    function nodeStateLabel(pct) {
+      if (pct >= 80) { return { cls: 'badge--teal', text: 'Mastered' }; }
+      if (pct > 0) { return { cls: 'badge--amber', text: 'In progress' }; }
+      return { cls: '', text: 'Not started' };
+    }
+
+    function buildTopicTable(MASTERY, tree) {
+      var body = document.getElementById('topo-body');
+      if (!body) { return; }
+      var p = MASTERY.progress;
+      var html = '';
+      (tree.nodes || []).forEach(function (n) {
+        var pct = p.topicMastery(n.topic);
+        var s = nodeStateLabel(pct);
+        html += '<tr>' +
+          '<td>' +
+            '<strong>' + escapeHTML(n.label) + '</strong>' +
+            (n.blurb ? '<div class="muted" style="font-size:var(--fs-sm);margin-top:2px">' + escapeHTML(n.blurb) + '</div>' : '') +
+          '</td>' +
+          '<td><div class="topo__links">' +
+            '<a class="tag" href="' + escapeHTML(n.href) + '" aria-label="Open the ' + escapeHTML(n.label) + ' session">Session &rsaquo;</a>' +
+          '</div></td>' +
+          '<td><div class="topo__links">' +
+            '<a class="tag" href="' + escapeHTML(n.challenges) + '" aria-label="Practice ' + escapeHTML(n.label) + ' challenges">Challenges &rsaquo;</a>' +
+          '</div></td>' +
+          '<td style="text-align:right;white-space:nowrap">' +
+            '<span class="badge ' + s.cls + '">' + s.text + '</span> ' +
+            '<span class="topo__pct">' + pct + '%</span>' +
+          '</td>' +
+        '</tr>';
+      });
+      body.innerHTML = html;
+    }
+
+    // A non-visual summary of the map's state, mirroring mastery.js nodeState:
+    // mastered at >=80%, locked when any prereq is <80% (and this topic <80%),
+    // else in progress. "Next up" is the first non-mastered node whose prereqs
+    // are all cleared — i.e. the soonest milestone a student can actually open.
+    function paintMapStatus(MASTERY, tree) {
+      var n = document.querySelector('[data-map-status]');
+      if (!n) { return; }
+      var p = MASTERY.progress;
+      var nodes = (tree.nodes || []);
+      var byId = {};
+      nodes.forEach(function (x) { byId[x.id] = x; });
+
+      function prereqsCleared(node) {
+        return (node.prereqs || []).every(function (pid) {
+          var pn = byId[pid];
+          return !pn || p.topicMastery(pn.topic) >= 80;
+        });
+      }
+
+      var total = nodes.length;
+      var mastered = 0, inProgress = 0, nextUp = null;
+      nodes.forEach(function (x) {
+        var pct = p.topicMastery(x.topic);
+        if (pct >= 80) { mastered++; }
+        else if (pct > 0) { inProgress++; }
+        if (!nextUp && pct < 80 && prereqsCleared(x)) { nextUp = x; }
+      });
+
+      var msg;
+      if (mastered === 0 && inProgress === 0) {
+        msg = 'Nothing mastered yet — start with ' + (nextUp ? nextUp.label : 'Kotlin Essentials') +
+          ' to light up your first milestone.';
+      } else if (mastered === total) {
+        msg = 'All ' + total + ' milestones mastered — you have walked the whole map. Keep your spaced reviews sharp.';
+      } else {
+        msg = mastered + ' of ' + total + ' milestones mastered' +
+          (inProgress > 0 ? ', ' + inProgress + ' in progress' : '') +
+          (nextUp ? '. Next up: ' + nextUp.label + '.' : '. Finish a prerequisite to unlock the next milestone.');
+      }
+      n.textContent = msg;
+    }
+
+    // Local escape (engine has one too, but keep this self-contained).
+    function escapeHTML(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    ready(function () {
+      if (typeof window.MASTERY === 'undefined') {
+        console.warn('MASTERY engine not found — map and dashboard cannot mount.');
+        return;
+      }
+      var MASTERY = window.MASTERY;
+      var tree = readTree();
+
+      // 1) Mount the visual skill-tree (per the MASTERY contract).
+      MASTERY.map('#map', '#tree');
+
+      // 2) Paint the live dashboard + deep-link table.
+      function refresh() {
+        paintDashboard(MASTERY, tree);
+        buildTopicTable(MASTERY, tree);
+        paintMapStatus(MASTERY, tree);
+      }
+      refresh();
+
+      // 3) Keep everything live as the student practices anywhere in the app.
+      document.addEventListener('mastery:change', refresh);
+    });
+  })();
+</script>
+</body>
+</html>

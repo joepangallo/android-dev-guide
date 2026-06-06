@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Session 4: Jetpack Compose Fundamentals. Composables, layouts, modifiers, and the Profile Card lab. Lesson plan." name="description"/>
+<title>Session 4 · Jetpack Compose Fundamentals — COP4667 Android Development</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .layout-with-toc { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 1000px) {
+      .layout-with-toc { grid-template-columns: 220px 1fr; align-items: start; }
+      .toc-rail { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow: auto; }
+    }
+    .toc-rail .card { padding: var(--space-4); }
+    .toc-rail h4 { margin: 0 0 var(--space-2); font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+
+    /* A tiny "phone" frame used to describe the Compose preview target visually */
+    .phone {
+      width: 188px; border: 8px solid var(--teal); border-radius: 26px;
+      background: var(--surface); box-shadow: var(--shadow); overflow: hidden;
+      margin: 0 auto; font-size: var(--fs-sm);
+    }
+    .phone__bar { height: 22px; background: var(--teal); }
+    .phone__screen { padding: var(--space-4); display: grid; gap: 10px; justify-items: center; text-align: center; }
+    .phone__avatar {
+      width: 84px; height: 84px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--green-dark));
+      display: grid; place-items: center; color: var(--teal); font-size: 2rem; font-weight: 800;
+    }
+    .phone__name { font-weight: 800; font-size: var(--fs-lg); margin: 0; }
+    .phone__role { color: var(--muted); margin: 0; font-size: var(--fs-sm); }
+    .phone__bio { color: var(--muted); font-size: var(--fs-xs); margin: 4px 0 0; }
+    .phone__btn {
+      margin-top: 6px; background: var(--green); color: var(--teal);
+      border-radius: 999px; padding: 7px 18px; font-weight: 700; font-size: var(--fs-xs);
+    }
+
+    /* modifier-order side-by-side demo boxes */
+    .demo-box { font-family: var(--font-mono); font-size: var(--fs-xs); text-align: center; }
+    .demo-box .swatch {
+      display: inline-block; margin-top: 8px; padding: 18px 22px; border-radius: 10px;
+      color: #fff; font-weight: 700;
+    }
+    .demo-box .swatch--padfirst { background: var(--info); border: 14px solid rgba(59,130,246,.25); }
+    .demo-box .swatch--bgfirst  { background: var(--green-dark); padding: 32px 36px; }
+
+    .legend-dot { display:inline-block; width:.7em; height:.7em; border-radius:50%; vertical-align:baseline; margin-right:4px; }
+    .key-term { font-weight: 700; color: var(--teal-2); }
+    [data-theme="dark"] .key-term { color: var(--green); }
+    .timeblock__body ul { margin-top: .4em; }
+    .nutshell { font-style: italic; }
+  </style>
+</head>
+<body>
+<!-- ===================== TOP NAV ===================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▶</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-03.html">‹ Prev</a>
+<a aria-current="page" href="session-04.html">S4</a>
+<a href="session-05.html">Next ›</a>
+<a href="../labs/compose-playground.html">Playground</a>
+<button aria-label="Toggle dark mode" aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<div class="layout-with-toc">
+<!-- TOC rail -->
+<aside aria-label="On this page" class="toc-rail no-print">
+<div class="card">
+<h4>On this page</h4>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+</aside>
+<div>
+<!-- ===================== HERO ===================== -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:var(--space-3);">
+<span class="pill pill--green">Session 4 of 12</span>
+<span class="pill">Week 2</span>
+<span class="pill">Building UIs with Jetpack Compose</span>
+</div>
+<h1 class="hero-title" id="hero-title">Jetpack Compose Fundamentals</h1>
+<p class="hero-sub nutshell">Today in a nutshell: students learn to describe a screen <em>declaratively</em> with composable functions, lay it out with <code>Column</code>/<code>Row</code>/<code>Box</code>, style it with modifiers, and build a styled Profile Card from scratch.</p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 2</span>
+<span class="pill">Unit 2 · Android Basics with Compose</span>
+</div>
+</section>
+<!-- ===================== LEARNING OBJECTIVES ===================== -->
+<section aria-labelledby="obj-h" class="slide">
+<h2 id="obj-h">Learning Objectives</h2>
+<div class="card card--accent">
+<p class="muted">By the end of this session, you will be able to:</p>
+<ul>
+<li><strong>Explain declarative UI</strong> — describe <em>what</em> the UI should look like for a given state, and define <span class="key-term">recomposition</span> at a conceptual level. <span class="clo-tag">CLO 2</span></li>
+<li><strong>Write composable functions</strong> using the <code>@Composable</code> annotation, name them in PascalCase, and drive an iterative workflow with <code>@Preview</code>. <span class="clo-tag">CLO 2</span></li>
+<li><strong>Use core composables</strong> — <code>Text</code>, <code>Button</code>, <code>Image</code>, <code>Icon</code>, <code>Spacer</code>, <code>TextField</code> — and pass content/parameters into them. <span class="clo-tag">CLO 2</span></li>
+<li><strong>Arrange UI</strong> with the layout composables <code>Column</code>, <code>Row</code>, and <code>Box</code>, controlling <code>verticalArrangement</code>, <code>horizontalAlignment</code>, and stacking. <span class="clo-tag">CLO 2</span></li>
+<li><strong>Apply and order modifiers</strong> (<code>padding</code>, <code>size</code>, <code>fillMaxWidth</code>, <code>background</code>, <code>clip</code>, <code>clickable</code>, <code>weight</code>) and predict how reordering changes the result. <span class="clo-tag">CLO 2</span></li>
+<li><strong>Contrast Compose with the legacy View system</strong> (Views/ViewGroups, XML layouts, <code>LinearLayout</code>/<code>RelativeLayout</code>/<code>ConstraintLayout</code>) so you can read old code and articulate why Compose replaces it. <span class="clo-tag">CLO 2</span></li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p>This session lives entirely under <strong>CLO 2 — "Design user interfaces using components and UI elements and connect them to code."</strong> It is the foundation for the project requirement <em>"Jetpack Compose UI driven by state"</em> (which we wire to real state in Session 5). Today's main activity is the <strong>Profile Card Lab</strong>.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ===================== MATERIALS & SETUP ===================== -->
+<!-- ===================== CONCEPT NOTES ===================== -->
+<section aria-labelledby="notes-h" class="slide">
+<h2 id="notes-h">Lecture / Concept Notes</h2>
+<p class="muted">Enough detail to learn each idea from scratch. Every big idea is an accordion — open one at a time and work through it.</p>
+<div class="accordion">
+<!-- Idea 1 -->
+<div class="accordion__item is-open">
+<button class="accordion__head" type="button">1 · Declarative UI &amp; a first look at recomposition</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>In the old View system, UI is <span class="key-term">imperative</span>: you find a widget and command it to change — <code>findViewById</code>, then <code>textView.setText("Hi")</code>. <strong>You</strong> are responsible for keeping the screen in sync with the data.</p>
+<p>Compose is <span class="key-term">declarative</span>: you write a function that says "for <em>this</em> data, the screen looks like <em>this</em>." When the data changes, Compose re-runs the function and updates only what changed. That re-running is <span class="key-term">recomposition</span>.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🧮</span>
+<div class="callout__body">
+<span class="callout__label">Analogy</span>
+<p>Imperative is hand-drawing turn-by-turn directions and erasing/redrawing each turn yourself. Declarative is typing the destination into GPS — you describe the <em>goal state</em> and the system figures out the redraw. Today we describe a <em>fixed</em> destination; in Session 5 the destination changes as state changes, and recomposition does the redraw automatically.</p>
+</div>
+</div>
+<div aria-label="Imperative vs declarative" class="tabs" role="tablist">
+<button class="tab" data-tab="imp" type="button">Legacy (imperative, XML+Kotlin)</button>
+<button class="tab" data-tab="dec" type="button">Compose (declarative, Kotlin)</button>
+</div>
+<div class="tabpanel" data-tabpanel="imp">
+<div class="codeblock">
+<span class="codeblock__lang">XML</span>
+<pre><code>&lt;!-- res/layout/activity_main.xml --&gt;
+&lt;TextView
+    android:id="@+id/greeting"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Hello" /&gt;</code></pre>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// MainActivity.kt — you mutate the widget by hand
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        val tv = findViewById&lt;TextView&gt;(R.id.greeting)
+        tv.text = "Hello, Android!"   // imperative command
+    }
+}</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="dec">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>// No XML. The function IS the UI.
+@Composable
+fun Greeting(name: String) {
+    Text(text = "Hello, $name!")   // describe, don't command
+}
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            Greeting(name = "Android")
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Misconception to pre-empt</span>
+<p>"A composable function is a normal function I call to <em>return</em> a view." No — composables <strong>emit</strong> UI into the tree; they return <code>Unit</code>. You don't say <code>val t = Text(...)</code>. Just call them for their effect.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 2 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">2 · Composable functions, naming &amp; the @Preview workflow</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>A <span class="key-term">composable</span> is a regular Kotlin function annotated with <code>@Composable</code>. Conventions:</p>
+<ul>
+<li><strong>PascalCase, noun-like name</strong> (<code>ProfileCard</code>, not <code>drawProfileCard</code>) — it describes a <em>thing</em> on screen.</li>
+<li><strong>Returns <code>Unit</code></strong> (no return type written). It emits UI; it doesn't hand one back.</li>
+<li><strong>First param is usually <code>modifier: Modifier = Modifier</code></strong> so callers can style it — we'll honor this convention all term.</li>
+</ul>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+
+@Composable
+fun WelcomeBanner(
+    title: String,
+    modifier: Modifier = Modifier      // convention: modifier first, with a default
+) {
+    Text(text = title, modifier = modifier)
+}
+
+// @Preview renders this composable in the Design pane — no emulator needed.
+@Preview(showBackground = true)
+@Composable
+fun WelcomeBannerPreview() {
+    WelcomeBanner(title = "Welcome to COP4667")
+}</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Preview-driven workflow</span>
+<p>Learn the loop: <strong>type → the Preview auto-updates → adjust</strong>. This is faster than running the app every time and works without a device. Use <code>showBackground = true</code> so transparent UIs are visible, and add multiple <code>@Preview</code>s to see light/dark or different inputs side-by-side.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 3 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">3 · Core composables: Text, Button, Image, Icon, Spacer, TextField</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>These are the building blocks. Show each one in the Preview as you introduce it.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>// Text — display a string, styled with parameters
+Text(
+    text = "Ada Lovelace",
+    fontSize = 24.sp,
+    fontWeight = FontWeight.Bold,
+    color = MaterialTheme.colorScheme.onSurface
+)
+
+// Button — a trailing lambda holds the label content
+Button(onClick = { /* handle click */ }) {
+    Text("Follow")
+}
+
+// Image — from a drawable resource
+Image(
+    painter = painterResource(id = R.drawable.avatar),
+    contentDescription = "Profile photo",   // accessibility: describe it
+    contentScale = ContentScale.Crop
+)
+
+// Icon — a vector glyph; null description if purely decorative
+Icon(
+    imageVector = Icons.Default.Email,
+    contentDescription = "Email"
+)
+
+// Spacer — empty space to separate elements
+Spacer(modifier = Modifier.height(16.dp))
+
+// TextField — user input (we wire its state next session)
+var name by remember { mutableStateOf("") }
+TextField(
+    value = name,
+    onValueChange = { name = it },
+    label = { Text("Your name") }
+)</code></pre>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Units &amp; imports</span>
+<p>Two new Kotlin-isms: <code>24.sp</code> (scalable pixels, for text) and <code>16.dp</code> (density-independent pixels, for layout). They come from Compose extension properties — students must <code>import androidx.compose.ui.unit.dp</code> / <code>.sp</code>. Also: <code>TextField</code> needs state (<code>remember { mutableStateOf(...) }</code>) — flag it as a Session-5 topic; today they may use it read-only or skip it.</p>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">♿</span>
+<div class="callout__body">
+<span class="callout__label">Accessibility note worth saying out loud</span>
+<p><code>contentDescription</code> is read by TalkBack. Give meaningful descriptions for informative images; pass <code>null</code> only for purely decorative ones. We'll reinforce this all term.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 4 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">4 · Layout composables: Column, Row, Box (arrangement &amp; alignment)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><span class="key-term">Column</span> stacks children <strong>vertically</strong> (top → bottom).</li>
+<li><span class="key-term">Row</span> places children <strong>horizontally</strong> (start → end).</li>
+<li><span class="key-term">Box</span> <strong>stacks children on top of each other</strong> (z-order) — great for badges/overlays.</li>
+</ul>
+<p>Control spacing/positioning with arrangement (the <em>main</em> axis) and alignment (the <em>cross</em> axis):</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>// Column: main axis = vertical, cross axis = horizontal
+Column(
+    verticalArrangement = Arrangement.Center,      // main axis
+    horizontalAlignment = Alignment.CenterHorizontally // cross axis
+) {
+    Text("Top")
+    Text("Bottom")
+}
+
+// Row: main axis = horizontal, cross axis = vertical
+Row(
+    horizontalArrangement = Arrangement.SpaceBetween, // push children apart
+    verticalAlignment = Alignment.CenterVertically
+) {
+    Text("Left")
+    Text("Right")
+}
+
+// Box: overlap children; align each within the box
+Box(contentAlignment = Alignment.Center) {
+    Image(/* ... */)
+    Text("Overlay label")     // sits on top of the image
+}</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🧮</span>
+<div class="callout__body">
+<span class="callout__label">Memory hook for arrangement vs alignment</span>
+<p>"<strong>Arrange</strong>ment moves along the <strong>main</strong> axis (the direction the layout flows); <strong>align</strong>ment moves across it." In a Column the main axis is vertical, so <code>verticalArrangement</code> spaces the stack and <code>horizontalAlignment</code> centers it left-right.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 5 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">5 · Modifiers — and why order matters</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>A <span class="key-term">Modifier</span> decorates or augments a composable: size, padding, background, click handling, and more. You build a <strong>chain</strong>, and Compose applies it <strong>left-to-right, top-to-bottom</strong>. Order changes the result.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>// Common modifiers, chained:
+Text(
+    text = "Hello",
+    modifier = Modifier
+        .fillMaxWidth()                 // take the full available width
+        .padding(16.dp)                 // space INSIDE the width, around content
+        .background(Color(0xFF3DDC84))  // paint behind what's left
+        .clip(RoundedCornerShape(12.dp))
+        .clickable { /* tap */ }
+)</code></pre>
+</div>
+<p><strong>Order demo:</strong> swapping <code>padding</code> and <code>background</code> changes whether the color sits inside or outside the padding.</p>
+<div class="grid grid-2">
+<div class="card demo-box">
+<code>.padding(16.dp).background(blue)</code>
+<div><span class="swatch swatch--padfirst">content</span></div>
+<p class="muted">Padding first → the background paints only the <em>inner</em> region; padding is transparent margin around the color.</p>
+</div>
+<div class="card demo-box">
+<code>.background(green).padding(16.dp)</code>
+<div><span class="swatch swatch--bgfirst">content</span></div>
+<p class="muted">Background first → the color fills the whole area, and padding pushes the content inward <em>on top of</em> the color.</p>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">⏱</span>
+<div class="callout__body">
+<span class="callout__label">Do it live</span>
+<p>This is best seen, not just read. Use the <a href="../labs/compose-playground.html">Compose Playground</a> to flip modifier order and watch the phone preview update. Then reproduce it in Android Studio and confirm for yourself that it's not magic.</p>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">⚖️</span>
+<div class="callout__body">
+<span class="callout__label">weight — the Row/Column divider</span>
+<p><code>Modifier.weight(1f)</code> inside a Row/Column tells a child to take a proportional share of leftover space. Two children both at <code>weight(1f)</code> split 50/50; <code>weight(2f)</code> vs <code>weight(1f)</code> splits 2:1. We use this for the wide-screen lab extension.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 6 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">6 · Compose vs the legacy View system (what you'll see in old code)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>You <em>will</em> open old tutorials and StackOverflow answers full of XML and <code>findViewById</code>. Here is a map so they don't confuse you.</p>
+<div aria-label="Concept mapping legacy to Compose" class="tabs" role="tablist">
+<button class="tab" data-tab="map" type="button">Concept map</button>
+<button class="tab" data-tab="xmlrow" type="button">Same row, two worlds</button>
+</div>
+<div class="tabpanel" data-tabpanel="map">
+<p class="muted">When you read old code, translate it on sight. The same UI ideas exist in both worlds — only the spelling changes.</p>
+<div class="grid grid-2">
+<div class="card card--teal">
+<p class="card__title">Legacy View system</p>
+<ul>
+<li><code>LinearLayout</code> (vertical)</li>
+<li><code>LinearLayout</code> (horizontal)</li>
+<li><code>FrameLayout</code></li>
+<li><code>RecyclerView</code> + adapter</li>
+<li><code>ScrollView</code></li>
+<li><code>ConstraintLayout</code></li>
+<li><code>findViewById</code> + <code>view.setText(...)</code></li>
+<li>An XML layout file (<code>res/layout/*.xml</code>)</li>
+<li><code>android:layout_marginStart</code> etc. as XML attributes</li>
+</ul>
+</div>
+<div class="card card--accent">
+<p class="card__title">Jetpack Compose</p>
+<ul>
+<li><code>Column</code></li>
+<li><code>Row</code></li>
+<li><code>Box</code> (z-stacked children)</li>
+<li><code>LazyColumn</code> / <code>LazyRow</code> <span class="muted">(Session 7)</span></li>
+<li><code>Modifier.verticalScroll(...)</code></li>
+<li>Composition of <code>Row</code>/<code>Column</code>/<code>Box</code> + <code>Modifier.weight</code></li>
+<li>Read <span class="key-term">state</span> → automatic <span class="key-term">recomposition</span> (no manual <code>setText</code>)</li>
+<li>A <code>@Composable</code> function (the function <em>is</em> the layout)</li>
+<li><code>Modifier.padding(...)</code> / <code>Modifier.size(...)</code> in Kotlin</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🗺️</span>
+<div class="callout__body">
+<span class="callout__label">The one mapping that matters most</span>
+<p>The deepest shift is the last row: in Views you <em>command</em> a widget to change (<code>setText</code>); in Compose you <em>change state</em> and let recomposition redraw. Memorize the layout swaps (Column/Row/Box), but internalize that one.</p>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="xmlrow">
+<div class="codeblock">
+<span class="codeblock__lang">XML · LinearLayout</span>
+<pre><code>&lt;LinearLayout
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp"&gt;
+
+    &lt;ImageView android:src="@drawable/avatar"
+        android:layout_width="48dp"
+        android:layout_height="48dp" /&gt;
+
+    &lt;TextView android:text="Ada Lovelace"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp" /&gt;
+&lt;/LinearLayout&gt;</code></pre>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose Row</span>
+<pre><code>Row(
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp),
+    verticalAlignment = Alignment.CenterVertically
+) {
+    Image(
+        painter = painterResource(R.drawable.avatar),
+        contentDescription = null,
+        modifier = Modifier.size(48.dp)
+    )
+    Spacer(Modifier.width(12.dp))
+    Text("Ada Lovelace")
+}</code></pre>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Why Compose replaces Views</span>
+<p>Less boilerplate (no XML + no <code>findViewById</code> + no keeping the two in sync), one language (Kotlin everywhere), UI that updates automatically from state, and powerful reuse via plain functions. The View system still exists and interops, but Compose is the recommended modern toolkit — which is why this course teaches it first.</p>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<!-- Flashcards: vocabulary -->
+<h3>Vocabulary check (flashcards)</h3>
+<p class="muted">Flip through these to lock in the vocabulary, or save them for self-study.</p>
+<div data-flashcards="fc-vocab"></div>
+<script id="fc-vocab" type="application/json">
+          [
+            { "front": "What is a composable function?", "back": "A Kotlin function annotated with @Composable that emits UI into the tree. It returns Unit; you call it for its effect, not its return value.", "tag": "Composables" },
+            { "front": "Declarative vs imperative UI?", "back": "Declarative (Compose): describe what the UI looks like for the current data; the framework redraws. Imperative (Views): you manually find and mutate widgets (findViewById + setText).", "tag": "Concepts" },
+            { "front": "What is recomposition?", "back": "Compose re-running a composable when the data it reads changes, updating only what changed on screen. (We use it for real in Session 5.)", "tag": "Concepts" },
+            { "front": "Column vs Row vs Box?", "back": "Column = stack vertically. Row = lay out horizontally. Box = overlap children (z-order) for badges/overlays.", "tag": "Layout" },
+            { "front": "Arrangement vs Alignment?", "back": "Arrangement positions children along the MAIN axis; Alignment positions them along the CROSS axis. In a Column: verticalArrangement (main) + horizontalAlignment (cross).", "tag": "Layout" },
+            { "front": "What does Modifier order affect?", "back": "Modifiers apply in chain order. e.g. .padding().background() paints color INSIDE the padding; .background().padding() paints color first, then pads content on top.", "tag": "Modifiers" },
+            { "front": "dp vs sp?", "back": "dp = density-independent pixels for layout/size. sp = scalable pixels for text (respects the user's font-size setting).", "tag": "Units" },
+            { "front": "Legacy ViewGroup maps to what in Compose?", "back": "A layout composable: LinearLayout to Column/Row, FrameLayout to Box.", "tag": "Legacy" }
+          ]
+          </script>
+</section>
+<!-- ===================== GUIDED LIVE-CODING ===================== -->
+<section aria-labelledby="live-h" class="slide">
+<h2 id="live-h">Guided Live-Coding — Profile Card</h2>
+<p>Type this yourself, saving after each step so the <code>@Preview</code> refreshes. Target: an avatar, a bold name, a role, a short bio, and a "Follow" button, centered in a Column.</p>
+<div class="grid grid-2">
+<div class="card">
+<h3 class="card__title">The target (preview mock)</h3>
+<div aria-label="Target profile card preview" class="phone">
+<div class="phone__bar"></div>
+<div class="phone__screen">
+<div aria-hidden="true" class="phone__avatar">AL</div>
+<p class="phone__name">Ada Lovelace</p>
+<p class="phone__role">Android Developer</p>
+<p class="phone__bio">First programmer. Currently composing UIs, declaratively.</p>
+<div class="phone__btn">Follow</div>
+</div>
+</div>
+</div>
+<div class="card">
+<h3 class="card__title">What to watch for</h3>
+<ul>
+<li>The <code>@Preview</code> pane updating after each save (cause &amp; effect).</li>
+<li>Autocomplete adding <code>import</code>s — watch them appear so you learn the packages.</li>
+<li>How wrapping in a <code>Column</code> suddenly stacks the pieces.</li>
+<li>The final modifier-order flip changing the look.</li>
+</ul>
+</div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Create the composable + Preview scaffold</h4>
+<p>New file <code>ProfileCard.kt</code>. Start with an empty composable and its preview so the loop is established before adding content.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun ProfileCard(modifier: Modifier = Modifier) {
+    Text("Profile goes here")
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProfileCardPreview() {
+    ProfileCard()
+}</code></pre>
+</div>
+<p class="muted">Expected: the Preview shows the placeholder text. If the pane is blank, click "Build &amp; Refresh".</p>
+</li>
+<li class="step">
+<h4>Add the avatar image</h4>
+<p>Swap the placeholder for an <code>Image</code> from a drawable. Crop it to a circle with <code>clip</code>.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>Image(
+    painter = painterResource(id = R.drawable.avatar),
+    contentDescription = "Ada Lovelace's profile photo",
+    contentScale = ContentScale.Crop,
+    modifier = Modifier
+        .size(120.dp)
+        .clip(CircleShape)
+)</code></pre>
+</div>
+<p class="muted">Expected: a 120dp circular photo. No image? Use <code>Icons.Default.AccountCircle</code> via <code>Icon</code> as a stand-in.</p>
+</li>
+<li class="step">
+<h4>Add name + role + bio Text</h4>
+<p>Three <code>Text</code> composables with different styling. Right now they'll overlap the image — that's expected until we add a Column.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>// Pull size and color from the theme, not from literals — so the card
+// adapts to light/dark automatically and stays consistent everywhere.
+Text(
+    text = "Ada Lovelace",
+    style = MaterialTheme.typography.titleLarge,
+    fontWeight = FontWeight.Bold
+)
+Text(
+    text = "Android Developer",
+    style = MaterialTheme.typography.bodyMedium,
+    color = MaterialTheme.colorScheme.onSurfaceVariant   // the "muted" role color
+)
+Text(
+    text = "First programmer. Currently composing UIs, declaratively.",
+    style = MaterialTheme.typography.bodySmall,
+    textAlign = TextAlign.Center
+)</code></pre>
+</div>
+<p class="muted">Teaching beat: ask "why are they all stacked on the same spot?" → nothing tells Compose how to arrange them yet. (Note the styling: <code>MaterialTheme.typography</code> for size/weight and <code>MaterialTheme.colorScheme.onSurfaceVariant</code> for the muted role — never a raw hex or <code>Color.Gray</code>, so a light/dark toggle just works. That is exactly what the lab's self-check grades.)</p>
+</li>
+<li class="step">
+<h4>Wrap everything in a Column</h4>
+<p>This is the "aha" moment. Put the image, the three texts, and (soon) the button inside a <code>Column</code> and center them.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun ProfileCard(modifier: Modifier = Modifier) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.avatar),
+            contentDescription = "Ada Lovelace's profile photo",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(120.dp).clip(CircleShape)
+        )
+        Text(
+            "Ada Lovelace",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            "Android Developer",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            "First programmer. Currently composing UIs, declaratively.",
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center
+        )
+    }
+}</code></pre>
+</div>
+<p class="muted">Expected: a centered, neatly spaced stack. <code>Arrangement.spacedBy(8.dp)</code> replaces manual Spacers.</p>
+</li>
+<li class="step">
+<h4>Add the Follow button</h4>
+<p>Inside the Column, below the bio. Demonstrate the trailing-lambda content slot.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>Button(onClick = { /* later: follow action */ }) {
+    Text("Follow")
+}</code></pre>
+</div>
+<p class="muted">Expected: a Material 3 filled button under the bio. Tapping does nothing yet — that's fine; behavior comes with state in Session 5.</p>
+</li>
+<li class="step">
+<h4>Polish with a card background + modifier-order demo</h4>
+<p>Give the column a surface look, then <strong>deliberately reorder</strong> <code>padding</code> and <code>background</code> and watch the difference for yourself.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>// Version A — color fills the whole card, padding inside:
+modifier = modifier
+    .fillMaxWidth()
+    .background(Color(0xFFEEF3F2), RoundedCornerShape(16.dp))
+    .padding(24.dp)
+
+// Version B — swap the two: padding pushes the colored area in,
+// leaving a transparent margin. Run both, ask which they want.
+modifier = modifier
+    .fillMaxWidth()
+    .padding(24.dp)
+    .background(Color(0xFFEEF3F2), RoundedCornerShape(16.dp))</code></pre>
+</div>
+</li>
+</ol>
+</section>
+<!-- ===================== HANDS-ON LAB ===================== -->
+<section aria-labelledby="lab-h" class="slide">
+<h2 id="lab-h">Hands-On Lab — Profile Card <span class="clo-tag">CLO 2</span></h2>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Goal</span>
+<p>Build your <em>own</em> styled profile / business card screen in Compose, using only layout composables and modifiers, that matches the target shown below. The full handout and acceptance checklist are right here in this section.</p>
+</div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Set up your file</h4>
+<p>Create <code>ProfileCard.kt</code> (or reuse the live-coding file as a base, then make it <em>yours</em> — your name, your role, your bio). Add a <code>@Preview</code> so you can iterate without the emulator.</p>
+</li>
+<li class="step">
+<h4>Build the required pieces</h4>
+<p>Your card must include all of these, arranged with a <code>Column</code> (and at least one <code>Row</code> or <code>Box</code> somewhere):</p>
+<ul>
+<li>A <strong>circular avatar</strong> — an <code>Image</code> with <code>.clip(CircleShape)</code> and <code>contentScale = ContentScale.Crop</code> (or an <code>Icon</code> stand-in if you have no drawable).</li>
+<li>A <strong>bold name</strong> <code>Text</code> (your name) — the largest, heaviest line.</li>
+<li>A <strong>muted role</strong> <code>Text</code> (e.g. "Android Developer in training"), visually quieter than the name.</li>
+<li>A <strong>centered bio</strong> <code>Text</code> — one or two sentences, <code>textAlign = TextAlign.Center</code>.</li>
+<li>A <strong>Follow <code>Button</code></strong> with a text label in its content slot.</li>
+<li>Everything inside a <code>Column</code> with <code>horizontalAlignment = Alignment.CenterHorizontally</code> and <code>verticalArrangement = Arrangement.spacedBy(12.dp)</code>.</li>
+<li><strong>At least one <code>Row</code> or <code>Box</code></strong> — e.g. a <code>Row</code> of two small stat chips ("Following 0 · Followers 0") under the bio, or a <code>Box</code> placing a small badge over the avatar corner.</li>
+<li>A surface look: a <code>.background(color, RoundedCornerShape(16.dp))</code> with <code>.padding(...)</code> — and you decide the order on purpose (see the modifier-order demo above).</li>
+</ul>
+</li>
+<li class="step">
+<h4>Starter hints</h4>
+<ul>
+<li>Begin from the live-coding Column scaffold; change the content to your own.</li>
+<li><code>Arrangement.spacedBy(12.dp)</code> on the Column is the cleanest way to space children.</li>
+<li>For a card look: <code>.background(color, RoundedCornerShape(16.dp))</code> then <code>.padding(...)</code> — decide the order on purpose.</li>
+<li>Let autocomplete add imports; if a symbol is red, hover → Alt+Enter (Option+Return) → Import.</li>
+</ul>
+</li>
+<li class="step">
+<h4>Expected result</h4>
+<p>A clean, centered profile card that visually matches the target: photo on top, bold name, muted role, centered bio, and a button — with comfortable spacing and a subtle background.</p>
+</li>
+<li class="step">
+<h4>Push further — make it responsive</h4>
+<p>Use the available width to switch between a vertical <code>Column</code> (narrow) and a horizontal <code>Row</code> (wide), with <code>Modifier.weight(1f)</code> giving the text block the remaining space beside the avatar.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>@Composable
+fun AdaptiveProfileCard(modifier: Modifier = Modifier) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val wide = maxWidth &gt;= 480.dp
+        if (wide) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Avatar()
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) { ProfileText() }
+            }
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Avatar()
+                ProfileText()
+            }
+        }
+    }
+}</code></pre>
+</div>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">🔧</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting</span>
+<ul>
+<li><strong>Preview is blank / "nothing to preview".</strong> Your <code>@Preview</code> function must itself be <code>@Composable</code> and <em>call</em> your card. Click "Build &amp; Refresh" in the pane.</li>
+<li><strong>Unresolved reference: dp / sp / CircleShape.</strong> Missing import. Alt+Enter (Option+Return) on the red symbol → Import. (<code>androidx.compose.ui.unit.dp</code>, <code>...foundation.shape.CircleShape</code>.)</li>
+<li><strong>Image is square, not round.</strong> Add <code>.clip(CircleShape)</code> <em>and</em> <code>contentScale = ContentScale.Crop</code>; clip must come after size in the chain.</li>
+<li><strong>Everything overlaps.</strong> You haven't wrapped the children in a <code>Column</code>/<code>Row</code> — without a layout, composables draw at the same spot.</li>
+<li><strong>Drawable not found (R.drawable.x).</strong> The image isn't in <code>res/drawable</code>, or the name has illegal characters (must be lowercase, no spaces).</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- ===================== ASSESSMENTS TODAY ===================== -->
+<section aria-labelledby="assess-h" class="slide">
+<h2 id="assess-h">Assessments Today</h2>
+<div class="card">
+<h3 class="card__title">Profile Card Lab <span class="clo-tag">CLO 2</span></h3>
+<p>The main build this session is the Profile Card Lab (above) — the skill you're growing is CLO 2: <em>design UIs with composables and modifiers, then wire them to code.</em></p>
+<ul>
+<li><strong>You've got it when</strong> the card renders cleanly in the <code>@Preview</code> pane <em>and</em> survives a theme switch (toggle light/dark — colors should come from <code>MaterialTheme</code>, never hard-coded hex).</li>
+<li><strong>Check yourself:</strong> the avatar is round (<code>clip(CircleShape)</code> + <code>ContentScale.Crop</code>), text uses <code>MaterialTheme.typography</code> styles, and nothing overlaps because every child lives inside a <code>Column</code>/<code>Row</code>.</li>
+<li><strong>Stretch:</strong> the responsive extension reflows between <code>Column</code> and <code>Row</code> as the width crosses 480.dp — drag the preview wider to watch it switch.</li>
+</ul>
+</div>
+<p class="muted">Looking ahead: <a href="../assessments/quiz-1.html">Quiz 1</a> (Session 6).</p>
+</section>
+<!-- ===================== DISCUSSION BOARD ===================== -->
+<section aria-labelledby="discussion-h" class="slide">
+<h2 id="discussion-h">Discussion Board Prompt</h2>
+<div class="card card--teal">
+<div class="card__title">💬 This week's prompt</div>
+<blockquote style="margin:0 0 1em; padding-left:1em; border-left:3px solid var(--green);">
+<p style="margin:0"><strong>"One modifier-order decision, explained."</strong> Post a screenshot of <em>your</em> Profile Card running in the <code>@Preview</code> pane (or emulator). Then explain <strong>one</strong> deliberate layout or modifier decision you made and <em>why</em>: for example, why you chose a <code>Column</code> over a <code>Row</code> (or vice-versa), or the order you put <code>.padding</code> and <code>.background</code> in and what the alternative would have looked like. Quote the relevant 3–6 lines of your <code>Modifier</code> chain. Then reply to <strong>one</strong> classmate: predict what their card would look like if they <em>swapped</em> two modifiers in that chain, and say whether you'd keep their order or change it.</p>
+</blockquote>
+<p class="muted">Initial post by Thursday; one reply by Sunday. Aim for ~150 words plus the snippet — the goal is to articulate the <em>cause and effect</em> of order, not to write an essay.</p>
+</div>
+</section>
+<!-- ===================== HOMEWORK / NEXT CLASS ===================== -->
+<section aria-labelledby="hw-h" class="slide">
+<h2 id="hw-h">Homework / Next Class</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<h3 class="card__title">Assignments &amp; async work</h3>
+<ul>
+<li><strong>Begin Assignment 2</strong> — work through <a href="https://developer.android.com/courses/android-basics-compose/unit-2" rel="noopener" target="_blank">Unit 2 — Building app UI</a> (Kotlin fundamentals + state). Bring questions to Session 5.</li>
+<li>Finish and submit the <strong>Profile Card Lab</strong> if you haven't completed it yet.</li>
+<li>Post your <strong>Discussion Board</strong> initial post + screenshot.</li>
+</ul>
+</div>
+<div class="card card--teal">
+<h3 class="card__title">Reading</h3>
+<ul>
+<li><a href="https://developer.android.com/develop/ui/compose/layouts/basics" rel="noopener" target="_blank">Compose layout basics</a> (developer.android.com).</li>
+<li><a href="https://developer.android.com/develop/ui/compose/designsystems" rel="noopener" target="_blank">Design systems in Compose</a> (developer.android.com).</li>
+<li>Skim ahead: <a href="https://developer.android.com/courses/android-basics-compose/unit-2" rel="noopener" target="_blank">Unit 2 state pathway</a> — Session 5 is all about state &amp; recomposition.</li>
+</ul>
+</div>
+</div>
+<div class="card">
+<h3 class="card__title">Project tasks (ongoing) <span class="badge badge--amber">Milestone 1 due Session 6</span></h3>
+<p>Keep moving on the student-choice app. After today you can start <em>sketching real screens</em> in Compose. Reminder of the required feature checklist:</p>
+<ul>
+<li>≥ 2 screens with navigation · Compose UI driven by state · local persistence (DataStore or Room) · data from a web API · clean architecture (ViewModel + repository).</li>
+<li><strong>For Milestone 1 (Session 6):</strong> a working <em>UI prototype</em> — so this week, mock at least one screen as composables, even with placeholder data.</li>
+</ul>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">➡️</span>
+<div class="callout__body">
+<span class="callout__label">Next class — Session 5</span>
+<p>State, <code>remember</code>, <code>mutableStateOf</code>, and recomposition for real: we make the Profile Card (and a counter) <em>react</em> to user input. Bring your card — we'll add behavior to it.</p>
+</div>
+</div>
+</div>
+</section>
+</div><!-- /content col -->
+</div><!-- /layout-with-toc -->
+<!-- ===================== LIVE, RUNNABLE COMPOSE (playground.js) ===================== -->
+<section aria-labelledby="til-h" class="card slide" id="try-it-live">
+<h2 class="card__title" id="til-h">► Try it live in your browser</h2>
+<div class="callout callout--warn">
+<span class="callout__icon">►</span>
+<div class="callout__body">
+<span class="callout__label">Live Compose — experimental</span>
+<p>These are complete, editable Compose programs. Press <strong>Run</strong> to compile them to WebAssembly on JetBrains’ servers and render the UI right here. Compose-on-web is <strong>experimental</strong> — if it’s slow or won’t compile on your network, use the offline <a href="../labs/compose-playground.html">visual simulator</a> or build it in <strong>Android Studio</strong>, where every Compose lesson ultimately runs. Try editing a modifier or string and re-running.</p>
+</div>
+</div>
+<p class="mt"><strong>1. A profile card.</strong> <code>Column</code> + <code>Text</code> + <code>Button</code>, arranged and styled with modifiers.</p>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Kotlin + Compose · runnable</div>
+<pre><code>import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
+
+fun main() {
+    ComposeViewport(document.body!!) { App() }
+}
+
+@Composable
+fun App() {
+    MaterialTheme {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Ada Lovelace",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(4.dp))
+            Text("Android developer in training")
+            Spacer(Modifier.height(16.dp))
+            Button(onClick = {}) { Text("Follow") }
+        }
+    }
+}</code></pre>
+</div>
+<p class="mt"><strong>2. A weighted Row.</strong> Two boxes split the width 1:2 — change the weights and re-run to feel how layout responds.</p>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Kotlin + Compose · runnable</div>
+<pre><code>import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
+
+fun main() {
+    ComposeViewport(document.body!!) { App() }
+}
+
+@Composable
+fun App() {
+    MaterialTheme {
+        Row(Modifier.fillMaxWidth().padding(16.dp)) {
+            Box(Modifier.weight(1f).height(60.dp).background(Color(0xFF3DDC84)))
+            Spacer(Modifier.width(8.dp))
+            Box(Modifier.weight(2f).height(60.dp).background(Color(0xFF073042)))
+        }
+    }
+}</code></pre>
+</div>
+</section>
+<!-- ===================== MASTER IT ===================== -->
+<section aria-labelledby="master-h" class="card slide" id="master-it">
+<h2 class="card__title" id="master-h">Master it</h2>
+<p class="muted">This is where you turn "I watched the demo" into "I can build it without looking." Work the example, complete the faded version, kill the misconceptions, then prove it on the retrieval check. Everything here is your own mastery — there is no grade attached.</p>
+<!-- live mastery strip: the student's OWN progress, never a grade -->
+<div data-mastery-stats=""></div>
+<!-- ---------- 1. WORKED EXAMPLE → FADED ---------- -->
+<h3>Worked example: reading a modifier chain like the compiler does</h3>
+<p>The single hardest idea in this session is not "what does <code>padding</code> do" — it is that a <span class="key-term">Modifier is an ordered pipeline</span>. Each link wraps the previous result, so the chain reads like a stack of nested boxes from the <em>outside in</em>. Master this and modifier-order bugs disappear.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🧠</span>
+<div class="callout__body">
+<span class="callout__label">The mental model that always works</span>
+<p>Read a chain top-to-bottom as "<strong>then</strong>". Each constraint is measured <em>before</em> the next runs. The <em>first</em> size/padding link claims outer space; <em>later</em> links operate on whatever space is left. Drawing (like <code>.background()</code>) paints the region that exists <em>at that point in the chain</em> — so anything <em>after</em> a <code>.padding()</code> draws only the shrunken inner region; anything <em>before</em> it draws the full region.</p>
+</div>
+</div>
+<p>Trace these two chains by hand <strong>before</strong> reading the answer. A 100 dp-wide content area:</p>
+<div class="grid grid-2">
+<div class="card">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>Modifier
+    .size(100.dp)          // box is 100×100
+    .background(Green)     // paint all 100×100 green
+    .padding(16.dp)        // shrink content area to 68×68</code></pre>
+</div>
+<p class="muted"><strong>Result:</strong> a fully green 100 dp box with 16 dp of green showing around the content. Green is painted <em>before</em> padding, so padding eats into the green.</p>
+</div>
+<div class="card">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>Modifier
+    .size(100.dp)          // box is 100×100
+    .padding(16.dp)        // inner region is now 68×68
+    .background(Green)     // paint only the 68×68</code></pre>
+</div>
+<p class="muted"><strong>Result:</strong> a 100 dp box with a 16 dp <em>transparent</em> margin and a smaller green square inside. Green is painted <em>after</em> padding, so it only fills the inner region.</p>
+</div>
+</div>
+<p>Same two modifiers, opposite visuals — entirely because of order. Now <strong>fade the support away</strong> and reason about a chain you have not seen. There is no preview here; the answer is a structured prediction, which forces the model into your head.</p>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">✍️</span>
+<div class="callout__body">
+<span class="callout__label">Faded task — predict, then check</span>
+<p>A composable uses this chain. Predict, in order: (a) the box's outer size, (b) whether the green fills edge-to-edge or sits inset, (c) where the 24 dp of empty space ends up, and (d) whether a tap on the transparent margin registers a click.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Compose</span>
+<pre><code>Box(
+    modifier = Modifier
+        .size(120.dp)
+        .padding(24.dp)
+        .clip(RoundedCornerShape(12.dp))
+        .background(Color(0xFF3DDC84))
+        .clickable { /* TODO */ }
+)</code></pre>
+</div>
+</div>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Reveal the trace</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><strong>(a) Outer size:</strong> 120×120 dp. <code>.size()</code> is first, so the whole element reserves 120 dp regardless of what follows.</li>
+<li><strong>(b) Green fill:</strong> <em>inset</em>. <code>.padding(24.dp)</code> comes before <code>.background()</code>, so the green only fills the inner 72×72 dp region.</li>
+<li><strong>(c) Empty space:</strong> a 24 dp transparent frame around the green square.</li>
+<li><strong>(d) Click area:</strong> only the inner 72×72 dp green region is clickable — <code>.clickable</code> is <em>after</em> the padding, so the padded margin is dead to taps. (If you wanted the whole 120 dp tappable, put <code>.clickable</code> <em>before</em> <code>.padding</code>.) This last point is the one that bites real apps: an invisible "why won't my button tap near the edge" bug.</li>
+</ul>
+</div></div>
+</div>
+</div>
+<h3 class="mt">Now drill the core in pure Kotlin (auto-checked)</h3>
+<p class="muted">Compose itself does not run on this in-browser JVM, so we isolate the <em>logic</em> a senior dev factors out of a composable: a pure formatting function that decides what a row should display. Same skill — "what should this UI element say for this data" — checked instantly. Fill in the <code>// YOUR CODE</code> region, then press <strong>Run</strong>.</p>
+<div class="codeblock" data-challenge="s04-format-row" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// A composable should stay "dumb": given a data item, a helper decides the
+// label text. Here is that helper, extracted so we can test it without a screen.
+//
+// Build rowLabel(name, role, unread) so it returns, for a contact row:
+//   - "$name · $role"                      when unread == 0
+//   - "$name · $role  (1 new)"             when unread == 1
+//   - "$name · $role  (N new)"             when unread &gt; 1   (N is the number)
+//   - a blank name is invalid -&gt; return "Unknown contact"
+//
+// Trim leading/trailing spaces off name and role before using them.
+
+fun rowLabel(name: String, role: String, unread: Int): String {
+    // YOUR CODE — start here
+    return ""
+    // YOUR CODE — end
+}
+
+// ---- test harness: do not edit below ----
+fun main() {
+    var pass = 0
+    var fail = 0
+    fun check(label: String, got: String, want: String) {
+        if (got == want) { pass++; println("✓ passed: $label") }
+        else { fail++; println("✗ FAILED: $label -&gt; expected \"$want\", got \"$got\"") }
+    }
+    check("no unread",      rowLabel("Ada", "Engineer", 0),       "Ada · Engineer")
+    check("one unread",     rowLabel("Ada", "Engineer", 1),       "Ada · Engineer  (1 new)")
+    check("many unread",    rowLabel("Ada", "Engineer", 5),       "Ada · Engineer  (5 new)")
+    check("trims spaces",   rowLabel("  Ada  ", "  Engineer ", 0),"Ada · Engineer")
+    check("blank name",     rowLabel("   ", "Engineer", 3),       "Unknown contact")
+    println()
+    if (fail == 0) println("ALL TESTS PASSED 🎉")
+    else println("$fail case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li>Start by <code>trim()</code>-ming both <code>name</code> and <code>role</code> into local <code>val</code>s.</li>
+<li>Guard the blank case first: <code>if (name.isBlank()) return "Unknown contact"</code>.</li>
+<li>Build the base as <code>"$name · $role"</code> (that middot is <code>·</code>; a literal · works too).</li>
+<li>For unread, use a <code>when</code>: <code>0 -&gt;</code> base, <code>else -&gt;</code> base + <code>"  ($unread new)"</code>. The 1 vs N cases share the same template.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>fun rowLabel(name: String, role: String, unread: Int): String {
+    val n = name.trim()
+    val r = role.trim()
+    if (n.isBlank()) return "Unknown contact"
+    val base = "$n · $r"
+    return when {
+        unread &lt;= 0 -&gt; base
+        else        -&gt; "$base  ($unread new)"
+    }
+}</code></pre>
+</div>
+<p class="muted">Note how the function is <em>pure</em>: no Compose, no state, no side effects. That is exactly what makes it trivially testable — and why senior engineers pull this kind of logic <em>out</em> of composables.</p>
+</div></div>
+</div>
+</div>
+<p class="mt">See the same idea rendered as real UI (non-runnable to read; flip it to your network's <a href="../labs/compose-playground.html">simulator</a> or Android Studio to run):</p>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Kotlin + Compose · runnable</div>
+<pre><code>import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
+
+// The pure helper from the challenge, driving a real Row.
+fun rowLabel(name: String, role: String, unread: Int): String {
+    val n = name.trim(); val r = role.trim()
+    if (n.isBlank()) return "Unknown contact"
+    val base = "$n · $r"
+    return if (unread &lt;= 0) base else "$base  ($unread new)"
+}
+
+fun main() { ComposeViewport(document.body!!) { App() } }
+
+@Composable
+fun App() {
+    MaterialTheme {
+        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+            ContactRow("Ada Lovelace", "Engineer", unread = 0)
+            ContactRow("Grace Hopper", "Compiler lead", unread = 3)
+        }
+    }
+}
+
+@Composable
+fun ContactRow(name: String, role: String, unread: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(rowLabel(name, role, unread), style = MaterialTheme.typography.bodyLarge)
+    }
+}</code></pre>
+</div>
+<!-- ---------- 2. MISCONCEPTIONS ---------- -->
+<h3 class="mt">Common misconceptions &amp; pitfalls</h3>
+<p class="muted">Each one is a real mental model that produces real bugs. Read the symptom first — if you have ever seen it, you had the wrong model.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">1 · "Modifier order is just style — the order won't change behavior"</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> the chain is a bag of properties; Compose figures out the "right" final look regardless of order.</p>
+<p><strong>Why it's wrong:</strong> a Modifier is an <em>ordered</em> chain; each link wraps the previous one. <code>size</code>, <code>padding</code>, <code>background</code>, <code>clip</code>, and <code>clickable</code> all measure or draw relative to the chain so far.</p>
+<p><strong>Correct model:</strong> read it as a pipeline, outside-in. The <em>first</em> link claims space; later links work inside it. <code>.clickable</code> only captures taps on the region that exists <em>at its point in the chain</em>.</p>
+<p class="muted"><strong>Symptom:</strong> a button or card that "won't tap near the edges," or a background color that mysteriously fills too much/too little. Move <code>.padding</code> relative to <code>.background</code>/<code>.clickable</code> and the symptom flips.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">2 · "A composable returns a UI object I can store in a variable"</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> <code>val card = ProfileCard()</code> gives me a view I can keep, pass around, or add to a list.</p>
+<p><strong>Why it's wrong:</strong> composables return <code>Unit</code>. Calling one <em>emits</em> nodes into the composition tree as a side effect at that call site; there is no object handed back.</p>
+<p><strong>Correct model:</strong> call composables for their effect, in the position you want them to appear. To reuse UI, call the function again — not store its "result."</p>
+<p class="muted"><strong>Symptom:</strong> code like <code>val x = Text("hi")</code> where <code>x</code> is <code>Unit</code>, or trying to build a <code>List&lt;@Composable&gt;</code> and getting confused why nothing renders.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">3 · "Children draw where I put them — so three Texts will stack automatically"</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> writing <code>Text(...)</code> three times in a row naturally stacks them vertically, like lines in a document.</p>
+<p><strong>Why it's wrong:</strong> without a layout composable, siblings have no defined relationship — they are placed at the same top-start origin and <em>overlap</em>. Stacking/spacing is the layout's job, not the children's.</p>
+<p><strong>Correct model:</strong> a <code>Column</code> stacks (main axis vertical), a <code>Row</code> lays out horizontally, a <code>Box</code> deliberately overlaps for z-order. You choose the relationship explicitly.</p>
+<p class="muted"><strong>Symptom:</strong> all your text crammed into the top-left corner, one label drawn on top of another. Wrap the siblings in a <code>Column</code> and it resolves.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">4 · "Arrangement and alignment are the same knob"</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> "to center my Column's children, I'll set <code>verticalAlignment</code>" (guessing whichever parameter autocomplete offers).</p>
+<p><strong>Why it's wrong:</strong> a <code>Column</code> has no <code>verticalAlignment</code> — its vertical axis is the <em>main</em> axis, controlled by <code>verticalArrangement</code>; <code>horizontalAlignment</code> handles the cross axis. A <code>Row</code> is the mirror image.</p>
+<p><strong>Correct model:</strong> <em>Arrange</em>ment moves children along the <em>main</em> axis (the direction the layout flows); <em>align</em>ment moves them across it. Column: <code>verticalArrangement</code> + <code>horizontalAlignment</code>. Row: <code>horizontalArrangement</code> + <code>verticalAlignment</code>.</p>
+<p class="muted"><strong>Symptom:</strong> "unresolved reference: verticalAlignment" inside a <code>Column</code>, or children that center on the wrong axis.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">5 · "A composable runs once, top to bottom, like main()"</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong model:</strong> "it's a function, so it executes one time when the screen opens, and that's it."</p>
+<p><strong>Why it's wrong:</strong> Compose <em>re-runs</em> a composable whenever the state it reads changes — that is recomposition. It can run many times, in any order relative to siblings, and skip composables whose inputs didn't change. Treat the body as describing UI <em>for the current state</em>, not as a one-shot script.</p>
+<p><strong>Correct model:</strong> the function is a pure description that may be re-invoked. Never do one-time work (logging, network calls, mutating external lists) directly in the body — it will fire on every recomposition. (You learn the right tools — <code>remember</code>, side-effect APIs — in Session 5.)</p>
+<p class="muted"><strong>Symptom:</strong> a log line that prints far more often than expected, a counter that resets, or a network call that fires repeatedly. This is the bridge into Session 5 — keep it in mind.</p>
+</div></div>
+</div>
+</div>
+<!-- ---------- 3. IN PRODUCTION ---------- -->
+<h3 class="mt">In production</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏗️</span>
+<div class="callout__body">
+<span class="callout__label">How a senior engineer actually writes a composable</span>
+<ul>
+<li><strong>Every reusable composable takes <code>modifier: Modifier = Modifier</code> as its first optional parameter</strong>, and applies it to the <em>outermost</em> element — once. This is the single most important convention in the ecosystem: it lets a caller size, pad, or position your component without you anticipating every use. A component that hardcodes its own size/padding instead is a code smell.</li>
+<li><strong>Hoist data in, hoist events out.</strong> A production <code>ContactRow</code> takes plain data (<code>name</code>, <code>role</code>) and lambdas (<code>onClick: () -&gt; Unit</code>) — it never reaches out for state or runs business logic. Keep composables "dumb" and you can preview, reuse, and reason about them. (We formalize this as state hoisting in Session 5 and architecture in Session 8.)</li>
+<li><strong>Pull non-UI logic into pure functions</strong> (exactly like the <code>rowLabel</code> helper above). It moves the hard-to-test part out of the hard-to-test place.</li>
+<li><strong>Multiple <code>@Preview</code>s are free documentation</strong> — one per meaningful state (empty, one item, many, long text, dark theme via <code>uiMode</code>). Seniors preview the <em>edge cases</em>, not just the happy path, so layout bugs surface before the emulator.</li>
+</ul>
+<p><strong>Tasteful gotcha:</strong> resist parameter-list bloat. When a composable grows past ~5–6 parameters, that is the signal to group related data into a small data class (a UI-state object) and pass <em>that</em> — not to add a seventh boolean flag. You will feel this pressure on the project; the fix is a data class, learned in Session 2, applied here.</p>
+</div>
+</div>
+<!-- ---------- 4. RETRIEVAL CHECK ---------- -->
+<h3 class="mt">Retrieval check</h3>
+<p class="muted">Close the notes. These test whether you can <em>apply</em> the model to code you haven't seen — that is what predicts real skill. Instant feedback, your own self-check, never a grade.</p>
+<div data-quiz="rc-4" data-topic="compose-ui"></div>
+<script id="rc-4" type="application/json">
+{
+  "title": "Session 4 — Compose fundamentals: apply it",
+  "intro": "Reason about each snippet before answering. Explanations included either way.",
+  "passingScore": 0.7,
+  "shuffle": false,
+  "questions": [
+    {
+      "id": "rc4-q1",
+      "type": "single",
+      "prompt": "You want a card whose ENTIRE 200dp area is tappable, with the label inset 16dp from the edges. Which modifier order on the outer Box is correct?",
+      "options": [
+        { "id": "a", "text": ".size(200.dp).padding(16.dp).clickable { open() }" },
+        { "id": "b", "text": ".size(200.dp).clickable { open() }.padding(16.dp)" },
+        { "id": "c", "text": ".padding(16.dp).size(200.dp).clickable { open() }" },
+        { "id": "d", "text": ".clickable { open() }.size(200.dp).padding(16.dp)" }
+      ],
+      "correct": "b",
+      "explanation": "clickable must come BEFORE padding so the tap region covers the full 200dp, then padding insets the content. In (a) the padding shrinks the clickable area, leaving a 16dp dead margin. Order is behavior, not just style."
+    },
+    {
+      "id": "rc4-q2",
+      "type": "single",
+      "prompt": "Three Text composables are written one after another with no layout wrapper. What renders?",
+      "options": [
+        { "id": "a", "text": "They stack vertically with default spacing." },
+        { "id": "b", "text": "They lay out left-to-right in a row." },
+        { "id": "c", "text": "They overlap at the same top-start position." },
+        { "id": "d", "text": "A compile error: composables require a parent." }
+      ],
+      "correct": "c",
+      "explanation": "Without a Column/Row/Box, siblings share the same origin and overlap. Stacking is the layout's job. Wrap them in a Column to stack vertically."
+    },
+    {
+      "id": "rc4-q3",
+      "type": "single",
+      "prompt": "Inside a Column, you want the children centered horizontally and pushed to the bottom. Which two parameters do you set?",
+      "options": [
+        { "id": "a", "text": "verticalAlignment = CenterVertically, horizontalArrangement = Bottom" },
+        { "id": "b", "text": "horizontalAlignment = CenterHorizontally, verticalArrangement = Arrangement.Bottom" },
+        { "id": "c", "text": "horizontalArrangement = Center, verticalAlignment = Bottom" },
+        { "id": "d", "text": "contentAlignment = BottomCenter" }
+      ],
+      "correct": "b",
+      "explanation": "A Column's main axis is vertical (verticalArrangement controls top/center/bottom) and its cross axis is horizontal (horizontalAlignment centers left-right). 'verticalAlignment' doesn't exist on Column; contentAlignment is a Box parameter."
+    },
+    {
+      "id": "rc4-q4",
+      "type": "single",
+      "prompt": "A teammate writes: val header = Text(\"Welcome\"). The code compiles but 'header' is useless. Why?",
+      "options": [
+        { "id": "a", "text": "Text returns a View object that must be added to a layout manually." },
+        { "id": "b", "text": "Composables return Unit; Text emits UI as a side effect, so 'header' holds Unit." },
+        { "id": "c", "text": "You must use 'by' instead of '=' for composables." },
+        { "id": "d", "text": "Text is only valid inside a Row." }
+      ],
+      "correct": "b",
+      "explanation": "Composables return Unit and emit into the composition tree by being called. There is no object to store. To reuse the header, call the composable again where you want it."
+    },
+    {
+      "id": "rc4-q5",
+      "type": "single",
+      "prompt": "In a Row, you place an Avatar then a text block, and want the text to fill all remaining width beside the avatar. What do you put on the text block's Column?",
+      "options": [
+        { "id": "a", "text": "Modifier.fillMaxWidth()" },
+        { "id": "b", "text": "Modifier.weight(1f)" },
+        { "id": "c", "text": "horizontalArrangement = Arrangement.SpaceBetween" },
+        { "id": "d", "text": "Modifier.size(0.dp)" }
+      ],
+      "correct": "b",
+      "explanation": "weight(1f) inside a Row/Column claims a proportional share of leftover space after fixed-size siblings (the avatar) are measured. fillMaxWidth would try to take the whole row and push the avatar out."
+    },
+    {
+      "id": "rc4-q6",
+      "type": "single",
+      "prompt": "You add println(\"composed!\") directly in a composable's body to debug. It prints far more often than the screen 'opens'. What's happening?",
+      "options": [
+        { "id": "a", "text": "A bug — composables should run exactly once." },
+        { "id": "b", "text": "The composable recomposes whenever state it reads changes, re-running the body each time." },
+        { "id": "c", "text": "println is not allowed in Compose and loops." },
+        { "id": "d", "text": "The @Preview annotation duplicated the function." }
+      ],
+      "correct": "b",
+      "explanation": "Composables can re-run (recompose) many times as state changes. Never do one-time/side-effecting work directly in the body — it fires on every recomposition. Session 5 covers remember and side-effect APIs for this."
+    }
+  ]
+}
+</script>
+<!-- ---------- 5. DELIBERATE PRACTICE ---------- -->
+<div class="callout callout--clo mt">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Deliberate practice — do these next, in order</span>
+<p>Mastery comes from spaced, faded reps — not re-reading. Here is your exact next move:</p>
+<ol>
+<li><strong>Challenges:</strong> open <a href="../practice/challenges.html">the challenge ladder</a> and finish the <em>Compose-UI</em> rungs — the row-label formatter (you just did the core here), modifier-order reasoning, and the window-size bucketing problem.</li>
+<li><strong>Debug drills:</strong> run the <a href="../practice/debug-drills.html">debug drills</a> tagged <em>Compose</em> — spot the modifier-order bug and the "missing <code>remember</code> / no layout wrapper" bugs. Find the broken line before you reveal the fix.</li>
+<li><strong>Spaced repetition:</strong> add today's cards from the <a href="../practice/spaced-repetition.html">spaced-repetition deck</a> — declarative vs imperative, recomposition, arrangement vs alignment, modifier order, dp vs sp. Come back tomorrow and the day after.</li>
+<li><strong>Map your route:</strong> the <a href="../path.html">skill-map</a> shows Compose-UI unlocking State → Lists. Clear this node, then move on with confidence.</li>
+</ol>
+<p class="muted">You've got it when the <code>s04-format-row</code> harness prints <strong>ALL TESTS PASSED 🎉</strong>, you score 6/6 on the retrieval check from memory, and you can predict any modifier-order outcome without running it.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- ===================== FOOTER ===================== -->
+<footer class="footer">
+<div class="wrap">
+<span><span class="footer__brand">COP4667 Android Development</span> · Session 4 of 12 · Week 2 — Building UIs with Jetpack Compose</span>
+<span class="muted">Keiser University · B.S. Software Engineering · 3.0 credit hours · taught in Kotlin + Jetpack Compose</span>
+<span><a href="../index.html">↩ Back to course hub</a></span>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

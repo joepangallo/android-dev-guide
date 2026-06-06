@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Session 5: State, Recomposition &amp; Handling User Input. Lesson plan with Jetpack Compose teaching notes, live-coding walkthrough, a Tip Calculator lab, quiz, and flashcards." name="description"/>
+<title>Session 5 · State, Recomposition &amp; User Input — COP4667 Android Development</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* Page-specific tweaks only — chrome uses the shared design system. */
+    .obj-list { list-style: none; padding-left: 0; display: grid; gap: var(--space-3); margin: var(--space-4) 0; }
+    .obj-list > li { display: flex; gap: var(--space-3); align-items: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-3) var(--space-4); }
+    .obj-list > li .clo-tag { flex: 0 0 auto; margin-top: 2px; }
+    .seg-note { margin: var(--space-3) 0 0; }
+    .seg-note ul { margin: .4em 0 .6em; }
+    .two-col-timer { display: grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: start; }
+    @media (max-width: 720px) { .two-col-timer { grid-template-columns: 1fr; } }
+    .mini-legend { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0; }
+    .recompose-diagram { font-family: var(--font-mono); font-size: var(--fs-sm); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-4); overflow-x: auto; line-height: 1.7; }
+    .recompose-diagram b { color: var(--green-dark); }
+    [data-theme="dark"] .recompose-diagram b { color: var(--green); }
+    .toc-card { position: sticky; top: 72px; }
+    @media (max-width: 980px) { .toc-card { position: static; } }
+    .layout { display: grid; grid-template-columns: 240px 1fr; gap: var(--space-5); align-items: start; }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } .toc-card { display: none; } }
+  </style>
+</head>
+<body>
+<!-- ====================================================================== -->
+<!-- TOP NAVIGATION                                                          -->
+<!-- ====================================================================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▶</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-04.html">‹ Prev</a>
+<a aria-current="page" class="active" href="session-05.html">S5</a>
+<a href="session-06.html">Next ›</a>
+<a href="../labs/compose-playground.html">Lab: Playground</a>
+<a href="../assessments/quiz-1.html">Quiz 1</a>
+<button aria-label="Toggle dark mode" aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Start present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ==================================================================== -->
+<!-- HERO                                                                  -->
+<!-- ==================================================================== -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta">
+<span class="pill pill--green">Session 5 of 12</span>
+<span class="pill">Week 2</span>
+<span class="pill">Building UIs with Jetpack Compose</span>
+<span class="pill pill--accent">Unit 2</span>
+</div>
+<h1 class="hero-title" id="hero-title">State, Recomposition &amp; Handling User Input</h1>
+<p class="hero-sub">
+      Today students learn the single most important idea in Jetpack Compose: <strong>UI is a function of state</strong>.
+      When state changes, Compose recomposes. We build a counter, then a live Tip Calculator, and practice
+      <em>state hoisting</em> so composables stay stateless, reusable, and testable.
+    </p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 2</span>
+<span class="clo-tag">CLO 3</span>
+<span class="pill">Face-to-Face</span>
+</div>
+</section>
+<div class="layout">
+<!-- on-page index (filled by app.js) -->
+<aside aria-label="On this page" class="card toc-card no-print">
+<div class="card__title">On this page</div>
+<nav aria-label="Section index" data-toc="main"></nav>
+</aside>
+<div>
+<!-- ================================================================ -->
+<!-- 1. LEARNING OBJECTIVES                                            -->
+<!-- ================================================================ -->
+<section aria-labelledby="obj-h" class="slide">
+<h2 id="obj-h">Learning Objectives</h2>
+<div class="card card--accent">
+<p class="muted" style="margin-top:0">By the end of this session you will be able to:</p>
+<ul class="obj-list">
+<li><span class="clo-tag">CLO 2</span><div>Explain how <strong>state drives the UI</strong> in Compose and describe what <em>recomposition</em> is and when it happens.</div></li>
+<li><span class="clo-tag">CLO 2</span><div>Hold state across recomposition using <code>remember</code> and <code>mutableStateOf</code>, and survive configuration changes (rotation) with <code>rememberSaveable</code>.</div></li>
+<li><span class="clo-tag">CLO 3</span><div>Wire user input to state with event callbacks such as <code>onClick</code> and <code>onValueChange</code>, using Kotlin lambdas and trailing-lambda syntax.</div></li>
+<li><span class="clo-tag">CLO 2</span><div>Apply <strong>state hoisting</strong> to convert a stateful composable into a stateless one that takes <code>value</code> + <code>onValueChange</code>, improving reuse and testability.</div></li>
+<li><span class="clo-tag">CLO 3</span><div>Build a working <strong>Tip Calculator</strong> that reads a <code>TextField</code>, validates input, and shows a derived total that updates live as the user types.</div></li>
+</ul>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p>This session advances <strong>CLO 2</strong> (design UIs from components and connect them to code) and <strong>CLO 3</strong> (build apps in Kotlin). It is the conceptual backbone for the project requirement <em>"Jetpack Compose UI driven by state"</em> and feeds <strong>Quiz 1</strong> (Session 6) and <strong>Assignment 2 (Unit 2)</strong>.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ================================================================ -->
+<!-- ================================================================ -->
+<!-- ================================================================ -->
+<!-- ================================================================ -->
+<!-- ================================================================ -->
+<!-- 6. LECTURE / CONCEPT NOTES                                        -->
+<!-- ================================================================ -->
+<section aria-labelledby="concept-h" class="slide">
+<h2 id="concept-h">Lecture / Concept Notes</h2>
+<p class="muted">Teaching notes. Each big idea below has an explanation, an analogy, and copyable Material 3 Compose code.</p>
+<div class="mini-legend">
+<span class="tag">Kotlin</span>
+<span class="tag">Jetpack Compose</span>
+<span class="tag">Material 3</span>
+<span class="badge badge--green">CLO 2</span>
+<span class="badge badge--green">CLO 3</span>
+</div>
+<h3 id="idea-state">1 · State drives the UI: recomposition</h3>
+<p>
+          A <strong>Composable</strong> function does not "draw" the screen the way <code>println</code> writes text. It <em>describes</em>
+          what the UI should look like <em>for the current state</em>. When that state changes, Compose re-runs the affected
+          composables to produce a fresh description and updates only what changed. That re-run is called
+          <strong>recomposition</strong>.
+        </p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Analogy</span>
+<p>Think of a spreadsheet. Cell <code>C1 = A1 + B1</code>. You never tell <code>C1</code> to update — you change <code>A1</code> and the cell recalculates itself. In Compose, your UI is <code>C1</code> and your <em>state</em> is <code>A1</code>. Change the state; the UI recomputes.</p>
+</div>
+</div>
+<div aria-label="Recomposition loop diagram" class="recompose-diagram">
+<b>state</b> ──▶ Composable(state) ──▶ UI on screen
+    ▲                                      │
+    │        user event (tap, type)        │
+    └──────────  update state  ◀───────────┘
+            (this triggers <b>recomposition</b>)
+        </div>
+<p>The loop: <strong>state → UI → user event → new state → recomposition → new UI</strong>. This is "unidirectional data flow." Your job is to (a) hold the state and (b) provide event callbacks that change it.</p>
+<h3 id="idea-remember">2 · <code>mutableStateOf</code> and <code>remember</code></h3>
+<p>
+          Two separate problems, two tools:
+        </p>
+<ul>
+<li><code>mutableStateOf(...)</code> creates an <strong>observable</strong> value. When you write to it, Compose knows to recompose anything that read it.</li>
+<li><code>remember { ... }</code> <strong>stores</strong> a value across recompositions so it isn't re-created every time the function re-runs.</li>
+</ul>
+<p>You almost always need both together. First, the classic mistake — a plain variable that never updates the UI:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · BROKEN</span>
+<pre><code>@Composable
+fun BrokenCounter() {
+    // ❌ A plain var is NOT observable. Tapping changes the number in memory,
+    //    but Compose never recomposes, so the screen never updates.
+    var count = 0
+
+    Button(onClick = { count++ }) {
+        Text("Clicked $count times")
+    }
+}</code></pre>
+</div>
+<p>Now make the value observable with <code>mutableStateOf</code>, and keep it across recompositions with <code>remember</code>:</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · WORKING</span>
+<pre><code>import androidx.compose.runtime.*
+
+@Composable
+fun Counter() {
+    // remember -&gt; survives recomposition; mutableStateOf -&gt; observable.
+    // 'by' delegates so we read/write `count` directly (not count.value).
+    var count by remember { mutableStateOf(0) }
+
+    Button(onClick = { count++ }) {
+        Text("Clicked $count times")
+    }
+}</code></pre>
+</div>
+<h4 id="by-delegation">First time you've seen <code>by</code> — what that keyword actually does</h4>
+<p>That little <code>by</code> in <code>var count by remember { … }</code> is doing real work, and it is <em>not</em> a Compose feature — it's a plain Kotlin language feature called a <strong>delegated property</strong>. You'll meet it again in later sessions (<code>by viewModels()</code>, <code>by lazy</code>), so it's worth nailing now.</p>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p><code>by</code> is Kotlin's <strong>property-delegation</strong> keyword: it tells the compiler to route every <em>read</em> of the property through the delegate's <code>getValue</code> and every <em>write</em> through its <code>setValue</code>, instead of storing the value in the property itself.</p>
+</div>
+</div>
+<p>So <code>var count by remember { mutableStateOf(0) }</code> reads like this, piece by piece:</p>
+<ul>
+<li><strong><code>remember { mutableStateOf(0) }</code></strong> — produces a <code>MutableState&lt;Int&gt;</code>, a little box that holds <code>0</code> and is observable. This box is the <em>delegate</em>.</li>
+<li><strong><code>var count by …</code></strong> — the <code>by</code> says "<code>count</code> doesn't store its own value; <em>delegate</em> to that box." From here on, <code>count</code> is just a friendly name pointing at the box.</li>
+<li><strong>reading <code>count</code></strong> (e.g. <code>"Clicked $count times"</code>) — the compiler rewrites this into <code>state.getValue(...)</code>, which hands back the box's current value <em>and</em> records that this composable read it (so Compose knows to recompose it later).</li>
+<li><strong>writing <code>count++</code></strong> — the compiler rewrites this into <code>state.setValue(...)</code>, which updates the box and notifies Compose to recompose every reader.</li>
+</ul>
+<p>Because reads and writes are rewritten for you, you get to treat <code>count</code> as if it were an ordinary <code>var Int</code> — no <code>.value</code> anywhere. That convenience is the <em>only</em> thing <code>by</code> buys you here.</p>
+<p><strong>Side-by-side: the exact same counter, written with <code>by</code> vs. with <code>.value</code>.</strong> These compile to the same thing — <code>by</code> is just sugar for the <code>.value</code> version:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · `by` (delegated — no .value)</span><pre><code>import androidx.compose.runtime.getValue   // needed for read
+import androidx.compose.runtime.setValue   // needed for write
+
+var count by remember { mutableStateOf(0) }
+
+count++              // write  — looks like a plain Int
+Text("$count")       // read   — looks like a plain Int</code></pre></div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · `=` (the State holder itself — uses .value)</span><pre><code>// No getValue/setValue imports needed here.
+
+val count = remember { mutableStateOf(0) }
+
+count.value++        // write — you touch the box's .value
+Text("${count.value}")  // read — you touch the box's .value</code></pre></div>
+<p class="muted">Same behavior, same recomposition. The only difference is ergonomics: <code>by</code> hides the <code>.value</code>; <code>=</code> exposes it. Notice the left side too — <code>by</code> needs <code>var</code> (the property is read/write), while the <code>=</code> form is a <code>val</code> because the <em>box</em> never changes, only its <code>.value</code> does.</p>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p><code>by</code> is not magic and not Compose-specific — it's a compiler rewrite into <code>getValue</code>/<code>setValue</code> calls (the same mechanism behind <code>by lazy</code> and <code>by viewModels()</code>). Two traps follow from that: (1) <code>by</code> needs the imports <code>androidx.compose.runtime.getValue</code> and <code>androidx.compose.runtime.setValue</code> — forget them and you get a red "unresolved <code>by</code>" error. (2) Don't mix the two forms: with <code>by</code> you write <code>count</code> (never <code>count.value</code>); with <code>=</code> you write <code>count.value</code> everywhere. The <code>by</code>-vs-<code>=</code> choice is the whole reason one version needs <code>.value</code> and the other doesn't.</p>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common misconception</span>
+<p>"If I drop <code>remember</code> but keep <code>mutableStateOf</code>, it should still work." It won't — without <code>remember</code> the state is re-created as <code>0</code> on every recomposition, so the count resets. Demo this live; it's the lightbulb moment.</p>
+</div>
+</div>
+<p>The three ways to declare Compose state — show all three so students recognize each in docs and code samples:</p>
+<div aria-label="Ways to declare state" class="tabs" role="tablist">
+<button class="tab" data-tab="by" type="button">by delegate</button>
+<button class="tab" data-tab="value" type="button">.value</button>
+<button class="tab" data-tab="destructure" type="button">destructured</button>
+</div>
+<div class="tabpanel" data-tabpanel="by">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// Most common, cleanest. Requires: import androidx.compose.runtime.getValue / setValue
+var name by remember { mutableStateOf("") }
+name = "Ada"          // write
+Text(name)            // read</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="value">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// Explicit .value — what `by` is sugar for.
+val name = remember { mutableStateOf("") }
+name.value = "Ada"    // write
+Text(name.value)      // read</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="destructure">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// Destructured into a value + setter (handy when hoisting).
+val (name, setName) = remember { mutableStateOf("") }
+setName("Ada")        // write
+Text(name)            // read</code></pre>
+</div>
+</div>
+<h3 id="idea-events">3 · Event handling: lambdas, <code>onClick</code>, <code>onValueChange</code></h3>
+<p>
+          Compose connects UI to code through <strong>lambdas</strong> (anonymous functions) passed as parameters. Since many
+          students are new to Kotlin, anchor the syntax explicitly.
+        </p>
+<div class="grid grid-2">
+<div class="card">
+<div class="card__title">Kotlin lambda cheat-sheet</div>
+<ul>
+<li><code>{ }</code> is a lambda — a block of code you can pass around.</li>
+<li><code>onClick = { count++ }</code> runs when tapped.</li>
+<li><code>onValueChange = { newText -&gt; ... }</code> receives the new value as a parameter.</li>
+<li>If a lambda is the <em>last</em> argument, Kotlin lets you move it outside the parentheses: <code>Button(onClick = {}) { Text("Hi") }</code> — the content block <em>is</em> a trailing lambda.</li>
+<li><code>it</code> is the implicit name of a single lambda parameter: <code>{ println(it) }</code>.</li>
+</ul>
+</div>
+<div class="card">
+<div class="card__title">Java vs Kotlin: same idea</div>
+<p class="muted" style="margin-top:0">For students coming from Java listeners:</p>
+<div aria-label="Java versus Kotlin callback" class="tabs" role="tablist">
+<button class="tab" data-tab="ktlam" type="button">Kotlin</button>
+<button class="tab" data-tab="javalam" type="button">Java (old View)</button>
+</div>
+<div class="tabpanel" data-tabpanel="ktlam">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>Button(onClick = { count++ }) {
+    Text("Add one")
+}</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="javalam">
+<div class="codeblock">
+<span class="codeblock__lang">Java</span>
+<pre><code>button.setOnClickListener(new View.OnClickListener() {
+    @Override public void onClick(View v) {
+        count++;
+        textView.setText("Add one");
+    }
+});</code></pre>
+</div>
+</div>
+<p class="muted">Same concept — "run this when tapped" — but Compose has no manual <code>setText</code>: change state, and the UI recomposes itself.</p>
+</div>
+</div>
+<p>A <code>TextField</code> in Compose is <strong>controlled</strong>: it shows the <code>value</code> you give it and reports edits via <code>onValueChange</code>. You must store the value in state and feed it back, or typing appears to "do nothing."</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Material 3</span>
+<pre><code>import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+
+@Composable
+fun NameField() {
+    var name by remember { mutableStateOf("") }
+
+    OutlinedTextField(
+        value = name,                       // what the field displays
+        onValueChange = { name = it },      // store every keystroke back into state
+        label = { Text("Your name") },
+        singleLine = true
+    )
+    Text("Hello, $name")                    // recomposes live as you type
+}</code></pre>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">"My TextField won't type!"</span>
+<p>The #1 beginner bug: passing a constant to <code>value</code> (e.g. <code>value = ""</code>) and never wiring <code>onValueChange</code> back to state. The field renders, you press keys, nothing appears — because the field always re-displays the unchanged state. Fix: <code>value = name</code> + <code>onValueChange = { name = it }</code>.</p>
+</div>
+</div>
+<h3 id="idea-hoisting">4 · State hoisting: stateless composables</h3>
+<p>
+<strong>State hoisting</strong> means moving state <em>up</em> to the caller and making the child composable
+          <strong>stateless</strong> — it receives a <code>value</code> and an <code>onValueChange</code> callback instead of
+          owning the state itself. The pattern is so common it has a name: a <em>state holder</em> passes
+          <code>value</code> down and <code>events</code> up.
+        </p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Analogy</span>
+<p>A stateless composable is like a <em>thermostat display</em> that just shows a number and reports button presses. The actual temperature setting lives in the house's control system (the parent). The display is dumb, reusable, and easy to test — you can show it any number.</p>
+</div>
+</div>
+<div aria-label="Stateful versus stateless" class="tabs" role="tablist">
+<button class="tab" data-tab="stateful" type="button">Stateful (before)</button>
+<button class="tab" data-tab="stateless" type="button">Stateless / hoisted (after)</button>
+</div>
+<div class="tabpanel" data-tabpanel="stateful">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// Owns its own state. Hard to reuse, hard to test,
+// the parent can't read or control the text.
+@Composable
+fun EditNameField() {
+    var name by remember { mutableStateOf("") }
+    OutlinedTextField(
+        value = name,
+        onValueChange = { name = it },
+        label = { Text("Name") }
+    )
+}</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="stateless">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// Stateless: value comes IN, events go OUT. Reusable + testable.
+@Composable
+fun EditNameField(
+    name: String,
+    onNameChange: (String) -&gt; Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = name,
+        onValueChange = onNameChange,
+        label = { Text("Name") },
+        modifier = modifier
+    )
+}
+
+// The PARENT now owns the state and can read it:
+@Composable
+fun SignupScreen() {
+    var name by remember { mutableStateOf("") }
+    Column {
+        EditNameField(name = name, onNameChange = { name = it })
+        Text("Welcome, $name")              // parent can use the value
+    }
+}</code></pre>
+</div>
+</div>
+<h3 id="idea-savable">5 · <code>rememberSaveable</code>: surviving rotation</h3>
+<p>
+<code>remember</code> survives <em>recomposition</em> but <strong>not</strong> a configuration change like screen rotation,
+          which recreates the Activity (callback to the <a href="https://developer.android.com/guide/components/activities/activity-lifecycle" rel="noopener" target="_blank">Activity lifecycle</a> from Session 1). Rotate the device and a <code>remember</code> counter resets to 0.
+          Use <code>rememberSaveable</code> to persist simple state across these recreations.
+        </p>
+<div aria-label="remember versus rememberSaveable" class="tabs" role="tablist">
+<button class="tab" data-tab="rem" type="button">remember (resets on rotate)</button>
+<button class="tab" data-tab="save" type="button">rememberSaveable (survives)</button>
+</div>
+<div class="tabpanel" data-tabpanel="rem">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// Rotate the phone -&gt; Activity recreated -&gt; count is 0 again.
+var count by remember { mutableStateOf(0) }</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="save">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>import androidx.compose.runtime.saveable.rememberSaveable
+
+// Survives rotation / process-death restore for primitive + Parcelable types.
+var count by rememberSaveable { mutableStateOf(0) }</code></pre>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Rule of thumb</span>
+<p>Use <code>rememberSaveable</code> for UI state the user would be annoyed to lose on rotation (form text, a counter, a selected tab). Use <code>remember</code> for transient/derived things. Persistent app data (survives the app fully closing) is a later topic — DataStore/Room in Unit 6.</p>
+</div>
+</div>
+<h3 id="idea-derived">6 · Deriving UI from state</h3>
+<p>
+          Don't store what you can <em>compute</em>. If the total tip is "bill × percent," store the bill and percent in
+          state and compute the tip in the composable body. It recomputes automatically on each recomposition. Storing a
+          duplicate "tip" state invites bugs where the two get out of sync.
+        </p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>var amountInput by remember { mutableStateOf("") }
+var tipPercent by remember { mutableStateOf("15") }
+
+// DERIVED — recomputed every recomposition, never stored separately:
+val amount = amountInput.toDoubleOrNull() ?: 0.0
+val percent = tipPercent.toDoubleOrNull() ?: 0.0
+val tip = amount * percent / 100
+
+Text("Tip: " + NumberFormat.getCurrencyInstance().format(tip))</code></pre>
+</div>
+<p>This also answers the worry "won't the <em>whole screen</em> redraw on every keystroke?" — no. Compose tracks <em>which</em> composable read <em>which</em> state, and re-runs only those <strong>recomposition scopes</strong>. Trace one keystroke in the bill field through the Tip screen:</p>
+<div aria-label="Tip screen recomposition-scope trace for one keystroke in the bill field" class="recompose-diagram">
+You type "5" in the bill field
+        │
+        ▼
+<b>amountInput</b> state changes  ("5" → "50")          <em>tipInput unchanged</em>
+        │
+        ├─▶ bill <code>OutlinedTextField</code>  reads amountInput   → <b>RE-RUNS</b> (shows "50")
+        │
+        ├─▶ <code>val amount</code> / <code>tip</code> / <code>total</code>  read amountInput → <b>RECOMPUTED</b>
+        │       └─▶ "Tip" + "Total" <code>Text</code>  read those vals → <b>RE-RUN</b>
+        │
+        ├─▶ tip-% <code>OutlinedTextField</code>  reads only tipInput → <em>SKIPPED</em> (no change)
+        │
+        └─▶ round-up <code>Switch</code> + its label  read only roundUp → <em>SKIPPED</em>
+</div>
+<p class="muted">Only the composables that <em>read</em> the changed state re-run; everything else is skipped. That's why "derive, don't store" is cheap — the derived <code>val</code>s recompute, but Compose still repaints just the few <code>Text</code> rows that depend on them. (Reserve <code>derivedStateOf</code> for the rare expensive derivation read by frequently-changing state — see Master&nbsp;it.)</p>
+<h3 id="idea-flashcards">Reinforce: quick flashcards</h3>
+<p class="muted">Use these as a quick 2-minute review before you start the lab. Click to flip; mark "Got it" to retire a card.</p>
+<div data-flashcards="fc-data"></div>
+<script id="fc-data" type="application/json">
+[
+  { "tag": "Concept", "front": "What is recomposition?", "back": "Compose re-running affected composable functions when the state they read changes, to produce an updated UI description." },
+  { "tag": "remember", "front": "What does remember { } do?", "back": "Stores a value across recompositions so it is not re-created each time the composable re-runs." },
+  { "tag": "mutableStateOf", "front": "What does mutableStateOf() give you?", "back": "An observable state holder. Writing to it tells Compose to recompose any composable that read it." },
+  { "tag": "Gotcha", "front": "Why won't a plain `var count = 0` update the UI?", "back": "A plain var is not observable, so Compose never schedules a recomposition when it changes." },
+  { "tag": "Events", "front": "What two callbacks wire a TextField to state?", "back": "value = (current state) and onValueChange = { state = it } — value flows down, events flow up." },
+  { "tag": "Hoisting", "front": "What is state hoisting?", "back": "Moving state up to the caller and making the child stateless, taking value + onValueChange parameters." },
+  { "tag": "Saveable", "front": "remember vs rememberSaveable?", "back": "remember survives recomposition only; rememberSaveable also survives configuration changes like rotation." },
+  { "tag": "Pattern", "front": "Unidirectional data flow in one line?", "back": "State flows DOWN to composables; events flow UP to whoever owns the state." }
+]
+        </script>
+</section>
+<!-- ================================================================ -->
+<!-- 7. GUIDED LIVE-CODING                                             -->
+<!-- ================================================================ -->
+<section aria-labelledby="live-h" class="slide">
+<h2 id="live-h">Guided Live-Coding</h2>
+<p class="muted">Type each step yourself on your machine as you read it. Run on the emulator after every step.</p>
+<ol class="stepper">
+<li class="step">
+<h4>The broken counter (make the bug visible)</h4>
+<p>In a fresh composable, write the version with a <strong>plain var</strong>. Run it and tap the button. The log shows count going up, but the screen never changes — ask yourself why before reading on.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>@Composable
+fun Counter() {
+    var count = 0      // ❌ not observable, not remembered
+    Button(onClick = { count++ }) {
+        Text("Clicks: $count")
+    }
+}</code></pre>
+</div>
+<p><strong>You should see:</strong> the button never updates. Let it sit for ~30 seconds.</p>
+</li>
+<li class="step">
+<h4>Fix it with remember + mutableStateOf</h4>
+<p>Add the imports, change one line, re-run. The number now climbs on each tap.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+
+@Composable
+fun Counter() {
+    var count by remember { mutableStateOf(0) }   // ✅
+    Button(onClick = { count++ }) {
+        Text("Clicks: $count")
+    }
+}</code></pre>
+</div>
+<p><strong>You should see:</strong> tapping increments the visible count. Pause and define recomposition in your own words.</p>
+</li>
+<li class="step">
+<h4>Tip Calculator v1: a controlled TextField</h4>
+<p>Start a <code>TipTimeScreen</code>. Add an <code>OutlinedTextField</code> for the bill and a derived 15% tip.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Material 3</span>
+<pre><code>import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import java.text.NumberFormat
+
+@Composable
+fun TipTimeScreen() {
+    var amountInput by remember { mutableStateOf("") }
+
+    val amount = amountInput.toDoubleOrNull() ?: 0.0
+    val tip = amount * 0.15
+    val tipFormatted = NumberFormat.getCurrencyInstance().format(tip)
+
+    Column(
+        modifier = Modifier.padding(32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("Calculate Tip", style = MaterialTheme.typography.titleLarge)
+        OutlinedTextField(
+            value = amountInput,
+            onValueChange = { amountInput = it },
+            label = { Text("Bill amount") },
+            singleLine = true
+        )
+        Text("Tip: $tipFormatted", style = MaterialTheme.typography.headlineSmall)
+    }
+}</code></pre>
+</div>
+<p><strong>You should see:</strong> typing a bill amount updates the tip line live as each digit lands.</p>
+</li>
+<li class="step">
+<h4>Make the percent editable + add a numeric keyboard</h4>
+<p>Add a second field for the tip percent and a derived total. Set <code>keyboardOptions</code> so the numeric keypad appears.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Material 3</span>
+<pre><code>import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+
+@Composable
+fun TipTimeScreen() {
+    var amountInput by remember { mutableStateOf("") }
+    var tipInput by remember { mutableStateOf("18") }
+
+    val amount = amountInput.toDoubleOrNull() ?: 0.0
+    val tipPercent = tipInput.toDoubleOrNull() ?: 0.0
+    val tip = amount * tipPercent / 100
+    val total = amount + tip
+    val currency = NumberFormat.getCurrencyInstance()
+
+    Column(
+        modifier = Modifier.padding(32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        OutlinedTextField(
+            value = amountInput,
+            onValueChange = { amountInput = it },
+            label = { Text("Bill amount") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+        OutlinedTextField(
+            value = tipInput,
+            onValueChange = { tipInput = it },
+            label = { Text("Tip %") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+        Text("Tip: ${currency.format(tip)}")
+        Text("Total: ${currency.format(total)}",
+             style = MaterialTheme.typography.headlineSmall)
+    }
+}</code></pre>
+</div>
+<p><strong>You should see:</strong> editing either field recomputes tip and total instantly.</p>
+</li>
+<li class="step">
+<h4>Hoist the bill field into a stateless composable</h4>
+<p>Extract <code>EditNumberField</code> as a reusable, stateless composable. The screen now owns the state and passes <code>value</code> + <code>onValueChange</code> down. Run again — behavior is identical, structure is cleaner.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Material 3</span>
+<pre><code>@Composable
+fun EditNumberField(
+    label: String,
+    value: String,
+    onValueChange: (String) -&gt; Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,        // event flows UP
+        label = { Text(label) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = modifier
+    )
+}
+
+@Composable
+fun TipTimeScreen() {
+    var amountInput by remember { mutableStateOf("") }   // state lives HERE now
+    var tipInput by remember { mutableStateOf("18") }
+    // ... derive amount/tip/total exactly as before ...
+
+    Column(/* ... */) {
+        EditNumberField(
+            label = "Bill amount",
+            value = amountInput,
+            onValueChange = { amountInput = it }          // value flows DOWN
+        )
+        EditNumberField(
+            label = "Tip %",
+            value = tipInput,
+            onValueChange = { tipInput = it }
+        )
+        // ... Text rows for tip + total ...
+    }
+}</code></pre>
+</div>
+<p><strong>You should see:</strong> the app behaves the same, but you now have one reusable field. Remember this shape — it's the form every input in your project should take.</p>
+</li>
+</ol>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Optional add-on if time allows</span>
+<p>Add <code>@Preview</code> on <code>TipTimeScreen</code> so the design pane renders without the emulator, and swap <code>remember</code> for <code>rememberSaveable</code> on one field, then rotate to show it survives. Great segue to the lab and to Session 6.</p>
+</div>
+</div>
+</section>
+<!-- ================================================================ -->
+<!-- 8. HANDS-ON LAB                                                   -->
+<!-- ================================================================ -->
+<section aria-labelledby="lab-h" class="slide">
+<h2 id="lab-h">Hands-On Lab — Interactive Tip Calculator</h2>
+<div class="row">
+<span class="badge">~70 minutes</span>
+<a href="../labs/compose-playground.html">Compose Playground (backup) ›</a>
+</div>
+<div class="card card--accent mt">
+<div class="card__title">🎯 Goal</div>
+<p>Build a Tip Calculator that takes a <strong>bill amount</strong> and <strong>tip %</strong>, adds a <strong>round-up toggle</strong>, and shows a <strong>live total</strong> with currency formatting and basic input validation. Start from your live-coding project.</p>
+</div>
+<h3>Acceptance criteria</h3>
+<p class="muted">Tick each item as you go — your progress is saved in this browser. You're done when every box is checked.</p>
+<div class="grid grid-2">
+<div class="card">
+<div class="card__title">Must build (your self-check)</div>
+<ul class="checklist" id="s05-tipcalc-acceptance">
+<li><label><input data-key="s05-bill" type="checkbox"/><span>A <strong>bill-amount</strong> <code>OutlinedTextField</code> with <code>KeyboardOptions(keyboardType = KeyboardType.Number)</code>.</span></label></li>
+<li><label><input data-key="s05-pct" type="checkbox"/><span>An <strong>editable tip %</strong> field (also numeric) — the percent is read from state, never hard-coded.</span></label></li>
+<li><label><input data-key="s05-roundup" type="checkbox"/><span>A <strong>round-up</strong> <code>Switch</code> bound to a <code>roundUp: Boolean</code> state.</span></label></li>
+<li><label><input data-key="s05-total" type="checkbox"/><span>A <strong>live total</strong> that updates as you type, formatted with <code>NumberFormat.getCurrencyInstance()</code>.</span></label></li>
+<li><label><input data-key="s05-derived" type="checkbox"/><span><strong>Tip and total are derived</strong> (plain <code>val</code>s), <em>not</em> stored in their own <code>mutableStateOf</code>.</span></label></li>
+<li><label><input data-key="s05-validate" type="checkbox"/><span>Input is parsed with <code>toDoubleOrNull() ?: 0.0</code> — empty or partial text (<code>""</code>, <code>"."</code>) shows <code>$0.00</code> and <strong>never crashes</strong>.</span></label></li>
+<li><label><input data-key="s05-hoisted" type="checkbox"/><span>At least one input is a <strong>hoisted, stateless</strong> <code>EditNumberField</code> (takes <code>value</code> + <code>onValueChange</code> + <code>modifier</code>; the screen owns the state).</span></label></li>
+<li><label><input data-key="s05-runs" type="checkbox"/><span>It builds and runs on the emulator (or renders in <code>@Preview</code>).</span></label></li>
+</ul>
+</div>
+<div class="card card--teal">
+<div class="card__title">Nice to have / stretch (optional)</div>
+<ul class="checklist" id="s05-tipcalc-stretch">
+<li><label><input data-key="s05-saveable" type="checkbox"/><span>Swap one input to <code>rememberSaveable</code> and confirm it survives a <strong>rotation</strong>.</span></label></li>
+<li><label><input data-key="s05-people" type="checkbox"/><span>Add a <strong>"Number of people"</strong> field and show a <em>per-person</em> total.</span></label></li>
+<li><label><input data-key="s05-stepper" type="checkbox"/><span>Replace the headcount field with a <code>+ / −</code> stepper instead of typed text.</span></label></li>
+<li><label><input data-key="s05-highlight" type="checkbox"/><span>Highlight the per-person amount in <code>MaterialTheme.colorScheme.primary</code>.</span></label></li>
+<li><label><input data-key="s05-preview" type="checkbox"/><span>Add a <code>@Preview</code> so the design pane renders the screen without the emulator.</span></label></li>
+</ul>
+</div>
+</div>
+<h3>Build steps</h3>
+<ol class="stepper">
+<li class="step">
+<h4>Sketch your state first</h4>
+<p>On paper or in a comment, list the state: <code>amountInput: String</code>, <code>tipInput: String</code>, <code>roundUp: Boolean</code>. Everything else (tip, total) is <em>derived</em>, not stored.</p>
+</li>
+<li class="step">
+<h4>Add the round-up toggle</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · Material 3</span>
+<pre><code>var roundUp by remember { mutableStateOf(false) }
+
+Row(verticalAlignment = Alignment.CenterVertically) {
+    Text("Round up tip", modifier = Modifier.weight(1f))
+    Switch(checked = roundUp, onCheckedChange = { roundUp = it })
+}</code></pre>
+</div>
+</li>
+<li class="step">
+<h4>Compute the tip with validation + round-up</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>import kotlin.math.ceil
+import java.text.NumberFormat
+
+// Return the raw Double so we can both display it AND add it to the total.
+private fun calculateTip(amount: Double, percent: Double, roundUp: Boolean): Double {
+    var tip = percent / 100 * amount
+    if (roundUp) tip = ceil(tip)        // always round the tip UP
+    return tip
+}
+
+// In the composable:
+val currency = NumberFormat.getCurrencyInstance()
+val amount = amountInput.toDoubleOrNull() ?: 0.0    // validation: bad input -&gt; 0.0
+val percent = tipInput.toDoubleOrNull() ?: 0.0
+val tip = calculateTip(amount, percent, roundUp)    // a Double
+val total = amount + tip
+
+Text("Tip: ${currency.format(tip)}")
+Text("Total: ${currency.format(total)}")</code></pre>
+</div>
+<p class="muted">Keep <code>calculateTip</code> returning a <code>Double</code> so you can both display it and add it to the total, then format once with <code>NumberFormat</code> at the point of display.</p>
+</li>
+<li class="step">
+<h4>Wire it into your hoisted fields + run</h4>
+<p>Reuse the <code>EditNumberField</code> from live-coding for both inputs. Run on the emulator and confirm the total moves as you type and toggle.</p>
+</li>
+<li class="step">
+<h4>Self-check &amp; commit</h4>
+<p>Walk the acceptance checklist above, then <code>git commit -m "Tip Calculator: state, validation, round-up"</code>.</p>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">🔧</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting (post on screen)</span>
+<ul style="margin:.3em 0 0;">
+<li><strong>Field won't accept typing</strong> → you passed a constant to <code>value</code>; use <code>value = amountInput</code> + <code>onValueChange = { amountInput = it }</code>.</li>
+<li><strong>App crashes when the field is empty</strong> → you used <code>.toDouble()</code>; use <code>.toDoubleOrNull() ?: 0.0</code>.</li>
+<li><strong>Number never updates</strong> → missing <code>remember</code>, or you stored <code>tip</code> in state instead of deriving it.</li>
+<li><strong>Letters appear in the bill field</strong> → add <code>keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)</code> (note: this changes the keyboard, validation still needed).</li>
+<li><strong>Unresolved <code>by</code> / <code>getValue</code></strong> → add <code>import androidx.compose.runtime.getValue</code> and <code>setValue</code>.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Push further</span>
+<p><strong>Split by N people.</strong> Add a "Number of people" field and show "per person" total. Then make a <code>+ / −</code> stepper for the headcount instead of a text field. Bonus: highlight the per-person amount in <code>MaterialTheme.colorScheme.primary</code>. Push the extension on a separate branch.</p>
+</div>
+</div>
+</section>
+<!-- ================================================================ -->
+<!-- 9. ASSESSMENTS TODAY                                              -->
+<!-- ================================================================ -->
+<section aria-labelledby="assess-h" class="slide">
+<h2 id="assess-h">Assessments Today</h2>
+<div class="grid grid-2">
+<div class="card card--amber">
+<div class="card__title">Assignment 2 (Unit 2) — due end of Week 2</div>
+<p>Self-paced <a href="https://developer.android.com/courses/android-basics-compose/unit-2" rel="noopener" target="_blank">Android Basics Unit 2</a> work covering Kotlin fundamentals + state. Reinforces today's content; due before the Week 2 close. Same activities.</p>
+<p><a href="https://developer.android.com/courses/android-basics-compose/unit-2" rel="noopener" target="_blank">Work through Unit 2 ›</a> · submit per the LMS instructions.</p>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Looking ahead to Session 6</span>
+<p>Next session is heavy: <strong>Quiz 1</strong> and <strong>Project Milestone 1</strong>. Today's state/recomposition material is squarely on Quiz 1 — use the practice check below and the flashcards to lock it in.</p>
+<p><a href="../assessments/quiz-1.html">Quiz 1 page ›</a> · <a href="session-06.html">Session 6 plan ›</a></p>
+</div>
+</div>
+<h3>Practice check</h3>
+<p class="muted">Run as a low-stakes warm-down or assign as Quiz 1 prep. Answers + explanations reveal on submit.</p>
+<div data-quiz="quiz-data" data-topic="state"></div>
+<script id="quiz-data" type="application/json">
+{
+  "title": "State & Recomposition — practice check",
+  "intro": "5 questions. 70% to pass. This is practice for Quiz 1.",
+  "passingScore": 0.7,
+  "shuffle": false,
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single",
+      "prompt": "Why does `var count = 0` (a plain variable) fail to update the UI when changed in onClick?",
+      "options": [
+        { "id": "a", "text": "Kotlin variables are immutable by default" },
+        { "id": "b", "text": "A plain var is not observable, so Compose never schedules a recomposition" },
+        { "id": "c", "text": "onClick can't modify variables" },
+        { "id": "d", "text": "You must call invalidate() manually" }
+      ],
+      "correct": ["b"],
+      "explanation": "Compose only recomposes when observable state (mutableStateOf) that a composable read changes. A plain var isn't tracked."
+    },
+    {
+      "id": "q2",
+      "type": "single",
+      "prompt": "What problem does remember { } solve?",
+      "options": [
+        { "id": "a", "text": "It makes a value observable" },
+        { "id": "b", "text": "It saves data to disk" },
+        { "id": "c", "text": "It stores a value across recompositions so it isn't re-created each run" },
+        { "id": "d", "text": "It survives screen rotation" }
+      ],
+      "correct": ["c"],
+      "explanation": "remember caches across recompositions. Observability comes from mutableStateOf; surviving rotation comes from rememberSaveable."
+    },
+    {
+      "id": "q3",
+      "type": "truefalse",
+      "prompt": "In state hoisting, the child composable becomes stateless and receives a value plus an onValueChange callback.",
+      "correct": true,
+      "explanation": "Exactly — value flows down, events flow up; the parent owns the state."
+    },
+    {
+      "id": "q4",
+      "type": "multi",
+      "prompt": "Which of these are reasons to hoist state? (Select all that apply.)",
+      "options": [
+        { "id": "a", "text": "Reusability of the composable" },
+        { "id": "b", "text": "Easier testing/previewing" },
+        { "id": "c", "text": "A single source of truth the parent can read" },
+        { "id": "d", "text": "It makes the app run faster on older CPUs" }
+      ],
+      "correct": ["a", "b", "c"],
+      "explanation": "Hoisting is about reuse, testability, and a single source of truth — not raw performance."
+    },
+    {
+      "id": "q5",
+      "type": "short",
+      "prompt": "Which function (one word) makes Compose state survive a screen rotation?",
+      "correct": ["rememberSaveable"],
+      "explanation": "rememberSaveable persists supported types across configuration changes like rotation; plain remember does not."
+    }
+  ]
+}
+        </script>
+</section>
+<!-- ================================================================ -->
+<!-- 10. DISCUSSION BOARD PROMPT                                       -->
+<!-- ================================================================ -->
+<section aria-labelledby="discussion-h" class="slide">
+<h2 id="discussion-h">Discussion Board Prompt</h2>
+<div class="card card--teal">
+<div class="card__title">💬 This week's prompt</div>
+<blockquote style="margin:0 0 1em; padding-left:1em; border-left:3px solid var(--green);">
+<p style="margin:0"><strong>"State hoisting in your own project."</strong> Pick one screen from <em>your</em> term project. Identify a piece of state it needs (e.g., a search box, a toggle, a form field). Post: (1) what the state is and its type, (2) which composable should <em>own</em> it and why, and (3) a 5–10 line Kotlin snippet showing the stateless child with <code>value</code> + <code>onValueChange</code>. Then reply to <strong>one</strong> classmate: would you hoist their state higher or lower, and why?</p>
+</blockquote>
+
+</div>
+</section>
+<!-- ================================================================ -->
+<!-- 11. HOMEWORK / NEXT CLASS                                         -->
+<!-- ================================================================ -->
+<section aria-labelledby="hw-h" class="slide">
+<h2 id="hw-h">Homework / Next Class</h2>
+<div class="grid grid-3">
+<div class="card card--accent">
+<div class="card__title">📚 Read / watch</div>
+<ul>
+<li><a href="https://developer.android.com/develop/ui/compose/state" rel="noopener" target="_blank">State in Compose</a> (official guide).</li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-2" rel="noopener" target="_blank">Android Basics Unit 2</a> — Kotlin fundamentals + state.</li>
+<li>Skim <a href="https://developer.android.com/guide/components/activities/activity-lifecycle" rel="noopener" target="_blank">Activity lifecycle</a> — context for <code>rememberSaveable</code> + rotation.</li>
+<li>Optional Kotlin practice: <a href="https://hyperskill.org/courses/18-kotlin-core" rel="noopener" target="_blank">Hyperskill Kotlin Core</a>.</li>
+</ul>
+</div>
+<div class="card card--accent">
+<div class="card__title">✅ Do</div>
+<ul>
+<li>Finish the <a href="#lab-h">Tip Calculator lab</a> if you haven't completed it yet.</li>
+<li>Complete <strong>Assignment 2 (Unit 2)</strong> — due end of Week 2. <a href="https://developer.android.com/courses/android-basics-compose/unit-2" rel="noopener" target="_blank">Unit 2 course ›</a></li>
+<li>Experiment in the <a href="../labs/compose-playground.html">Compose Playground</a> with state + recomposition.</li>
+</ul>
+</div>
+<div class="card card--accent">
+<div class="card__title">🚀 Project (Milestone 1 prep)</div>
+<ul>
+<li>Build a <strong>working UI prototype</strong> of YOUR app for Session 6: <strong>≥2 screens with navigation</strong> and Compose UI <strong>driven by state</strong>.</li>
+<li>No network/persistence required yet — that's later units.</li>
+<li>Bring it ready to demo; it's the Project milestone.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">📅</span>
+<div class="callout__body">
+<span class="callout__label">Heads-up for Session 6</span>
+<p>Session 6 = <strong>Quiz 1</strong> + <strong>Project Milestone 1</strong> in the same meeting. Get ready on state/recomposition <em>and</em> bring a demoable prototype. Build the prototype across the week — don't leave it to the night before.</p>
+</div>
+</div>
+</section>
+<!-- ================================================================ -->
+<!-- ================================================================ -->
+</div><!-- /content column -->
+</div><!-- /layout -->
+<!-- ===================== LIVE, RUNNABLE COMPOSE (playground.js) ===================== -->
+<section aria-labelledby="til-h" class="card slide" id="try-it-live">
+<h2 class="card__title" id="til-h">► Try it live in your browser</h2>
+<div class="callout callout--warn">
+<span class="callout__icon">►</span>
+<div class="callout__body">
+<span class="callout__label">Live Compose — experimental</span>
+<p>Complete, editable Compose programs. Press <strong>Run</strong> to compile to WebAssembly on JetBrains’ servers and render here. Compose-on-web is <strong>experimental</strong> — if it won’t compile on your network, use the offline <a href="../labs/compose-playground.html">visual simulator</a> or Android Studio. Watch the UI <em>recompose</em> the instant state changes.</p>
+</div>
+</div>
+<p class="mt"><strong>1. State &amp; recomposition.</strong> <code>remember { mutableStateOf(...) }</code> + the buttons mutate it; the <code>Text</code> recomposes automatically.</p>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Kotlin + Compose · runnable</div>
+<pre><code>import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
+
+fun main() {
+    ComposeViewport(document.body!!) { App() }
+}
+
+@Composable
+fun App() {
+    MaterialTheme {
+        var count by remember { mutableStateOf(0) }
+        Column(
+            Modifier.fillMaxWidth().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Count: $count", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(16.dp))
+            Row {
+                Button(onClick = { count-- }) { Text("Minus") }
+                Spacer(Modifier.width(12.dp))
+                Button(onClick = { count++ }) { Text("Plus") }
+            }
+        }
+    }
+}</code></pre>
+</div>
+<p class="mt"><strong>2. Text input &amp; derived UI.</strong> The greeting is computed from state — type in the field and watch it update.</p>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Kotlin + Compose · runnable</div>
+<pre><code>import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
+
+fun main() {
+    ComposeViewport(document.body!!) { App() }
+}
+
+@Composable
+fun App() {
+    MaterialTheme {
+        var name by remember { mutableStateOf("") }
+        Column(Modifier.fillMaxWidth().padding(24.dp)) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Your name") }
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(if (name.isBlank()) "Type your name above…" else "Hello, $name!")
+        }
+    }
+}</code></pre>
+</div>
+</section>
+<!-- ====================================================================== -->
+<!-- MASTER IT — worked example, misconceptions, production, retrieval        -->
+<!-- ====================================================================== -->
+<section aria-labelledby="master-h" class="card slide" id="master-it">
+<h2 class="card__title" id="master-h">★ Master it: derived state &amp; the hoisting refactor</h2>
+<p class="muted">
+        This is where the average student and the strongest engineer in the room split apart. Anyone can paste a
+        <code>TextField</code>. The skill is knowing <em>what belongs in state</em>, <em>what should be derived</em>, and
+        <em>who should own it</em>. Work the example, complete the faded version, then drill the misconceptions until
+        they stop biting you in code review.
+      </p>
+<!-- live mastery strip: the student's OWN progress, never a grade -->
+<div data-mastery-stats=""></div>
+<!-- ---------------------------------------------------------------- -->
+<!-- 1. WORKED EXAMPLE → FADED                                          -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-we">1 · Worked example: reduce a tip screen to its true state</h3>
+<p>
+        The hardest idea in this session is not <code>remember</code> — it's <strong>minimal state + everything else
+        derived</strong>. Let's reason about a real screen before we write a line of UI. Suppose a tip screen shows:
+        the bill, a tip %, a "round up" toggle, the computed tip, the total, and an error hint when the bill is invalid.
+        That's six things on screen. How many should be <em>state</em>?
+      </p>
+<div class="card card--accent">
+<div class="card__title">Reasoning, step by step</div>
+<ol>
+<li><strong>Ask of each value: "Could the user change this directly?"</strong> The bill text, the tip-% text, and
+            the toggle — yes, those are <em>inputs</em>. They must be state, because nothing else can compute them.</li>
+<li><strong>For everything else, ask: "Can I compute it from the inputs?"</strong> The tip is
+            <code>bill × pct ÷ 100</code> (then maybe rounded). The total is <code>bill + tip</code>. The error hint is
+            "is the bill text a valid number?". All three are pure functions of the three inputs → <strong>derive them,
+            never store them.</strong></li>
+<li><strong>The payoff:</strong> three state slots, zero chance of the tip and the total disagreeing. If you stored a
+            separate <code>tip</code> state you'd have to remember to update it in <em>every</em> place the bill or % can
+            change — and the day you forget one, the UI silently lies.</li>
+</ol>
+<p class="muted" style="margin-bottom:0">
+          Verdict: <strong>3 state values</strong> (<code>amountInput</code>, <code>tipInput</code>, <code>roundUp</code>),
+          <strong>3 derived values</strong> recomputed on every recomposition. "Don't store what you can compute" is the
+          single most reusable instinct from this whole session.
+        </p>
+</div>
+<p class="mt">Here is the fully worked, idiomatic version. <strong>Predict the printed output, then Run to confirm</strong> — the
+        harness below proves the <em>derivation logic</em> in pure Kotlin (the same math your composable will run on every keystroke):</p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable</div>
+<pre><code>import kotlin.math.ceil
+
+// The pure core of the tip screen — no Compose, just the logic that
+// runs on every recomposition. This is exactly what we'll DERIVE in the UI.
+fun parseMoney(text: String): Double = text.toDoubleOrNull() ?: 0.0
+
+fun tipOf(bill: Double, pct: Double, roundUp: Boolean): Double {
+    val raw = bill * pct / 100.0
+    return if (roundUp) ceil(raw) else raw
+}
+
+fun totalOf(bill: Double, pct: Double, roundUp: Boolean): Double =
+    bill + tipOf(bill, pct, roundUp)
+
+fun main() {
+    // bill "50", 18%, no round-up -&gt; tip 9.0, total 59.0
+    val bill = parseMoney("50")
+    val pct = parseMoney("18")
+    println("tip   = " + tipOf(bill, pct, roundUp = false))
+    println("total = " + totalOf(bill, pct, roundUp = false))
+
+    // round-up bumps 9.0 -&gt; 9.0 (already whole); try 23% -&gt; 11.5 -&gt; 12.0
+    println("tip23 = " + tipOf(bill, parseMoney("23"), roundUp = true))
+
+    // invalid bill text safely becomes 0.0 — no crash, UI just shows $0
+    println("bad   = " + parseMoney("abc"))
+}</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Read the seam</span>
+<p>Notice the logic is a set of <strong>pure functions</strong> with no <code>@Composable</code>, no <code>remember</code>,
+          no Android types. That's deliberate: the composable's only job is to <em>hold the three inputs</em> and call these.
+          Pure logic like this is trivially testable and is the exact shape you'll lift into a ViewModel in Session 8.</p>
+</div>
+</div>
+<h4 id="master-fade">Now you finish it — the faded version (auto-checked)</h4>
+<p>
+        Below, the state-vs-derived <em>thinking</em> is done; the <strong>arithmetic is blanked out</strong>. Fill in the
+        <code>// YOUR CODE</code> region so the round-up logic and total are correct, then press <strong>Run</strong>. You've
+        got it when every case prints <code>✓ passed</code> and you see <code>ALL TESTS PASSED 🎉</code>. If a case fails it
+        tells you exactly what it expected.
+      </p>
+<div class="codeblock" data-challenge="s05-tipcalc" data-run="kotlin" data-topic="state">
+<div class="codeblock__lang">Kotlin · runnable · auto-checked challenge</div>
+<pre><code>import kotlin.math.ceil
+
+// Safe parse — an invalid bill/percent string becomes 0.0 (never crashes).
+fun parseMoney(text: String): Double = text.toDoubleOrNull() ?: 0.0
+
+// ---- YOUR CODE -------------------------------------------------------
+// Return the tip. When roundUp is true, round the tip UP to a whole number.
+fun tipOf(bill: Double, pct: Double, roundUp: Boolean): Double {
+    val raw = bill * pct / 100.0
+    return raw            // TODO: when roundUp, return ceil(raw) instead
+}
+
+// Return the grand total = bill + tip (respecting roundUp).
+fun totalOf(bill: Double, pct: Double, roundUp: Boolean): Double {
+    return bill          // TODO: add the tip
+}
+// ---- END YOUR CODE ---------------------------------------------------
+
+fun main() {
+    var passed = 0
+    fun check(name: String, expected: Double, actual: Double) {
+        if (kotlin.math.abs(expected - actual) &lt; 0.0001) {
+            println("✓ passed: $name")
+            passed++
+        } else {
+            println("✗ FAILED: $name — expected $expected, got $actual")
+        }
+    }
+
+    val bill = parseMoney("50")          // 50.0
+    check("tip 18% no round", 9.0,  tipOf(bill, 18.0, roundUp = false))
+    check("tip 23% round up", 12.0, tipOf(bill, 23.0, roundUp = true))   // 11.5 -&gt; 12.0
+    check("total 18% no round", 59.0, totalOf(bill, 18.0, roundUp = false))
+    check("total 23% round up", 62.0, totalOf(bill, 23.0, roundUp = true)) // 50 + 12
+    check("invalid bill is 0", 0.0, totalOf(parseMoney("oops"), 18.0, false))
+
+    if (passed == 5) println("ALL TESTS PASSED 🎉")
+    else println("${5 - passed} case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Hint</button>
+<div class="accordion__body">
+<p>Two tiny edits. In <code>tipOf</code>, return <code>if (roundUp) ceil(raw) else raw</code>. In
+              <code>totalOf</code>, return <code>bill + tipOf(bill, pct, roundUp)</code> so the total reuses the exact same
+              tip — never recompute the tip a second, slightly-different way.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>fun tipOf(bill: Double, pct: Double, roundUp: Boolean): Double {
+    val raw = bill * pct / 100.0
+    return if (roundUp) ceil(raw) else raw
+}
+
+fun totalOf(bill: Double, pct: Double, roundUp: Boolean): Double =
+    bill + tipOf(bill, pct, roundUp)</code></pre>
+</div>
+<p class="muted">Once green, press <strong>Mark solved ✓</strong> on this challenge to log it toward your mastery. The
+              <em>Compose</em> version is just this logic wrapped in three <code>remember { mutableStateOf(...) }</code> inputs and
+              a few <code>Text</code> rows — try it in the <a href="#try-it-live">Try it live</a> sandbox above.</p>
+</div>
+</div>
+</div>
+<!-- ---------------------------------------------------------------- -->
+<!-- 2. MISCONCEPTIONS & PITFALLS                                       -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-misconceptions">2 · Common misconceptions &amp; pitfalls</h3>
+<p class="muted">Each one is a wrong mental model that compiles fine and then misbehaves. Learn the symptom so you can
+        diagnose it in two seconds instead of twenty minutes.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">“<code>mutableStateOf</code> alone is enough — I can skip <code>remember</code>.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> "<code>mutableStateOf(0)</code> creates the state, so it persists." </p>
+<p><strong>Why it's wrong:</strong> <code>mutableStateOf</code> only makes a value <em>observable</em>;
+              <code>remember</code> is what <em>keeps</em> it across recompositions. Without <code>remember</code>, every
+              recomposition re-runs <code>var count by mutableStateOf(0)</code> and resets it to 0.</p>
+<p><strong>Correct model:</strong> <code>remember</code> = "store it across re-runs", <code>mutableStateOf</code> =
+              "make writes trigger a re-run". You almost always need both: <code>remember { mutableStateOf(0) }</code>.</p>
+<p><strong>Symptom you'd see:</strong> the counter flickers back to 0 (or the field clears) the instant <em>anything
+              else</em> on the screen recomposes — it looks like the tap "didn't register," but it did and was immediately erased.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“I'll store the tip <em>and</em> the total in state to keep them handy.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> "Computed values are important, so they deserve their own
+              <code>mutableStateOf</code>."</p>
+<p><strong>Why it's wrong:</strong> A derived value stored as state has to be manually re-synced everywhere an input
+              changes. Miss one update path and you get two sources of truth that silently disagree.</p>
+<p><strong>Correct model:</strong> store only <em>inputs</em>; compute <code>tip</code> and <code>total</code> as plain
+              <code>val</code>s in the composable body. They recompute for free on every recomposition. Reserve
+              <code>derivedStateOf</code> for the rare case where the derivation is genuinely expensive <em>and</em> reads
+              frequently-changing state — for simple arithmetic, a plain <code>val</code> is correct and faster to read.</p>
+<p><strong>Symptom you'd see:</strong> the total updates but the tip line is stale (or vice-versa) after editing a
+              field — the classic "the numbers don't add up" bug.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“A <code>TextField</code> manages its own text, like an EditText.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> "I drop in an <code>OutlinedTextField</code>, the user types, I read its text later."</p>
+<p><strong>Why it's wrong:</strong> Compose text fields are <em>controlled</em>: they render exactly the
+              <code>value</code> you pass and report edits via <code>onValueChange</code>. If you don't write the new value
+              back into state, the field keeps re-displaying the old value — so typing appears to do nothing.</p>
+<p><strong>Correct model:</strong> <code>value = text</code> + <code>onValueChange = { text = it }</code>. Value flows
+              <em>down</em>, the edit event flows <em>up</em> into your state; the new state flows back down and the field
+              shows it.</p>
+<p><strong>Symptom you'd see:</strong> you press keys and the field stays empty (or frozen on its initial text). The
+              #1 "my TextField won't type" support ticket.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“<code>.toDouble()</code> is fine — users type numbers in a number field.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> "The keyboard is numeric, so the text is always a valid number."</p>
+<p><strong>Why it's wrong:</strong> <code>keyboardType = Number</code> is a <em>hint</em>, not a guarantee — the field
+              is empty initially, can contain <code>"."</code> or <code>"3.4.5"</code>, and hardware/paste/voice input bypass
+              the soft keyboard entirely. <code>"".toDouble()</code> throws <code>NumberFormatException</code> and crashes the app.</p>
+<p><strong>Correct model:</strong> parse defensively with <code>text.toDoubleOrNull() ?: 0.0</code>. Validation
+              (the keyboard hint) and parsing (the null-safe conversion) are two separate jobs — you need both.</p>
+<p><strong>Symptom you'd see:</strong> the app runs perfectly in the demo, then crashes the moment a tester opens the
+              screen and the field is empty, or clears the field mid-edit.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">“<code>remember</code> keeps my state through a screen rotation.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> "It's remembered, so it survives everything."</p>
+<p><strong>Why it's wrong:</strong> <code>remember</code> survives <em>recomposition</em> only. A configuration change
+              (rotation, dark-mode toggle, font-size change) recreates the Activity and throws away everything held in plain
+              <code>remember</code>.</p>
+<p><strong>Correct model:</strong> use <code>rememberSaveable</code> for UI state the user would be annoyed to lose
+              (form text, a counter, a selected tab). It persists supported types (primitives, <code>Parcelable</code>, anything
+              with a <code>Saver</code>) across recreation. Keep plain <code>remember</code> for transient/derived things.</p>
+<p><strong>Symptom you'd see:</strong> the user fills a form, rotates the phone to read it better, and the whole form
+              blanks out — instant rage-quit material.</p>
+</div>
+</div>
+</div>
+<!-- ---------------------------------------------------------------- -->
+<!-- 3. IN PRODUCTION                                                   -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-production">3 · In production: how a senior engineer wires this</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">The idiomatic pattern</span>
+<p>
+            On a real team, the rule is <strong>"hoist state until it has an owner."</strong> A leaf input
+            (<code>EditNumberField</code>) is <em>always</em> stateless — it takes <code>value: String</code> +
+            <code>onValueChange: (String) -&gt; Unit</code> and nothing else. The screen-level composable owns the few input
+            states with <code>rememberSaveable</code>. And the moment that logic needs to outlive the screen, talk to the
+            network, or be unit-tested, the state moves <em>one more level up</em> into a <strong>ViewModel</strong> exposing a
+            single immutable <code>UiState</code> via <code>StateFlow</code> (that's Session 8). The progression is the
+            whole architecture story: <em>local <code>remember</code> → hoisted to parent → lifted to ViewModel</em>. You're
+            learning rung one of a ladder you'll climb for the rest of the course.
+          </p>
+<p style="margin-bottom:0">
+<strong>Tasteful gotcha:</strong> a senior dev never lets a stateless leaf own its own text — but they also never
+            over-hoist. If a piece of state is only ever read and written <em>inside one composable</em> and nobody else cares
+            (e.g. whether a tooltip is expanded), hoisting it just adds noise. Hoist for a <em>reason</em>: a parent needs to
+            read it, two siblings must share it, or you want to test/preview it. "Hoist everything" is as much a smell as
+            "hoist nothing."
+          </p>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">One more production reflex</span>
+<p>Type your event callbacks as the last parameter and your <code>modifier: Modifier = Modifier</code> as the last
+          <em>defaulted</em> one, in that order: <code>fun EditNumberField(label: String, value: String, onValueChange: (String) -&gt; Unit, modifier: Modifier = Modifier)</code>.
+          A <code>modifier</code> param that every caller can pass is the unwritten contract of a reusable composable — omit it
+          and your component can't be sized, padded, or laid out by its parent, which is the first thing a reviewer will flag.</p>
+</div>
+</div>
+<!-- ---------------------------------------------------------------- -->
+<!-- 4. RETRIEVAL CHECK                                                 -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-retrieval">4 · Retrieval check</h3>
+<p class="muted">Close the notes. These test whether you can <em>apply</em> the model to new code, not recite definitions.
+        Answers and full explanations reveal on submit. This is your own self-check — not a grade.</p>
+<div data-quiz="rc-5" data-topic="state"></div>
+<script id="rc-5" type="application/json">
+{
+  "title": "State & recomposition — application check",
+  "intro": "5 questions. Reason about real code. Self-check only.",
+  "passingScore": 0.8,
+  "shuffle": false,
+  "questions": [
+    {
+      "id": "rc5q1",
+      "type": "single",
+      "prompt": "A composable does `var name by mutableStateOf(\"\")` (no remember) and a Text elsewhere on the same screen updates every second. The name field appears to clear itself constantly. What's happening?",
+      "options": [
+        { "id": "a", "text": "The TextField is missing onValueChange" },
+        { "id": "b", "text": "Without remember, each recomposition re-runs mutableStateOf and resets name to \"\"" },
+        { "id": "c", "text": "mutableStateOf is deprecated; use rememberSaveable" },
+        { "id": "d", "text": "The Text is stealing focus from the field" }
+      ],
+      "correct": ["b"],
+      "explanation": "mutableStateOf makes the value observable, but remember is what preserves it across recompositions. The unrelated per-second update forces recomposition, which re-initializes the un-remembered state back to its default."
+    },
+    {
+      "id": "rc5q2",
+      "type": "single",
+      "prompt": "You have amountInput and tipInput in state, and you ALSO keep `var total by remember { mutableStateOf(0.0) }`, updating it inside the bill field's onValueChange only. A user edits the tip % field. What does the user see?",
+      "options": [
+        { "id": "a", "text": "Total updates correctly — onValueChange always recomputes" },
+        { "id": "b", "text": "Total goes stale: it only re-syncs when the BILL field changes, not the tip field" },
+        { "id": "c", "text": "The app crashes because total is read-only" },
+        { "id": "d", "text": "Compose automatically keeps total in sync because it's state" }
+      ],
+      "correct": ["b"],
+      "explanation": "Storing a derived value creates a second source of truth you must hand-sync on every input path. You only updated total in the bill field's callback, so editing the tip % leaves total stale. Fix: don't store total — derive it (`val total = amount + tip`) so it recomputes on every recomposition."
+    },
+    {
+      "id": "rc5q3",
+      "type": "multi",
+      "prompt": "You want EditNumberField to be a reusable, production-grade stateless leaf. Which of these belong in its signature? (Select all that apply.)",
+      "options": [
+        { "id": "a", "text": "value: String" },
+        { "id": "b", "text": "onValueChange: (String) -> Unit" },
+        { "id": "c", "text": "modifier: Modifier = Modifier" },
+        { "id": "d", "text": "var text by remember { mutableStateOf(\"\") } inside the function body" }
+      ],
+      "correct": ["a", "b", "c"],
+      "explanation": "A stateless leaf takes value in and reports edits out, and exposes a modifier so the parent can lay it out. Owning its own remembered text (d) would make it stateful — the opposite of hoisting — and the parent could no longer read or control the value."
+    },
+    {
+      "id": "rc5q4",
+      "type": "single",
+      "prompt": "A user clears the tip field (or it briefly holds just `.` mid-entry), and your code does `tipInput.toDouble()`. What is the safest production behavior?",
+      "options": [
+        { "id": "a", "text": "toDouble() handles empty/partial input like \"\" or \".\" fine, nothing to do" },
+        { "id": "b", "text": "Use toDoubleOrNull() ?: 0.0 so partial/empty input becomes 0.0 instead of crashing" },
+        { "id": "c", "text": "Block the decimal key so it can never be typed" },
+        { "id": "d", "text": "Wrap the whole composable in try/catch" }
+      ],
+      "correct": ["b"],
+      "explanation": "Empty and partial strings (e.g. \"\" or a lone \".\") are normal in a live-updating field, and toDouble() throws NumberFormatException on them and crashes. (Note a trailing-dot string like \"12.\" actually parses to 12.0 — but \"\" and \".\" do not, so you must still parse defensively.) toDoubleOrNull() returns null which you coalesce to 0.0. The numeric keyboard is only a hint — parsing must still be defensive."
+    },
+    {
+      "id": "rc5q5",
+      "type": "truefalse",
+      "prompt": "A counter built with `rememberSaveable { mutableStateOf(0) }` will keep its value when the user rotates the device, whereas one built with plain `remember` will reset to 0.",
+      "correct": true,
+      "explanation": "Rotation is a configuration change that recreates the Activity. Plain remember survives recomposition but not recreation, so it resets. rememberSaveable persists supported types (Int here) across the recreation, so the count is preserved."
+    }
+  ]
+}
+        </script>
+<!-- ---------------------------------------------------------------- -->
+<!-- 5. DELIBERATE PRACTICE                                             -->
+<!-- ---------------------------------------------------------------- -->
+<h3 id="master-practice">5 · Deliberate practice — what to do next</h3>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Build the rep, then space it out</span>
+<p>Mastery comes from spaced, faded practice with immediate feedback — not re-reading. Do these in order:</p>
+<ol>
+<li><strong>Faded challenges (<code>state</code> topic).</strong> Open
+            <a href="../practice/challenges.html">../practice/challenges.html</a> and complete the <em>tip-calc derived</em>,
+            <em>hoisting refactor</em>, and <em>reduce(state, event)</em> reps. Each is auto-checked — green means you've got it.</li>
+<li><strong>Debug drills.</strong> Run the state bugs in
+            <a href="../practice/debug-drills.html">../practice/debug-drills.html</a>: <em>plain-var-resets-on-recompose</em>,
+            <em>in-place mutation</em>, <em>missing onValueChange</em>, and <em>rotation loss</em>. Find the broken line before
+            you peek — that's the skill that transfers to your own code.</li>
+<li><strong>Spaced repetition.</strong> Add the state/recomposition deck in
+            <a href="../practice/spaced-repetition.html">../practice/spaced-repetition.html</a> to your rotation. Return
+            tomorrow and the day after — spacing is what moves this from "I followed along" to "I own it."</li>
+<li><strong>See where you stand.</strong> Check the
+            <a href="../path.html">skill-map (../path.html)</a> — it colours each topic by your mastery and shows what unlocks
+            next. State is a prerequisite for Lists, Architecture, and the whole project.</li>
+</ol>
+<p class="muted" style="margin-bottom:0">Right now, do the one faded challenge above and the four debug drills.
+            Tomorrow, hit the spaced deck. That's the loop the strongest engineer in your cohort is running.</p>
+</div>
+</div>
+<!-- a small spaced deck the student can start right here -->
+<h4 id="master-srs">Quick spaced deck (start your rotation)</h4>
+<p class="muted">Rate yourself honestly — Again / Hard / Good / Easy schedules each card. These return on the days you're about to forget them.</p>
+<div data-srs="rc-5-deck"></div>
+<script id="rc-5-deck" type="application/json">
+{
+  "id": "s05-state-deck",
+  "cards": [
+    { "id": "s05c1", "topic": "state", "front": "Two tools, two jobs: which gives observability, which gives persistence across recompositions?", "back": "mutableStateOf() → observability (writes trigger recomposition). remember { } → persistence across recompositions. Use both together: remember { mutableStateOf(...) }." },
+    { "id": "s05c2", "topic": "state", "front": "Predict: `var x by mutableStateOf(0)` (no remember), screen recomposes often. Behavior?", "back": "x keeps resetting to 0 on every recomposition — the state is re-created each run because it isn't remembered." },
+    { "id": "s05c3", "topic": "state", "front": "When should a value be state vs derived?", "back": "State = inputs the user changes directly (text, toggles). Derived = anything computable from inputs (tip, total, error hints). Don't store what you can compute." },
+    { "id": "s05c4", "topic": "state", "front": "A controlled TextField needs which two things to actually type?", "back": "value = currentState and onValueChange = { state = it }. Value flows down, the edit event flows up." },
+    { "id": "s05c5", "topic": "state", "front": "remember vs rememberSaveable — what's the difference?", "back": "remember survives recomposition only. rememberSaveable also survives configuration changes (rotation, process death) for supported types." },
+    { "id": "s05c6", "topic": "state", "front": "Signature of a stateless, hoisted input leaf?", "back": "fun X(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) — value in, events out, modifier exposed." },
+    { "id": "s05c7", "topic": "state", "front": "Safest way to parse a money TextField into a Double?", "back": "text.toDoubleOrNull() ?: 0.0 — never .toDouble(), which throws on empty/partial/invalid input." },
+    { "id": "s05c8", "topic": "state", "front": "Unidirectional data flow in one line?", "back": "State flows DOWN to composables; events flow UP to whoever owns the state." }
+  ]
+}
+        </script>
+</section>
+</main>
+<!-- ====================================================================== -->
+<!-- FOOTER                                                                  -->
+<!-- ====================================================================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> — Session 5 of 12 · Week 2: Building UIs with Jetpack Compose
+    </div>
+<div class="muted">
+      Keiser University · B.S. Software Engineering · Teaching guide. Built with Kotlin + Jetpack Compose (Material 3). No external dependencies.
+    </div>
+<div>
+<a href="../index.html">Course Hub</a> ·
+      <a href="session-04.html">‹ Session 4</a> ·
+      <a href="session-06.html">Session 6 ›</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

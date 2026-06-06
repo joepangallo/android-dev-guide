@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Session 2 of 12: Kotlin Essentials for Android. A lesson covering Kotlin fundamentals (val/var, null safety, functions, control flow as expressions, classes &amp; data classes, collections, lambdas, scope functions) front-loaded for Jetpack Compose." name="description"/>
+<title>Session 2 · Kotlin Essentials for Android — COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+  /* Page-specific tweaks only — chrome uses the shared design system. */
+  .layout-toc { display: grid; grid-template-columns: 230px 1fr; gap: var(--space-6); align-items: start; }
+  .layout-toc__rail { position: sticky; top: 76px; }
+  .layout-toc__rail .card { padding: var(--space-4); }
+  @media (max-width: 980px) { .layout-toc { grid-template-columns: 1fr; } .layout-toc__rail { position: static; display: none; } }
+  .objective-row { display: grid; grid-template-columns: 1fr auto; gap: var(--space-3); align-items: start; padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+  .objective-row:first-child { border-top: none; }
+  .agenda-timers { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); }
+  .io-table { width: 100%; border-collapse: collapse; margin: var(--space-3) 0; font-size: var(--fs-sm); }
+  .io-table th, .io-table td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); vertical-align: top; }
+  .io-table th { color: var(--teal-2); font-weight: 700; }
+  [data-theme="dark"] .io-table th { color: var(--green); }
+  .io-table code { white-space: normal; }
+  .lede { font-size: var(--fs-lg); color: var(--muted); max-width: 70ch; }
+  .pillrow { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0; }
+  .seg-meta { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); }
+</style>
+</head>
+<body>
+<!-- ========================= TOP NAV ========================= -->
+<header>
+<div class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">⚛</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="session-01.html">‹ Prev (S1)</a>
+<a aria-current="page" href="session-02.html">S2</a>
+<a href="session-03.html">Next (S3) ›</a>
+<a href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</div>
+</header>
+<main id="main">
+<div class="wrap">
+<!-- ========================= HERO ========================= -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:var(--space-3)">
+<span class="pill pill--green">Session 2 of 12</span>
+<span class="pill">Week 1</span>
+<span class="pill">Foundations: Android Essentials &amp; Ecosystem</span>
+</div>
+<h1 class="hero-title" id="hero-title">Kotlin Essentials for Android</h1>
+<p class="hero-sub">Front-loading the language: in one session we cover the Kotlin you need so that every later Compose, ViewModel, Room, and networking session reads like plain English.</p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 3</span>
+<span class="pill">Unit 2 prep / Kotlin Core</span>
+</div>
+<p class="muted" style="color:#CFEFE2;margin:var(--space-4) 0 0;max-width:68ch;">
+<strong style="color:#fff;">Today in a nutshell:</strong> students who already program (Java/C++/Python from the prerequisite) learn to <em>think</em> and <em>write</em> in idiomatic Kotlin — values vs variables, null safety, expression-based control flow, data classes, and collection lambdas — then prove it on a set of Kotlin Katas tied to their course project.
+    </p>
+</section>
+<div class="layout-toc">
+<!-- Sticky section index rail -->
+<aside aria-label="On this page" class="layout-toc__rail no-print">
+<div class="card">
+<h2 class="card__title" style="font-size:var(--fs-md);margin-top:0">On this page</h2>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+</aside>
+<div>
+<!-- ========================= LEARNING OBJECTIVES ========================= -->
+<section aria-labelledby="obj-h" class="slide">
+<div class="card card--accent">
+<h2 class="card__title" id="obj-h">Learning Objectives <span class="clo-tag">CLO 3</span></h2>
+<p class="muted">By the end of this session, students can… (each objective maps to the syllabus course-level outcome it serves).</p>
+<div class="objective-row">
+<div><strong>1.</strong> Explain <em>why</em> Kotlin is the first-class language on Android (null safety, conciseness, 100% Java interop, official Google support) and contrast it with a language they already know.</div>
+<span class="clo-tag">CLO 3</span>
+</div>
+<div class="objective-row">
+<div><strong>2.</strong> Declare values correctly with <code>val</code> vs <code>var</code>, rely on type inference, and use string templates.</div>
+<span class="clo-tag">CLO 3</span>
+</div>
+<div class="objective-row">
+<div><strong>3.</strong> Write functions with default &amp; named arguments and single-expression bodies.</div>
+<span class="clo-tag">CLO 3</span>
+</div>
+<div class="objective-row">
+<div><strong>4.</strong> Apply Kotlin null safety: nullable types, safe-call <code>?.</code>, Elvis <code>?:</code>, the <code>!!</code> hazard, and <code>let</code>.</div>
+<span class="clo-tag">CLO 3</span>
+</div>
+<div class="objective-row">
+<div><strong>5.</strong> Use control flow as <em>expressions</em> — <code>if</code>/<code>when</code> that return values, ranges, and loops.</div>
+<span class="clo-tag">CLO 3</span>
+</div>
+<div class="objective-row">
+<div><strong>6.</strong> Model a domain with classes, primary constructors, <code>data class</code>, <code>object</code>, <code>enum class</code>, and <code>sealed class</code>.</div>
+<span class="clo-tag">CLO 3</span>
+</div>
+<div class="objective-row">
+<div><strong>7.</strong> Transform collections (<code>List</code>/<code>Map</code>/<code>Set</code>) with <code>map</code>/<code>filter</code>/<code>forEach</code>, lambdas, and higher-order functions.</div>
+<span class="clo-tag">CLO 3</span>
+</div>
+<div class="objective-row">
+<div><strong>8.</strong> Recognize the scope functions (<code>let</code>/<code>apply</code>/<code>run</code>/<code>with</code>/<code>also</code>) and choose the right one.</div>
+<span class="clo-tag">CLO 3</span>
+</div>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Syllabus mapping</span>
+<p style="margin:0">This session feeds <strong>CLO 3 — "Create various types of Android applications using an industry-current language (Kotlin)."</strong> Everything here is the language scaffolding for the Compose UI work that begins in Session 3.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================= LECTURE / CONCEPT NOTES ========================= -->
+<section aria-labelledby="concept-h" class="slide" id="concept-notes">
+<h2 id="concept-h">Lecture / Concept Notes</h2>
+<p class="lede">Work through each big idea below: every one has an explanation, an analogy, and copyable examples. Run the snippets yourself in a Kotlin Scratch file or the Playground as you read.</p>
+<div class="accordion">
+<!-- Idea 1 -->
+<div class="accordion__item is-open">
+<button class="accordion__head" type="button">1 · Why Kotlin? (null safety, conciseness, interop, first-class on Android)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>Kotlin is Google's <strong>preferred language for Android</strong> (announced 2017, "Kotlin-first" since 2019). It compiles to the same bytecode as Java, runs on the Android Runtime (ART), and calls Java libraries seamlessly — so the entire Android SDK is available.</p>
+<p><strong>Why teams switched:</strong></p>
+<ul>
+<li><strong>Null safety in the type system</strong> — the compiler tracks what can be <code>null</code>, eliminating most <code>NullPointerException</code>s (Tony Hoare's "billion-dollar mistake").</li>
+<li><strong>Conciseness</strong> — data classes, type inference, and no boilerplate getters/setters cut code dramatically.</li>
+<li><strong>100% Java interop</strong> — mix Kotlin and Java in one project; migrate file by file.</li>
+<li><strong>Modern features</strong> — first-class functions, extension functions, coroutines for async, and a great standard library.</li>
+</ul>
+<p class="muted"><strong>Analogy:</strong> If Java is a manual-transmission car you've driven for years, Kotlin is the same car with an automatic gearbox, lane-keeping, and a seatbelt that physically stops you from the most common crash (the null crash). Same roads (the JVM/Android), far fewer self-inflicted wrecks.</p>
+<p>The classic comparison — a simple "model" class:</p>
+<div aria-label="Kotlin vs Java data class" class="tabs" role="tablist">
+<button class="tab" data-tab="dc-kt" type="button">Kotlin</button>
+<button class="tab" data-tab="dc-java" type="button">Java (equivalent)</button>
+</div>
+<div class="tabpanel" data-tabpanel="dc-kt">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>data class User(val name: String, val age: Int)
+
+fun main() {
+    val u = User("Ada", 36)
+    println(u)            // User(name=Ada, age=36)  -- toString() is free
+    val older = u.copy(age = 37)
+    println(u == User("Ada", 36))  // true  -- equals() is free
+}</code></pre></div>
+</div>
+<div class="tabpanel" data-tabpanel="dc-java">
+<div class="codeblock"><span class="codeblock__lang">Java</span><pre><code>public final class User {
+    private final String name;
+    private final int age;
+    public User(String name, int age) { this.name = name; this.age = age; }
+    public String getName() { return name; }
+    public int getAge() { return age; }
+    @Override public String toString() { return "User{name=" + name + ", age=" + age + "}"; }
+    @Override public boolean equals(Object o) { /* ... lots of boilerplate ... */ return false; }
+    @Override public int hashCode() { /* ... */ return 0; }
+    // copy(): write it yourself.
+}</code></pre></div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Teaching move</span>
+<p style="margin:0">Flip the tabs live. The one-line Kotlin <code>data class</code> vs the ~25 lines of Java is the most persuasive slide in the whole session for "why Kotlin."</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 2 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">2 · val vs var, type inference, basic types, string templates</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><code>val</code> = a <strong>read-only</strong> reference (like Java's <code>final</code>); reassigning it is a compile error. <code>var</code> = a reassignable variable. <strong>Prefer <code>val</code></strong>; reach for <code>var</code> only when the value genuinely changes. This habit makes Compose state predictable later.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val courseCode = "COP4667"   // type inferred as String
+var attempts = 0             // mutable
+attempts = attempts + 1      // OK
+
+// courseCode = "OTHER"      // ERROR: val cannot be reassigned
+
+val credits: Double = 3.0    // explicit type when you want it
+val isFaceToFace = true      // Boolean inferred
+
+// String templates: $var and ${expression}
+val name = "Ada"
+println("Welcome, $name — you have ${3 - attempts} attempts left.")
+// Welcome, Ada — you have 2 attempts left.</code></pre></div>
+<p><strong>Basic types</strong> are real objects (no primitives to worry about): <code>Int</code>, <code>Long</code>, <code>Double</code>, <code>Float</code>, <code>Boolean</code>, <code>Char</code>, <code>String</code>. There is <strong>no implicit widening</strong> — convert explicitly:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val i: Int = 7
+val d: Double = i.toDouble()   // explicit; `val d: Double = i` is an ERROR
+val text: String = i.toString()
+val parsed: Int = "42".toInt()</code></pre></div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common misconception</span>
+<p style="margin:0"><code>val</code> means the <em>reference</em> is fixed, not that the object is immutable. A <code>val</code> pointing at a <code>mutableListOf()</code> can still have items added. "Can't reassign the box" ≠ "can't change what's in the box."</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 3 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">3 · Functions: default &amp; named args, single-expression functions</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>Functions use <code>fun</code>, name the return type after the params with <code>:</code>, and <code>Unit</code> means "returns nothing" (like <code>void</code>).</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun greet(name: String, punctuation: String = "!"): String {
+    return "Hello, $name$punctuation"
+}
+
+// Single-expression function: drop the braces and `return`, use `=`
+fun square(x: Int) = x * x          // return type inferred as Int
+
+fun main() {
+    println(greet("Ada"))                       // Hello, Ada!
+    println(greet("Bob", punctuation = "."))    // named arg
+    // Default arg lets you skip `punctuation` entirely.
+    println(greet(punctuation = "?", name = "Cy"))  // named args in any order
+    println(square(9))                          // 81
+}</code></pre></div>
+<p><strong>Named arguments</strong> make call sites self-documenting and let you skip middle defaults — this is exactly how Compose functions like <code>Text(text = ..., color = ..., fontSize = ...)</code> are called, so it pays off immediately in Session 3.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Looking ahead to Compose</span>
+<p style="margin:0">Every Composable you write next week is just a Kotlin function with default and named arguments. Master this now and your Compose call sites will read themselves.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 4 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">4 · Null safety: nullable types, ?., ?:, !!, let</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>By default a Kotlin type <strong>cannot be null</strong>. Add <code>?</code> to opt into nullability. The compiler then forces you to handle the null before you use the value.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>var nonNull: String = "hi"
+// nonNull = null            // ERROR: null can't be a value of non-null String
+
+var nickname: String? = null  // nullable: opt in with ?
+
+// Safe call ?.  -&gt; returns null instead of crashing if the receiver is null
+val len: Int? = nickname?.length    // null (not a crash)
+
+// Elvis ?:  -&gt; provide a fallback when the left side is null
+val safeLen: Int = nickname?.length ?: 0   // 0
+
+// let { } -&gt; run a block ONLY when the value is non-null
+nickname?.let { n -&gt;
+    println("Nickname is $n with ${n.length} chars")  // skipped when null
+}
+
+// !! -&gt; "I promise it's not null." Throws NPE if you're wrong. Use sparingly.
+// val risky = nickname!!.length   // would crash here</code></pre></div>
+<p class="muted"><strong>Analogy:</strong> <code>?.</code> is asking politely "if you exist, give me your length." <code>?:</code> is "…otherwise here's a default." <code>!!</code> is kicking the door in and accepting the consequences.</p>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">☠</span>
+<div class="callout__body">
+<span class="callout__label"><code>!!</code> is a code smell</span>
+<p style="margin:0">Teach <code>!!</code> only so students recognize and distrust it. In code review, <code>!!</code> almost always means "I should have used <code>?.</code>, <code>?:</code>, or <code>let</code>." Each <code>!!</code> is a re-introduced billion-dollar mistake.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 5 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">5 · Control flow as expressions: if / when, ranges, loops</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>In Kotlin, <code>if</code> and <code>when</code> are <strong>expressions</strong> — they return a value. There is no ternary <code>?:</code>-for-conditions operator because <code>if</code> already does that job.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val score = 87
+
+// if as an expression
+val passed = if (score &gt;= 65) "pass" else "fail"   // "pass"
+
+// when as an expression — replaces long if/else-if chains AND switch
+val letter = when {
+    score &gt;= 90 -&gt; "A"
+    score &gt;= 80 -&gt; "B"
+    score &gt;= 70 -&gt; "C"
+    score &gt;= 65 -&gt; "D"
+    else -&gt; "F"
+}                                              // "B"
+
+// when on a value, with ranges and multiple labels
+val band = when (score) {
+    in 90..100 -&gt; "excellent"
+    in 70..89  -&gt; "solid"
+    0, 1, 2    -&gt; "barely started"
+    else       -&gt; "needs work"
+}</code></pre></div>
+<p><strong>Ranges &amp; loops:</strong></p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>for (i in 1..5) print(i)          // 12345     (inclusive range)
+println()
+for (i in 1 until 5) print(i)     // 1234      (excludes 5)
+println()
+for (i in 10 downTo 1 step 2) print("$i ")  // 10 8 6 4 2
+println()
+
+val fruits = listOf("apple", "kiwi", "mango")
+for (f in fruits) println(f)
+for ((index, f) in fruits.withIndex()) println("$index: $f")
+
+var n = 3
+while (n &gt; 0) { println(n); n-- }</code></pre></div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Why this matters for Compose</span>
+<p style="margin:0">Because <code>when</code> returns a value, you'll use it directly inside Composables to pick a color, label, or icon from state — no temporary <code>var</code> needed. "Everything is an expression" is the Kotlin habit that makes declarative UI clean.</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 6 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">6 · Classes, constructors, data classes, objects, enums, sealed classes</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Primary constructor</strong> goes right in the class header. Properties declared with <code>val</code>/<code>var</code> there are auto-created.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>class Counter(val label: String) {
+    var count: Int = 0
+        private set                 // read-only from outside, writable inside
+    fun increment() { count++ }
+}
+
+// data class: value object with free equals/hashCode/toString/copy/destructuring
+data class Task(
+    val id: Int,
+    val title: String,
+    val done: Boolean = false
+)
+
+// object: a singleton (one instance, ever)
+object AppConfig {
+    const val MAX_TASKS = 100
+}
+
+// enum class: a fixed set of named values
+enum class Priority { LOW, MEDIUM, HIGH }
+
+// sealed class: a closed hierarchy — great for UI state
+sealed class UiState {
+    object Loading : UiState()
+    data class Success(val tasks: List&lt;Task&gt;) : UiState()
+    data class Error(val message: String) : UiState()
+}
+
+fun render(state: UiState): String = when (state) {   // when is EXHAUSTIVE, no else needed
+    UiState.Loading      -&gt; "Loading…"
+    is UiState.Success   -&gt; "Loaded ${state.tasks.size} tasks"
+    is UiState.Error     -&gt; "Error: ${state.message}"
+}</code></pre></div>
+<p><strong>Destructuring</strong> falls out of data classes for free:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val t = Task(1, "Write notes")
+val (id, title, done) = t
+println("$id / $title / $done")   // 1 / Write notes / false</code></pre></div>
+</div></div>
+</div>
+<!-- Idea 7 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">7 · Collections + functional ops (map/filter/forEach), lambdas &amp; higher-order functions</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>Kotlin separates <strong>read-only</strong> from <strong>mutable</strong> collections. Default to read-only.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val nums = listOf(1, 2, 3, 4)              // read-only List
+val editable = mutableListOf("a", "b")    // MutableList
+editable.add("c")
+
+val ages = mapOf("Ada" to 36, "Bob" to 28)  // read-only Map
+val unique = setOf(1, 1, 2, 3)               // Set -&gt; [1, 2, 3]</code></pre></div>
+<p>A <strong>lambda</strong> is a block of code you can pass around: <code>{ parameter -&gt; body }</code>. If there's one parameter you can use the implicit name <code>it</code>. A <strong>higher-order function</strong> is a function that takes or returns a function.</p>
+<h4 id="higher-order-fns">Reading the function type <code>(Int) -&gt; Int</code></h4>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p><code>(Int) -&gt; Int</code> is a <strong>type</strong> — it reads "a function that takes one <code>Int</code> and returns an <code>Int</code>" — and a <em>higher-order function</em> is simply one whose parameter (or return) is itself a function of that kind.</p>
+</div>
+</div>
+<p>Before the chained example, meet the smallest possible higher-order function on its own — one that takes a function and runs it twice:</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · higher-order function in isolation</span><pre><code>fun applyTwice(x: Int, op: (Int) -&gt; Int): Int = op(op(x))
+
+println(applyTwice(3) { it * 2 })   // 12</code></pre></div>
+<p>Read it piece by piece:</p>
+<ul>
+<li><strong><code>op: (Int) -&gt; Int</code></strong> — a parameter named <code>op</code> whose <em>type</em> is "function taking an <code>Int</code>, returning an <code>Int</code>." This is what makes <code>applyTwice</code> a higher-order function: it accepts a function as an argument, just like any other value.</li>
+<li><strong><code>= op(op(x))</code></strong> — the body <em>calls</em> the passed-in function. Inner <code>op(x)</code> runs it once; the outer <code>op(...)</code> feeds that result back in and runs it again.</li>
+<li><strong><code>applyTwice(3) { it * 2 }</code></strong> — the trailing <code>{ it * 2 }</code> is the lambda supplied as <code>op</code>; <code>it</code> is the lambda's single implicit parameter. So <code>op(op(3))</code> evaluates to <code>(3 * 2) * 2</code> = <code>12</code>.</li>
+</ul>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p style="margin:0"><code>(Int) -&gt; Int</code> is <em>not</em> a value or a call — it's a <strong>type</strong>, like <code>Int</code> or <code>String</code>, that you can store in a variable, pass as an argument, or return. Nothing runs until you actually <em>call</em> the function: writing <code>op</code> just refers to it, while <code>op(x)</code> invokes the lambda that was passed in.</p>
+</div>
+</div>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val nums = listOf(1, 2, 3, 4, 5, 6)
+
+val doubled = nums.map { it * 2 }            // [2, 4, 6, 8, 10, 12]
+val evens   = nums.filter { it % 2 == 0 }    // [2, 4, 6]
+val total   = nums.sum()                     // 21
+nums.forEach { println(it) }                 // prints each on its own line
+
+// Chain them — reads top to bottom like a pipeline
+val result = nums
+    .filter { it % 2 == 0 }   // keep evens
+    .map { it * it }          // square them
+    .sum()                    // add them up   -&gt; 4 + 16 + 36 = 56
+
+// A higher-order function you WRITE:
+fun applyTwice(x: Int, op: (Int) -&gt; Int): Int = op(op(x))
+println(applyTwice(3) { it + 1 })   // 5   (trailing lambda syntax)</code></pre></div>
+<p><strong>Trailing lambda</strong> rule: if the last argument is a lambda, it can move outside the parentheses — this is why Compose's <code>Button(onClick = { ... }) { Text("Go") }</code> looks the way it does.</p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Pipeline mental model</span>
+<p style="margin:0">Read a chain bottom-up as a sentence: "sum, of the squares, of the evens." This functional style replaces most hand-written loops and is everywhere in Android (transforming API results into UI lists).</p>
+</div>
+</div>
+</div></div>
+</div>
+<!-- Idea 8 -->
+<div class="accordion__item">
+<button class="accordion__head" type="button">8 · Scope functions at a glance: let / apply / run / with / also</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>Scope functions run a block "on" an object. They differ in (a) how you reference the object inside (<code>it</code> vs <code>this</code>) and (b) what they return (the object itself vs the lambda's result). Today: <strong>recognize</strong> them — don't drill them.</p>
+<table class="io-table">
+<thead><tr><th>Function</th><th>Object as</th><th>Returns</th><th>Typical use</th></tr></thead>
+<tbody>
+<tr><td><code>let</code></td><td><code>it</code></td><td>lambda result</td><td>Null-check + transform a value</td></tr>
+<tr><td><code>apply</code></td><td><code>this</code></td><td>the object</td><td>Configure an object, then keep it</td></tr>
+<tr><td><code>run</code></td><td><code>this</code></td><td>lambda result</td><td>Configure + compute a result</td></tr>
+<tr><td><code>with</code></td><td><code>this</code></td><td>lambda result</td><td>Group calls on one object</td></tr>
+<tr><td><code>also</code></td><td><code>it</code></td><td>the object</td><td>Side effect (log/validate), keep object</td></tr>
+</tbody>
+</table>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// apply: build &amp; configure, return the object
+val sb = StringBuilder().apply {
+    append("Tasks: ")
+    append(3)
+}                                   // sb is the StringBuilder
+println(sb)                         // Tasks: 3
+
+// let: transform a non-null value
+val length = "hello".let { it.length }   // 5
+
+// also: tap in for a side effect without breaking the chain
+val nums = listOf(1, 2, 3)
+    .also { println("before map: $it") }
+    .map { it * 10 }
+println(nums)                       // [10, 20, 30]</code></pre></div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Don't over-teach</span>
+<p style="margin:0">Students confuse these. For today: "<code>apply</code> = configure-and-keep; <code>let</code> = null-safe transform." The other three are recognition-only. They will reach for these naturally once they have real objects to configure.</p>
+</div>
+</div>
+</div></div>
+</div>
+</div><!-- /.accordion -->
+<!-- Concept check flashcards -->
+<h3 id="concept-flash">Concept-check flashcards <span class="badge">self-quiz</span></h3>
+<p class="muted">Project these during the break or use them as a quick verbal check. Click a card to flip; mark "Got it" to retire it.</p>
+<div aria-label="Kotlin concept flashcards" data-flashcards="flash-data"></div>
+<script id="flash-data" type="application/json">
+[
+  { "front": "val vs var?", "back": "val = read-only reference (can't reassign). var = reassignable. Prefer val.", "tag": "basics" },
+  { "front": "What does the ?. operator do?", "back": "Safe call: returns null instead of throwing if the receiver is null.", "tag": "null safety" },
+  { "front": "What does ?: (Elvis) do?", "back": "Provides a fallback value when the left side is null. e.g. name ?: \"Guest\".", "tag": "null safety" },
+  { "front": "Why is !! dangerous?", "back": "It asserts non-null and throws a NullPointerException if you're wrong — re-introducing the bug Kotlin prevents.", "tag": "null safety" },
+  { "front": "What do you get for free from a data class?", "back": "equals(), hashCode(), toString(), copy(), and destructuring (componentN()).", "tag": "classes" },
+  { "front": "if and when are ____ in Kotlin.", "back": "Expressions — they return a value, so you can assign their result directly.", "tag": "control flow" },
+  { "front": "map vs filter?", "back": "map transforms each element into something new; filter keeps only elements matching a predicate.", "tag": "collections" },
+  { "front": "What is a higher-order function?", "back": "A function that takes a function as a parameter and/or returns a function.", "tag": "lambdas" },
+  { "front": "When is a 'when' over a sealed class exhaustive (no else)?", "back": "When every subtype of the sealed class is handled — the compiler knows the set is closed.", "tag": "classes" },
+  { "front": "apply vs let?", "back": "apply: object is 'this', returns the object (configure & keep). let: object is 'it', returns the lambda result (transform).", "tag": "scope fns" }
+]
+        </script>
+</section>
+<!-- ========================= GUIDED LIVE-CODING ========================= -->
+<section aria-labelledby="live-h" class="slide" id="live-coding">
+<h2 id="live-h">Guided Live-Coding <span class="badge badge--teal">type-along</span></h2>
+<p class="lede">Build a tiny <code>Task</code> domain in a Kotlin Scratch file and transform a list. Type each step yourself. Run after every step (the gutter ▶ in Studio, or Run in the Playground) so you see immediate output.</p>
+<ol class="stepper">
+<li class="step">
+<h4>Declare values &amp; print with a template</h4>
+<p>Establish the basics and confirm everyone's scratch file runs.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val appName = "TaskTracker"
+var taskCount = 0
+println("$appName has $taskCount tasks (room for ${100 - taskCount}).")</code></pre></div>
+<p class="muted"><strong>You'll see:</strong> <code>TaskTracker has 0 tasks (room for 100).</code></p>
+</li>
+<li class="step">
+<h4>Trigger a compile error on purpose, then fix it</h4>
+<p>Make the val/var distinction visceral.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>appName = "Renamed"   // squiggle: "Val cannot be reassigned"
+// Fix: change appName to a var, OR (better) keep it val and use a new value:
+taskCount = taskCount + 1   // var reassignment is fine</code></pre></div>
+</li>
+<li class="step">
+<h4>Write a function with a default &amp; named arg</h4>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun banner(title: String, width: Int = 20): String {
+    val line = "=".repeat(width)
+    return "$line\n$title\n$line"
+}
+println(banner("Tasks"))
+println(banner("Long Title Here", width = 32))   // named arg</code></pre></div>
+<p class="muted"><strong>You'll see:</strong> two banners, the second wider. Notice the call that passes the named <code>width</code>.</p>
+</li>
+<li class="step">
+<h4>Model the domain: a data class + enum</h4>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>enum class Priority { LOW, MEDIUM, HIGH }
+
+data class Task(
+    val id: Int,
+    val title: String,
+    val priority: Priority = Priority.MEDIUM,
+    val done: Boolean = false
+)
+
+val t = Task(1, "Read syllabus")
+println(t)                       // Task(id=1, title=Read syllabus, priority=MEDIUM, done=false)
+val finished = t.copy(done = true)
+println(finished)                // same task, done=true (original unchanged)</code></pre></div>
+<p class="muted"><strong>You'll see:</strong> a readable <code>toString()</code> for free and a <code>copy()</code> that doesn't mutate the original — a preview of immutable state in Compose.</p>
+</li>
+<li class="step">
+<h4>Build a list and transform it (map / filter / sortedBy)</h4>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val tasks = listOf(
+    Task(1, "Email professor", Priority.LOW),
+    Task(2, "Finish kata",     Priority.HIGH, done = true),
+    Task(3, "Read Unit 2",     Priority.HIGH),
+    Task(4, "Stretch",         Priority.MEDIUM, done = true)
+)
+
+val openHighPriority = tasks
+    .filter { !it.done }                 // not done
+    .filter { it.priority == Priority.HIGH }
+    .map { it.title }                    // just the titles
+
+println(openHighPriority)   // [Read Unit 2]
+
+val doneCount = tasks.count { it.done }
+println("Completed: $doneCount of ${tasks.size}")   // Completed: 2 of 4</code></pre></div>
+</li>
+<li class="step">
+<h4>Null safety in context: find a task that might not exist</h4>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val maybe: Task? = tasks.find { it.id == 99 }   // find returns Task? (nullable)
+val label = maybe?.title ?: "No such task"      // safe call + Elvis
+println(label)                                   // No such task
+
+tasks.find { it.id == 3 }?.let { found -&gt;
+    println("Found: ${found.title}")             // Found: Read Unit 2
+}</code></pre></div>
+<p class="muted"><strong>You'll see:</strong> the difference between the missing-task path (fallback) and the found path (the <code>let</code> block runs).</p>
+</li>
+<li class="step">
+<h4>Model UI state with a sealed class (watch-me if short on time)</h4>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>sealed class TaskListState {
+    object Loading : TaskListState()
+    data class Loaded(val tasks: List&lt;Task&gt;) : TaskListState()
+    data class Failed(val reason: String) : TaskListState()
+}
+
+fun describe(state: TaskListState): String = when (state) {
+    TaskListState.Loading -&gt; "Loading…"
+    is TaskListState.Loaded -&gt; "Showing ${state.tasks.size} tasks"
+    is TaskListState.Failed -&gt; "Error: ${state.reason}"
+}
+
+println(describe(TaskListState.Loaded(tasks)))   // Showing 4 tasks
+println(describe(TaskListState.Failed("No network")))</code></pre></div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body"><span class="callout__label">Payoff</span><p style="margin:0">"This exact shape — Loading / Loaded / Failed — is how your project's screen will react to a network call in Week 3. You just wrote tomorrow's architecture today."</p></div>
+</div>
+</li>
+</ol>
+</section>
+<!-- ========================= HANDS-ON LAB ========================= -->
+<section aria-labelledby="lab-h" class="slide" id="lab">
+<h2 id="lab-h">Hands-On Lab — Kotlin Katas </h2>
+<p class="lede">70 minutes, individual (pairs allowed for debugging). Four short katas of increasing difficulty. Tie answers to your own project domain where noted. Run in a Scratch file or the Playground.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">How to self-verify</span>
+<p style="margin:0"><strong>Katas 1 and 2</strong> are auto-checked right here: finish the editable region, press <strong>Run</strong>, and a test harness prints <code>✓ passed</code> per case and <code>ALL TESTS PASSED 🎉</code> only when every case is green. <strong>Katas 3 and 4</strong> use <em>your own</em> project data, so they aren't auto-graded — run them in a Scratch file or the Playground and compare to the <em>Expected output</em> shown with each. Companion reference: the <a href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a>.</p>
+</div>
+</div>
+<div class="kpi-grid">
+<div class="kpi"><span class="kpi__num">4</span><span class="kpi__label">katas</span></div>
+<div class="kpi"><span class="kpi__num">70</span><span class="kpi__label">minutes</span></div>
+<div class="kpi"><span class="kpi__num">✓</span><span class="kpi__label">self-checked</span></div>
+<div class="kpi"><span class="kpi__num">CLO 3</span><span class="kpi__label">outcome</span></div>
+</div>
+<ol class="stepper">
+<li class="step">
+<h4>Kata 1 — FizzBuzz with <code>when</code> <span class="badge badge--teal">auto-checked</span></h4>
+<p><strong>Goal:</strong> finish <code>fizzbuzz(n)</code> so it returns <code>"Fizz"</code> for multiples of 3, <code>"Buzz"</code> for multiples of 5, <code>"FizzBuzz"</code> for multiples of both, and the number as a string otherwise. Use a <code>when</code> expression (no long if/else chain). Press <strong>Run</strong> — the harness checks the tricky cases and prints <code>ALL TESTS PASSED 🎉</code> only when every case is green.</p>
+<div class="codeblock" data-challenge="s02-fizzbuzz" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable · challenge</div>
+<pre><code>fun fizzbuzz(n: Int): String = when {
+    // YOUR CODE: fill in the three conditions IN THE RIGHT ORDER,
+    // then the else branch. Put the "both" condition FIRST.
+    else -&gt; TODO("replace with your when branches")
+}
+
+// ── Test harness (do not edit) ────────────────────────────────────
+fun check(n: Int, expected: String) {
+    val got = fizzbuzz(n)
+    if (got == expected) println("✓ passed: fizzbuzz($n) -&gt; \"$got\"")
+    else println("✗ FAILED: fizzbuzz($n) expected \"$expected\", got \"$got\"")
+}
+
+fun main() {
+    val cases = listOf(
+        1 to "1", 2 to "2", 3 to "Fizz", 5 to "Buzz",
+        9 to "Fizz", 10 to "Buzz", 15 to "FizzBuzz", 30 to "FizzBuzz"
+    )
+    cases.forEach { (n, expected) -&gt; check(n, expected) }
+    val passed = cases.count { (n, expected) -&gt; fizzbuzz(n) == expected }
+    println(
+        if (passed == cases.size) "ALL TESTS PASSED 🎉"
+        else "${cases.size - passed} case(s) still failing — keep going."
+    )
+}</code></pre></div>
+<p><strong>Expected output (first lines, when you run all 1…30 yourself):</strong></p>
+<div class="codeblock"><span class="codeblock__lang">Output</span><pre><code>1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz</code></pre></div>
+<p class="muted"><strong>Check yourself:</strong> 15 and 30 must return <code>FizzBuzz</code>. If they return <code>Fizz</code>, your "both" condition isn't first.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Reference solution (Kata 1)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun fizzbuzz(n: Int): String = when {
+    n % 15 == 0 -&gt; "FizzBuzz"   // multiples of BOTH first
+    n % 3 == 0  -&gt; "Fizz"
+    n % 5 == 0  -&gt; "Buzz"
+    else        -&gt; n.toString()
+}</code></pre></div>
+<p class="muted">Testing <code>n % 15</code> is the same as <code>n % 3 == 0 &amp;&amp; n % 5 == 0</code>, and it must come first or 15/30 fall into the <code>Fizz</code> branch.</p>
+</div></div>
+</div>
+</div>
+</li>
+<li class="step">
+<h4>Kata 2 — Null-safe parsing <span class="badge badge--teal">auto-checked</span></h4>
+<p><strong>Goal:</strong> write <code>sumValid(inputs)</code> so it adds up only the strings that are valid integers and ignores the rest <em>without crashing</em>. Use <code>toIntOrNull()</code> with <code>mapNotNull</code> (or a safe call + Elvis). Press <strong>Run</strong> — the harness checks several messy lists and prints <code>ALL TESTS PASSED 🎉</code> only when every case is green.</p>
+<div class="codeblock" data-challenge="s02-null-safe-sum" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable · challenge</div>
+<pre><code>fun sumValid(inputs: List&lt;String&gt;): Int {
+    // YOUR CODE: keep only the strings that parse to an Int, then sum them.
+    // hint: inputs.mapNotNull { it.toIntOrNull() }.sum()
+    TODO("replace this with the null-safe sum")
+}
+
+// ── Test harness (do not edit) ────────────────────────────────────
+fun check(inputs: List&lt;String&gt;, expected: Int) {
+    val got = sumValid(inputs)
+    if (got == expected) println("✓ passed: $inputs -&gt; $got")
+    else println("✗ FAILED: $inputs expected $expected, got $got")
+}
+
+fun main() {
+    val cases = listOf(
+        listOf("12", "x", "8", "", "20", "3.5") to 40,   // 12 + 8 + 20
+        emptyList&lt;String&gt;() to 0,                          // nothing to add
+        listOf("nope", "NaN", "1.5") to 0,                // all junk
+        listOf("5", "5", "5") to 15                       // all valid
+    )
+    cases.forEach { (inputs, expected) -&gt; check(inputs, expected) }
+    val passed = cases.count { (inputs, expected) -&gt; sumValid(inputs) == expected }
+    println(
+        if (passed == cases.size) "ALL TESTS PASSED 🎉"
+        else "${cases.size - passed} case(s) still failing — keep going."
+    )
+}</code></pre></div>
+<p><strong>Expected for the first case:</strong> <code>sumValid(listOf("12","x","8","","20","3.5")) == 40</code> (12 + 8 + 20; <code>"3.5"</code> is not a valid <em>Int</em>).</p>
+<p class="muted"><strong>Why it matters:</strong> real API and user input is messy; <code>toIntOrNull()</code> + <code>mapNotNull</code> is the idiomatic "skip the junk" pattern you'll reuse all term.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Reference solution (Kata 2)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun sumValid(inputs: List&lt;String&gt;): Int =
+    inputs.mapNotNull { it.toIntOrNull() }.sum()</code></pre></div>
+<p class="muted"><code>toIntOrNull()</code> returns <code>null</code> instead of throwing on <code>"x"</code>, <code>""</code>, or <code>"3.5"</code>; <code>mapNotNull</code> drops every <code>null</code> in one step, leaving a clean <code>List&lt;Int&gt;</code> to <code>sum()</code>.</p>
+</div></div>
+</div>
+</div>
+</li>
+<li class="step">
+<h4>Kata 3 — Data class + list transformation</h4>
+<p><strong>Goal:</strong> model an item from <em>your own project domain</em> as a <code>data class</code> (e.g., <code>Movie</code>, <code>Workout</code>, <code>Recipe</code>, <code>Habit</code>). Make a list of at least 4, then: (a) filter by some boolean/enum field, (b) map to a <code>List&lt;String&gt;</code> of titles, (c) print how many match.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>// Example shape — adapt the fields to YOUR project idea
+data class Habit(val name: String, val streak: Int, val active: Boolean = true)
+
+val habits = listOf(
+    Habit("Read", 12),
+    Habit("Run", 3, active = false),
+    Habit("Water", 30),
+    Habit("Sketch", 0)
+)
+
+// TODO:
+// 1) val activeNames: List&lt;String&gt; = habits.filter { ... }.map { ... }
+// 2) val longStreaks = habits.count { it.streak &gt;= 10 }
+fun main() {
+    // println(activeNames)         // e.g. [Read, Water, Sketch]
+    // println("Long streaks: $longStreaks")  // Long streaks: 2
+}</code></pre></div>
+<p class="muted"><strong>Expected (for the sample data):</strong> <code>[Read, Water, Sketch]</code> and <code>Long streaks: 2</code>. Your numbers differ if you change the data — that's fine; the <em>transformations</em> are what matter.</p>
+</li>
+<li class="step">
+<h4>Kata 4 — A higher-order function</h4>
+<p><strong>Goal:</strong> write <code>fun &lt;T&gt; summarize(items: List&lt;T&gt;, selector: (T) -&gt; Int): Int</code> that maps each item with <code>selector</code> and returns the sum. Then call it two different ways with a trailing lambda.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun &lt;T&gt; summarize(items: List&lt;T&gt;, selector: (T) -&gt; Int): Int {
+    // TODO: return items.sumOf { selector(it) }
+    return 0
+}
+
+data class Habit(val name: String, val streak: Int)
+
+fun main() {
+    val habits = listOf(Habit("Read", 12), Habit("Water", 30))
+    println(summarize(habits) { it.streak })          // 42
+    println(summarize(listOf("a", "bb", "ccc")) { it.length })  // 6
+}</code></pre></div>
+<p><strong>Expected output:</strong></p>
+<div class="codeblock"><span class="codeblock__lang">Output</span><pre><code>42
+6</code></pre></div>
+</li>
+</ol>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">🔧</span>
+<div class="callout__body">
+<span class="callout__label">Troubleshooting (common kata errors)</span>
+<ul style="margin:.2em 0 0">
+<li><strong>"Function 'main' is not defined" / nothing prints:</strong> in a Scratch file each top-level statement runs, so you may not need <code>main()</code>; in the Playground you DO. Pick one and be consistent.</li>
+<li><strong>Kata 1: 15 prints "Fizz":</strong> put the <code>% 3 == 0 &amp;&amp; % 5 == 0</code> branch <em>first</em>.</li>
+<li><strong>Kata 2: crash on <code>"x".toInt()</code>:</strong> use <code>toIntOrNull()</code> (returns null) instead of <code>toInt()</code> (throws).</li>
+<li><strong>Kata 4: "Type inference failed":</strong> declare the lambda param type or let it infer from the list; ensure the function's generic <code>&lt;T&gt;</code> is before the function name.</li>
+<li><strong>Type mismatch Int/Double:</strong> Kotlin won't auto-convert; call <code>.toInt()</code>/<code>.toDouble()</code> explicitly.</li>
+</ul>
+</div>
+</div>
+<div class="grid grid-2">
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">🚀</span>
+<div class="callout__body">
+<span class="callout__label">Push further</span>
+<p style="margin:0">Add a <code>groupBy</code> challenge: group your Kata 3 items by an enum/boolean field into a <code>Map</code>, then print each group's count. Or rewrite Kata 1 using <code>(1..30).map(::fizzbuzz).forEach(::println)</code> and explain the <code>::</code> function reference.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================= ASSESSMENTS TODAY ========================= -->
+<section aria-labelledby="assess-h" class="slide">
+<h2 id="assess-h">Assessments Today</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<h3 class="card__title">Kotlin Katas</h3>
+<p><span class="badge badge--green">Exercise</span> <span class="clo-tag">CLO 3</span></p>
+<p>The lab above <em>is</em> today's hands-on practice.</p>
+</div>
+<div class="card">
+<h3 class="card__title">Not today (course timeline)</h3>
+<ul>
+<li><strong>Pre-test</strong> — already done in Session 1.</li>
+<li><strong>Quiz 1</strong> — Session 6. <span class="muted">(<a href="../assessments/quiz-1.html">preview</a>)</span></li>
+<li><strong>Final Project demos + Post-test</strong> — Session 12.</li>
+</ul>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Connect to the project</span>
+<p style="margin:0">Remind students the Katas aren't busywork — the <code>data class</code>, list transforms, and <code>sealed class UiState</code> they wrote today are the building blocks of their student-choice app's ViewModel + repository (clean-architecture requirement).</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================= DISCUSSION BOARD ========================= -->
+<section aria-labelledby="disc-h" class="slide" id="discussion">
+<h2 id="disc-h">Discussion Board Prompt <span class="badge">Weekly · participation</span></h2>
+<div class="card card--teal">
+<p class="card__title">Same thread as Week 1 — now with a Kotlin model to back it up</p>
+<p>There is <strong>one shared discussion thread for Week 1</strong>, posted in Session 1; we don't open a new board mid-week. Today's session gives you the language to make your post concrete: the <code>data class</code> you sketched in <strong>Kata 3</strong> and the <code>sealed class UiState</code> from the live-coding are exactly the building blocks the prompt asks you to reason about.</p>
+<blockquote>
+<p><strong>Go to the prompt:</strong> open the <a href="session-01.html#h-discussion">Week 1 Discussion Board prompt (Session 1)</a> — introduce yourself, describe your student-choice app, and say in one sentence how it satisfies each of the five required features ((a) 2+ screens with navigation, (b) Compose UI driven by state, (c) local persistence, (d) data from a web API, (e) ViewModel + repository).</p>
+</blockquote>
+<ul>
+<li><strong>Add a Kotlin angle this week:</strong> paste your Kata 3 <code>data class</code> as your "main data model" and name which field your list will <code>filter</code>/<code>sort</code> on. This shows the model is real, not hand-wavy.</li>
+<li><strong>Initial post</strong> by the end of Week 1 (≈150–200 words), addressing all five features; <strong>reply to at least two classmates</strong> with something specific (suggest a public web API, flag a feature that looks hard, or propose a tighter scope).</li>
+<li>"Great idea!" replies don't count toward participation — be constructive and concrete.</li>
+</ul>
+</div>
+</section>
+<!-- ========================= HOMEWORK / NEXT CLASS ========================= -->
+<section aria-labelledby="hw-h" class="slide" id="homework">
+<h2 id="hw-h">Homework / Next Class</h2>
+<div class="grid grid-2">
+<div class="card">
+<h3 class="card__title">Async activities &amp; reading</h3>
+<ul>
+<li><strong>Read</strong> the Kotlin docs <a href="https://kotlinlang.org/docs/basic-syntax.html">Basic syntax</a> and <a href="https://kotlinlang.org/docs/null-safety.html">Null safety</a> — they re-state today's lecture in the official voice; skim, don't memorize.</li>
+<li><strong>Practice</strong> in <a href="https://play.kotlinlang.org/koans/overview">Kotlin Koans</a> (or the relevant <a href="https://developer.android.com/courses/android-basics-compose/course">Android Basics with Compose</a> Kotlin pathway) — aim for the <em>Introduction</em> and <em>Collections</em> sets; each Koan is a tiny failing test you make pass.</li>
+<li><strong>Finish any kata</strong> from today's lab you didn't complete (FizzBuzz, null-safe parse, data-class transform, higher-order <code>summarize</code>), then re-run the two auto-checked <a href="#lab">Lab katas</a> (Kata 1 — FizzBuzz and Kata 2 — null-safe parsing) and the <a href="#master-challenge">Master-it challenge</a> until all three go green.</li>
+<li><strong>Bookmark</strong> the <a href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a> — your quick reference for the rest of the term.</li>
+</ul>
+</div>
+<div class="card card--accent">
+<h3 class="card__title">Project tasks (start thinking)</h3>
+<ul>
+<li>Decide on your <strong>student-choice app idea</strong>. Write one sentence: "My app lets a user ___."</li>
+<li>Sketch the <strong>main data model</strong> as a Kotlin <code>data class</code> (reuse your Kata 3 work).</li>
+<li>List the <strong>2+ screens</strong> you'll need (navigation requirement).</li>
+</ul>
+<h4>Next class — Session 3 preview</h4>
+<p>We start <strong>Jetpack Compose</strong>: your first Composable functions, <code>Text</code>/<code>Column</code>/<code>Row</code>, modifiers, and the preview pane. Everything you learned today (functions, named args, expressions, lambdas) becomes UI. <span class="muted">(<a href="session-03.html">Session 3 ›</a>)</span></p>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body"><span class="callout__label">Keep handy</span><p style="margin:0">Bookmark the <a href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a> — it's your reference for the rest of the course.</p></div>
+</div>
+</div>
+</div>
+</section>
+</div><!-- /content column -->
+</div><!-- /.layout-toc -->
+<!-- ===================== LIVE, RUNNABLE CODE (playground.js) ===================== -->
+<section aria-labelledby="til-h" class="card slide" id="try-it-live">
+<h2 class="card__title" id="til-h">► Try it live in your browser</h2>
+<div class="callout callout--info">
+<span class="callout__icon">►</span>
+<div class="callout__body">
+<span class="callout__label">Live, runnable Kotlin</span>
+<p>Every snippet below is <strong>editable</strong> — change it and press <strong>Run</strong>. It compiles on JetBrains’ Kotlin Playground servers, so this needs internet (your code is sent there to compile). Offline or blocked on the campus network? The code stays readable and copyable, and you can paste it into Android Studio. Great for live demos: edit a value, re-run, and let students predict the output first.</p>
+</div>
+</div>
+<p class="mt"><strong>1. val/var &amp; string templates.</strong> Read-only vs mutable, and <code>$name</code> / <code>${expr}</code> interpolation.</p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable</div>
+<pre><code>fun main() {
+    val name = "Ada"          // val = read-only
+    var score = 0             // var = mutable
+    score += 10
+    println("Hello, $name! Score: $score (doubled: ${score * 2})")
+}</code></pre>
+</div>
+<p class="mt"><strong>2. Null safety.</strong> Safe-call <code>?.</code>, the Elvis operator <code>?:</code>, and a non-null result.</p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable</div>
+<pre><code>fun firstInitial(name: String?): Char {
+    return name?.trim()?.firstOrNull() ?: '?'
+}
+
+fun main() {
+    println(firstInitial("  Ada"))   // A
+    println(firstInitial(null))      // ?
+}</code></pre>
+</div>
+<p class="mt"><strong>3. Control flow as expressions.</strong> A <code>when</code> that <em>returns</em> a value — no temporary <code>var</code>, no <code>break</code>. This is the habit that makes Composables pick a label, color, or icon straight from state.</p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable</div>
+<pre><code>fun grade(score: Int): Char = when (score) {
+    in 90..100 -&gt; 'A'
+    in 80..89  -&gt; 'B'
+    in 70..79  -&gt; 'C'
+    in 65..69  -&gt; 'D'
+    else       -&gt; 'F'
+}
+
+fun main() {
+    for (s in listOf(96, 84, 73, 66, 50)) {
+        println("$s -&gt; ${grade(s)}")
+    }
+}</code></pre>
+</div>
+<p class="mt"><strong>4. Data classes + collection operators.</strong> <code>filter</code>, <code>map</code>, <code>average</code> — the workhorses of Android data handling.</p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable</div>
+<pre><code>data class Student(val name: String, val gpa: Double)
+
+fun main() {
+    val roster = listOf(
+        Student("Ada", 3.9),
+        Student("Linus", 3.2),
+        Student("Grace", 4.0)
+    )
+    val honors = roster.filter { it.gpa &gt;= 3.5 }.map { it.name }
+    println("Honor roll: $honors")
+    println("Average GPA: ${roster.map { it.gpa }.average()}")
+}</code></pre>
+</div>
+<p class="mt"><strong>5. Lambdas &amp; higher-order functions.</strong> A function that takes a function — the basis of Compose’s <code>onClick = { ... }</code>.</p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable</div>
+<pre><code>fun runTimes(times: Int, action: (Int) -&gt; Unit) {
+    for (i in 1..times) action(i)
+}
+
+fun main() {
+    runTimes(3) { i -&gt; println("Tick #$i") }
+}</code></pre>
+</div>
+</section>
+<!-- ========================= MASTER IT (self-directed mastery) ========================= -->
+<section aria-labelledby="master-h" class="card slide" id="master-it">
+<h2 class="card__title" id="master-h">Master it — sealed state &amp; the exhaustive <code>when</code></h2>
+<p class="lede">The single highest-leverage idea in this whole session is modeling a closed set of outcomes with a <code>sealed</code> hierarchy and <em>reducing</em> it with an exhaustive <code>when</code>. Get this one pattern into your fingers and the rest of the course — ViewModel state, network <code>Loading/Success/Error</code>, navigation — is just this shape repeated. Below: a fully worked example, a faded challenge you finish, the misconceptions that bite real engineers, the production pattern, and a retrieval check.</p>
+<!-- ---------- WORKED EXAMPLE ---------- -->
+<h3 id="master-we">Worked example — reasoning, step by step</h3>
+<p>We want one function that turns <em>any</em> screen state into a user-facing line of text. The state can be exactly one of: loading, loaded-with-data, loaded-but-empty, or failed. Watch the reasoning:</p>
+<ol class="stepper">
+<li class="step">
+<h4>1 · Name the closed set of outcomes</h4>
+<p>A screen that loads data is <strong>never</strong> "kind of loading and kind of loaded." It is in exactly one state at a time, and the set of states is fixed at compile time. That is the definition of a <code>sealed</code> type: a hierarchy the compiler knows is <em>closed</em> — no outside code can add a new subtype.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>sealed interface ScreenState {
+    data object Loading : ScreenState
+    data class Loaded(val items: List&lt;String&gt;) : ScreenState
+    data object Empty : ScreenState
+    data class Failed(val message: String) : ScreenState
+}</code></pre></div>
+<p class="muted">We use <code>sealed interface</code> (modern, lighter than <code>sealed class</code> when you don't need shared state) and <code>data object</code> for the no-payload cases (free <code>toString()</code>/<code>equals()</code>, and it reads as a value, not a type).</p>
+</li>
+<li class="step">
+<h4>2 · Reduce the state with <code>when</code> — and let the compiler enforce completeness</h4>
+<p>Because the type is sealed, a <code>when</code> over it can be <strong>exhaustive without an <code>else</code></strong>. The payoff is enormous: the day someone adds a new state, every <code>when</code> that forgot to handle it becomes a <em>compile error</em>, not a silent bug shipped to users.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun statusLine(state: ScreenState): String = when (state) {
+    ScreenState.Loading      -&gt; "Loading…"
+    is ScreenState.Loaded    -&gt; "Showing ${state.items.size} items"   // smart-cast: state.items is in scope
+    ScreenState.Empty        -&gt; "Nothing here yet"
+    is ScreenState.Failed    -&gt; "Error: ${state.message}"             // smart-cast to Failed
+}</code></pre></div>
+<p>Two things to notice. (a) For the no-payload objects we compare by value (<code>ScreenState.Loading</code>), and for the data classes we use <code>is</code>, which <strong>smart-casts</strong> — inside that branch <code>state</code> is known to be <code>Loaded</code>, so <code>state.items</code> just works. (b) There is no <code>else</code>; delete the <code>Empty</code> branch and the file won't compile.</p>
+</li>
+<li class="step">
+<h4>3 · Prove it runs</h4>
+<p class="muted"><strong>Predict the printed output first, then Run to confirm.</strong></p>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable</div>
+<pre><code>sealed interface ScreenState {
+    data object Loading : ScreenState
+    data class Loaded(val items: List&lt;String&gt;) : ScreenState
+    data object Empty : ScreenState
+    data class Failed(val message: String) : ScreenState
+}
+
+fun statusLine(state: ScreenState): String = when (state) {
+    ScreenState.Loading   -&gt; "Loading…"
+    is ScreenState.Loaded -&gt; "Showing ${state.items.size} items"
+    ScreenState.Empty     -&gt; "Nothing here yet"
+    is ScreenState.Failed -&gt; "Error: ${state.message}"
+}
+
+fun main() {
+    println(statusLine(ScreenState.Loading))
+    println(statusLine(ScreenState.Loaded(listOf("Read", "Run", "Rest"))))
+    println(statusLine(ScreenState.Empty))
+    println(statusLine(ScreenState.Failed("No network")))
+}</code></pre>
+</div>
+</li>
+</ol>
+<!-- ---------- FADED CHALLENGE ---------- -->
+<h3 id="master-challenge">Now you — faded challenge <span class="badge badge--teal">auto-checked</span></h3>
+<p>The scaffolding is removed. You write the reducer. A <code>List&lt;Result&gt;</code> arrives from a fake "load"; map it to a sealed <code>LoadState</code>, then write the exhaustive <code>when</code> that turns each state into a label. Press <strong>Run</strong> — the harness checks four cases and prints <code>ALL TESTS PASSED 🎉</code> only when every branch is right. You've got it when all cases go green.</p>
+<div class="codeblock" data-challenge="s02-sealed-uistate" data-run="kotlin" data-topic="kotlin">
+<div class="codeblock__lang">Kotlin · runnable · challenge</div>
+<pre><code>// ── The closed set of states (given) ──────────────────────────────
+sealed interface LoadState {
+    data object Loading : LoadState
+    data class Success(val names: List&lt;String&gt;) : LoadState
+    data object Empty : LoadState
+    data class Failure(val reason: String) : LoadState
+}
+
+// ── Step 1: turn a raw load result into a state ───────────────────
+// rawResult is null while loading, an empty list when nothing came back,
+// a non-empty list on success, and we signal an error with the special
+// sentinel list listOf("__ERROR__", "&lt;reason&gt;").
+fun toState(rawResult: List&lt;String&gt;?): LoadState {
+    // YOUR CODE: return the correct LoadState for each case.
+    // - null            -&gt; Loading
+    // - ["__ERROR__", r]-&gt; Failure(r)
+    // - empty list      -&gt; Empty
+    // - anything else   -&gt; Success(the list)
+    TODO("replace this with your four cases")
+}
+
+// ── Step 2: reduce a state to a one-line label ────────────────────
+// Use an EXHAUSTIVE when with NO else. Labels must match exactly:
+//   Loading -&gt; "loading"
+//   Success -&gt; "ok:&lt;count&gt;"      e.g. ok:3
+//   Empty   -&gt; "empty"
+//   Failure -&gt; "fail:&lt;reason&gt;"   e.g. fail:timeout
+fun label(state: LoadState): String {
+    // YOUR CODE
+    TODO("replace this with an exhaustive when")
+}
+
+// ── Test harness (do not edit) ────────────────────────────────────
+fun check(input: List&lt;String&gt;?, expected: String) {
+    val got = label(toState(input))
+    if (got == expected) println("✓ passed: $input -&gt; $got")
+    else println("✗ FAILED: expected $expected, got $got")
+}
+
+fun main() {
+    check(null, "loading")
+    check(listOf("Ada", "Bo", "Cy"), "ok:3")
+    check(emptyList(), "empty")
+    check(listOf("__ERROR__", "timeout"), "fail:timeout")
+
+    val ok = label(toState(null)) == "loading" &amp;&amp;
+             label(toState(listOf("Ada", "Bo", "Cy"))) == "ok:3" &amp;&amp;
+             label(toState(emptyList())) == "empty" &amp;&amp;
+             label(toState(listOf("__ERROR__", "timeout"))) == "fail:timeout"
+    println(if (ok) "ALL TESTS PASSED 🎉" else "Some cases failed — fix the branches above.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Hint (open only if stuck)</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<ul>
+<li><code>toState</code> is a chain of <code>when</code> conditions: test <code>rawResult == null</code> first, then <code>rawResult.firstOrNull() == "__ERROR__"</code> (use <code>rawResult[1]</code> for the reason), then <code>rawResult.isEmpty()</code>, else <code>Success(rawResult)</code>.</li>
+<li>Once <code>rawResult</code> is past the null check, the compiler smart-casts it to non-null <code>List&lt;String&gt;</code>, so <code>.isEmpty()</code> and indexing work without <code>?.</code>.</li>
+<li>In <code>label</code>, match the <code>data object</code> cases by value (<code>LoadState.Loading</code>) and the <code>data class</code> cases with <code>is</code> so you can read <code>state.names.size</code> / <code>state.reason</code>.</li>
+</ul>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun toState(rawResult: List&lt;String&gt;?): LoadState = when {
+    rawResult == null                       -&gt; LoadState.Loading
+    rawResult.firstOrNull() == "__ERROR__"  -&gt; LoadState.Failure(rawResult[1])
+    rawResult.isEmpty()                     -&gt; LoadState.Empty
+    else                                    -&gt; LoadState.Success(rawResult)
+}
+
+fun label(state: LoadState): String = when (state) {
+    LoadState.Loading     -&gt; "loading"
+    is LoadState.Success  -&gt; "ok:${state.names.size}"
+    LoadState.Empty       -&gt; "empty"
+    is LoadState.Failure  -&gt; "fail:${state.reason}"
+}</code></pre></div>
+<p class="muted">Notice the <code>when</code> in <code>toState</code> has an <code>else</code> (it tests arbitrary boolean conditions), but the <code>when</code> in <code>label</code> has <strong>none</strong> — it switches over a sealed type, so the compiler proves it's complete.</p>
+</div></div>
+</div>
+</div>
+<!-- ---------- MISCONCEPTIONS ---------- -->
+<h3 id="master-pitfalls">Common misconceptions &amp; pitfalls</h3>
+<p class="muted">Each of these is a real mistake that compiles-and-runs-wrong (or compiles-and-crashes) for working engineers. Open one, read the symptom, fix the model.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">1 · “<code>val</code> makes my list immutable, so I can share it freely.”</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> <code>val items = mutableListOf(...)</code> is safe to expose because <code>val</code> means immutable.</p>
+<p><strong>Why it's wrong:</strong> <code>val</code> freezes the <em>reference</em>, not the object. A <code>val</code> pointing at a <code>MutableList</code> can still have items added, removed, or cleared by anyone who holds it.</p>
+<p><strong>Correct model:</strong> immutability is about the <em>type</em>. Declare the property's type as the read-only <code>List&lt;T&gt;</code> (back it with a private <code>MutableList</code> if you must mutate internally). "Can't reassign the box" ≠ "can't change what's in the box."</p>
+<p><strong>Symptom you'd see:</strong> a "read-only" list mysteriously grows because a caller you forgot about kept a reference and called <code>.add()</code>. In Compose this shows up as state changing from a layer that was supposed to be the source of truth.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val items = mutableListOf("a")
+items.add("b")          // compiles fine — val didn't stop this
+println(items)          // [a, b]
+
+val safe: List&lt;String&gt; = mutableListOf("a")
+// safe.add("b")        // ERROR: List has no add() — the TYPE made it read-only</code></pre></div>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">2 · “I'll add an <code>else -&gt; </code> branch so my <code>when</code> always compiles.”</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> a catch-all <code>else</code> on a <code>when</code> over a sealed type is harmless defensive programming.</p>
+<p><strong>Why it's wrong:</strong> the <code>else</code> <em>silences the compiler's best feature</em>. When you add a new subtype (say <code>Refreshing</code>), the <code>else</code> swallows it and your screen falls through to whatever the <code>else</code> branch did — no error, no warning. You've traded a compile-time guarantee for a runtime surprise.</p>
+<p><strong>Correct model:</strong> over a <em>sealed</em> type, list every case and omit <code>else</code>. Now adding a state breaks the build at every <code>when</code> that needs updating — exactly where you want to be told.</p>
+<p><strong>Symptom you'd see:</strong> you add a new <code>UiState</code> and the app compiles, ships, and the new state renders as the stale fallback (often a blank or "loading" screen forever) because an <code>else</code> ate it.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">3 · “<code>!!</code> is just how you tell Kotlin a value isn't null.”</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> <code>value!!</code> is the normal way to use a nullable value once you "know" it's set.</p>
+<p><strong>Why it's wrong:</strong> <code>!!</code> doesn't <em>check</em> anything — it asserts and throws <code>NullPointerException</code> the instant you're wrong. It re-introduces the exact billion-dollar mistake Kotlin's type system was designed to prevent, and it moves the crash far from the real cause.</p>
+<p><strong>Correct model:</strong> handle the null explicitly with <code>?.</code> (safe call), <code>?:</code> (Elvis fallback), or <code>?.let { }</code> (run only when present). Reserve <code>!!</code> for the rare case where a non-null is a true invariant you can't express — and treat every <code>!!</code> in review as a question to answer.</p>
+<p><strong>Symptom you'd see:</strong> a <code>NullPointerException</code> in production on a line that "can't" be null, usually after a config change, a slow network, or an empty API field — the very moments your app is most visible.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">4 · “Kotlin auto-converts numbers like Java, so <code>Int</code> + <code>Double</code> just works.”</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> assigning an <code>Int</code> where a <code>Double</code> is expected (or mixing them) widens silently.</p>
+<p><strong>Why it's wrong:</strong> Kotlin has <strong>no implicit widening</strong>. <code>val d: Double = anInt</code> is a compile error; you must call <code>.toDouble()</code>. This is deliberate — it removes a class of silent precision/overflow bugs.</p>
+<p><strong>Correct model:</strong> convert explicitly with <code>.toDouble()</code> / <code>.toInt()</code> / <code>.toLong()</code>, and remember integer division truncates: <code>7 / 2 == 3</code>, while <code>7 / 2.0 == 3.5</code>.</p>
+<p><strong>Symptom you'd see:</strong> a "type mismatch: required Double, found Int" red squiggle while wiring a tip/total/average calculation, or — worse, if you cast wrong — a tip of <code>0.0</code> because you divided two <code>Int</code>s before converting.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>val parts = 7
+val whole = 2
+// val avg: Double = parts / whole        // = 3 (Int division!) then needs .toDouble anyway
+val avg: Double = parts.toDouble() / whole  // 3.5  — convert BEFORE dividing
+println(avg)</code></pre></div>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">5 · “<code>data class</code> <code>copy()</code> gives me a fresh, independent copy.”</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p><strong>Wrong mental model:</strong> <code>task.copy(done = true)</code> deep-copies everything, so the copy shares nothing with the original.</p>
+<p><strong>Why it's wrong:</strong> <code>copy()</code> is a <strong>shallow</strong> copy. Scalar/immutable fields are fine, but if a field is a <em>mutable</em> reference (a <code>MutableList</code>, another mutable object), the copy points at the <em>same</em> instance — mutate it through one and both "see" the change.</p>
+<p><strong>Correct model:</strong> keep <code>data class</code> fields immutable (<code>val</code> + read-only <code>List</code>). Then <code>copy()</code> is effectively safe because there's nothing mutable to alias. This is why idiomatic Compose state is built from immutable data classes.</p>
+<p><strong>Symptom you'd see:</strong> you <code>copy()</code> a state object to "snapshot" it, mutate the original's inner list, and the snapshot changes too — a classic source of "the UI updated when it shouldn't have."</p>
+</div></div>
+</div>
+</div>
+<!-- ---------- IN PRODUCTION ---------- -->
+<h3 id="master-prod">In production</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">How a senior engineer actually writes this</span>
+<p style="margin:0 0 .6em">In a real Android codebase the sealed-state pattern is the <em>contract between the ViewModel and the screen</em>. The idiomatic shape today is:</p>
+<ul style="margin:.2em 0 .6em">
+<li><strong>Sealed <em>interface</em>, <code>data object</code> for empty cases.</strong> <code>sealed interface UiState { data object Loading : UiState; data class Success(...) : UiState; data object Empty : UiState; data class Error(val message: String) : UiState }</code>. <code>sealed interface</code> is lighter than <code>sealed class</code> when there's no shared state, and <code>data object</code> (Kotlin 1.9+) gives the singletons a sensible <code>toString()</code> for logs.</li>
+<li><strong>One immutable <code>UiState</code> per screen,</strong> exposed read-only and copied with <code>copy()</code> on every change. The screen does an exhaustive <code>when (state)</code> — no <code>else</code> — so a new state is a compile error, not a blank screen.</li>
+<li><strong>Model all four states from day one:</strong> <code>Loading / Success / Error / Empty</code>. Empty is a real state (search returned nothing), not "Success with a zero-length list you forgot to special-case."</li>
+</ul>
+<p style="margin:0"><strong>Tasteful gotcha:</strong> don't let your sealed states leak <em>implementation</em> types. <code>Error</code> should carry a clean <code>message: String</code> (or a typed app error), <em>never</em> a raw <code>Throwable</code>/<code>HttpException</code>/<code>SQLException</code> — that couples your UI to your data layer and makes the <code>when</code> branch reach for things the screen has no business knowing. Map exceptions to a user-facing message at the boundary, and keep the state model about <em>what the screen shows</em>, not <em>how it failed under the hood</em>.</p>
+</div>
+</div>
+<!-- ---------- RETRIEVAL CHECK ---------- -->
+<h3 id="master-retrieval">Retrieval check <span class="badge">self-check</span></h3>
+<p class="muted">Apply the ideas — don't just recall them. Submit to see a thorough explanation for every option. This is practice for your own mastery, never a grade.</p>
+<div data-quiz="rc-2" data-topic="kotlin"></div>
+<script id="rc-2" type="application/json">
+{
+  "title": "Session 2 — apply what you learned",
+  "intro": "Six application questions. Submit to reveal explanations.",
+  "passingScore": 0.7,
+  "shuffle": false,
+  "questions": [
+    {
+      "id": "rc2q1",
+      "type": "single",
+      "prompt": "You write `fun render(s: UiState): String = when (s) { ... }` over a sealed UiState and handle every subtype. A teammate later adds `data object Refreshing : UiState`. What happens to your render()?",
+      "options": [
+        {"id": "a", "text": "Nothing — it silently returns an empty string for Refreshing at runtime."},
+        {"id": "b", "text": "It stops compiling until you add a Refreshing branch (because there is no else)."},
+        {"id": "c", "text": "It throws a NullPointerException the first time Refreshing is passed."},
+        {"id": "d", "text": "It auto-generates a branch for Refreshing from the data object."}
+      ],
+      "correct": ["b"],
+      "explanation": "An exhaustive when over a sealed type with no else is checked at COMPILE time. Adding a subtype breaks every such when until you handle the new case — that compile error is the whole point of choosing sealed types for state."
+    },
+    {
+      "id": "rc2q2",
+      "type": "single",
+      "prompt": "A function exposes `val tags: MutableList<String>` and you mark the field `val`. Why can a caller still corrupt the list?",
+      "options": [
+        {"id": "a", "text": "val only freezes the reference; the MutableList itself still has add()/remove()."},
+        {"id": "b", "text": "val is ignored on properties; only local variables respect it."},
+        {"id": "c", "text": "MutableList overrides val to allow reassignment."},
+        {"id": "d", "text": "It can't — val makes the contents immutable too."}
+      ],
+      "correct": ["a"],
+      "explanation": "val fixes the reference, not the object. A val pointing at a MutableList still allows add/remove/clear. Expose the read-only List<String> type (optionally backed by a private MutableList) to actually protect the contents."
+    },
+    {
+      "id": "rc2q3",
+      "type": "single",
+      "prompt": "Given `val nums = listOf(2, 5, 8, 11)`, what does `nums.filter { it % 2 == 0 }.map { it * it }.sum()` evaluate to?",
+      "options": [
+        {"id": "a", "text": "68"},
+        {"id": "b", "text": "4"},
+        {"id": "c", "text": "0"},
+        {"id": "d", "text": "294"}
+      ],
+      "correct": ["a"],
+      "explanation": "filter keeps the evens [2, 8]; map squares them to [4, 64]; sum is 68. Read a chain bottom-up as a sentence: 'sum, of the squares, of the evens.'"
+    },
+    {
+      "id": "rc2q4",
+      "type": "single",
+      "prompt": "Which expression safely yields the length of a nullable `name: String?`, using 0 when name is null — without any chance of a crash?",
+      "options": [
+        {"id": "a", "text": "name!!.length"},
+        {"id": "b", "text": "name?.length ?: 0"},
+        {"id": "c", "text": "name.length ?: 0"},
+        {"id": "d", "text": "if (name) name.length else 0"}
+      ],
+      "correct": ["b"],
+      "explanation": "name?.length returns null instead of crashing when name is null; the Elvis operator ?: then supplies 0. name!!.length crashes on null; name.length won't compile (name is nullable); and a String? is not a Boolean condition."
+    },
+    {
+      "id": "rc2q5",
+      "type": "single",
+      "prompt": "You need a tip = 18% of a total stored as `val total: Int = 47`. Which line gives the correct Double result?",
+      "options": [
+        {"id": "a", "text": "val tip: Double = total * 18 / 100"},
+        {"id": "b", "text": "val tip: Double = total.toDouble() * 0.18"},
+        {"id": "c", "text": "val tip: Double = total * 0.18.toInt()"},
+        {"id": "d", "text": "val tip: Double = total / 100 * 18"}
+      ],
+      "correct": ["b"],
+      "explanation": "Convert to Double BEFORE arithmetic so nothing truncates: 47.toDouble() * 0.18 = 8.46. Option a does Int division (47*18=846, /100 = 8 as Int) then widens 8.0; option d divides 47/100 = 0 first. No implicit widening means you control where the conversion happens."
+    },
+    {
+      "id": "rc2q6",
+      "type": "multi",
+      "prompt": "You're choosing a scope function. Which statements are correct? (Select all that apply.)",
+      "options": [
+        {"id": "a", "text": "apply runs a block on the object and returns the object itself — ideal for configure-and-keep."},
+        {"id": "b", "text": "let exposes the object as 'it' and returns the lambda's result — ideal for null-safe transform."},
+        {"id": "c", "text": "also returns the lambda result, so it's used to transform a value into a new type."},
+        {"id": "d", "text": "with, run, and let can all return a computed result rather than the receiver."}
+      ],
+      "correct": ["a", "b", "d"],
+      "explanation": "apply returns the receiver (configure-and-keep); let exposes 'it' and returns the lambda result (transform, often null-safe via ?.let). 'also' returns the OBJECT (not the lambda result) and is for side effects like logging — that's why c is wrong. with/run/let all return the lambda result."
+    }
+  ]
+}
+</script>
+<!-- ---------- DELIBERATE PRACTICE ---------- -->
+<h3 id="master-practice">Deliberate practice — what to do next</h3>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Your next reps (spaced, increasing difficulty)</span>
+<p style="margin:0 0 .5em">Mastery comes from <em>retrieval and reps with immediate feedback</em>, not re-reading. Do these in order — each gives you a green check or a precise failure message:</p>
+<ol style="margin:.2em 0 0">
+<li><strong>Finish the challenge above</strong> (<code>s02-sealed-uistate</code>) until you see <code>ALL TESTS PASSED 🎉</code>, then click <em>Mark solved ✓</em> to log it toward your mastery.</li>
+<li><strong>Challenge ladder:</strong> the Kotlin track on <a href="../practice/challenges.html">practice/challenges.html</a> — work the faded set: <em>FizzBuzz with when</em>, <em>mapNotNull + sum</em>, the <em>higher-order summarize</em>, and the <em>null-safe parse</em> drills. Each fades the scaffolding a little more.</li>
+<li><strong>Debug drills:</strong> <a href="../practice/debug-drills.html">practice/debug-drills.html</a> — hunt the Kotlin bugs (a not-null <code>!!</code> NPE, a <code>val</code> list someone called <code>.add()</code> on, a non-exhaustive <code>when</code>, and an <code>Int</code>-division precision bug). Diagnosing wrong code cements the right model faster than writing fresh code.</li>
+<li><strong>Spaced repetition:</strong> add the Kotlin deck on <a href="../practice/spaced-repetition.html">practice/spaced-repetition.html</a> to your review queue and clear today's cards. Come back tomorrow — the streak is the point.</li>
+<li><strong>See where this leads:</strong> the <a href="../path.html">skill map</a> shows Kotlin as the gate to Compose-UI → State → everything after. This session is the foundation the whole map is built on.</li>
+</ol>
+</div>
+</div>
+<!-- ---------- MASTERY STAT STRIP ---------- -->
+<p class="muted mt" style="margin-bottom:.4em">Your self-directed progress (stored only in this browser):</p>
+<div data-mastery-stats=""></div>
+</section>
+</div><!-- /.wrap -->
+</main>
+<!-- ========================= FOOTER ========================= -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Session 2 of 12 · Kotlin Essentials for Android<br/>
+<span class="muted">Keiser University · B.S. Software Engineering · 3.0 credit hours · Face-to-Face</span>
+</div>
+<div class="row no-print">
+<a href="../index.html">Course Hub</a>
+<a href="session-01.html">‹ Session 1</a>
+<a href="session-03.html">Session 3 ›</a>
+<a href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+</body>
+</html>

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>COP4667 — Spaced-Repetition Trainer</title>
+<meta content="COP4667 Android Development — a spaced-repetition trainer with an SM-2 scheduler and a hand-curated deck of 86 exam-ready cards covering the Android ecosystem &amp; Studio, Kotlin, the Activity lifecycle &amp; intents, Jetpack Compose, state, lists &amp; Material 3, navigation &amp; architecture, local persistence (DataStore/Room), networking (REST/JSON/Retrofit), and the integration project. Rate Again/Hard/Good/Easy each day and let spacing move knowledge into long-term memory." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ---- Page-specific tweaks (chrome still uses contract classes) ---- */
+    .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: var(--fs-xs); font-weight: 800; color: var(--green-dark); margin: 0 0 .35em; }
+    [data-theme="dark"] .eyebrow { color: var(--green); }
+    .section-anchor { scroll-margin-top: 76px; }
+
+    /* The SRS host gets a little breathing room and a subtle frame */
+    #srs { max-width: 720px; margin-inline: auto; }
+    #srs .ms-card__face code,
+    #srs .ms-card__back code {
+      font-family: var(--font-mono); font-size: .92em;
+      background: var(--surface-2); border: 1px solid var(--line);
+      padding: .06em .35em; border-radius: 5px; white-space: normal;
+    }
+    #srs .ms-card__back strong { color: var(--green-dark); }
+    [data-theme="dark"] #srs .ms-card__back strong { color: var(--green); }
+
+    /* "How spacing works" curve illustration (pure CSS, no images) */
+    .curve { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); align-items: end; height: 160px; margin: var(--space-4) 0 var(--space-2); }
+    .curve__bar { background: linear-gradient(180deg, var(--green), var(--green-dark)); border-radius: var(--radius-sm) var(--radius-sm) 0 0; position: relative; min-height: 8px; }
+    .curve__bar span { position: absolute; left: 0; right: 0; bottom: -1.6em; text-align: center; font-size: var(--fs-xs); color: var(--muted); font-family: var(--font-mono); }
+    .curve__bar::before { content: attr(data-int); position: absolute; left: 0; right: 0; top: -1.4em; text-align: center; font-size: var(--fs-xs); font-weight: 800; color: var(--teal-2); }
+    [data-theme="dark"] .curve__bar::before { color: var(--green); }
+
+    .topic-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+    .topic-table th, .topic-table td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); vertical-align: top; }
+    .topic-table th { color: var(--teal-2); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .04em; }
+    [data-theme="dark"] .topic-table th { color: var(--green); }
+    .topic-table tr:last-child td { border-bottom: none; }
+    .topic-table td.num { text-align: right; font-family: var(--font-mono); }
+
+    .keys-hint { font-size: var(--fs-xs); color: var(--muted); margin-top: var(--space-3); }
+    .keys-hint kbd { margin: 0 1px; }
+    .rating-key { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .rating-key li { display: grid; grid-template-columns: 84px 1fr; gap: var(--space-3); align-items: baseline; }
+    .rating-key .rk { font-weight: 800; font-family: var(--font-mono); font-size: var(--fs-sm); }
+    .rk--again { color: var(--danger); }
+    .rk--hard  { color: var(--accent); }
+    .rk--good  { color: var(--green-dark); }
+    .rk--easy  { color: var(--teal-2); }
+    [data-theme="dark"] .rk--good { color: var(--green); }
+  </style>
+</head>
+<body>
+<!-- ====================== TOP NAV ====================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 teaching guide home" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▶</span>
+<span>COP4667
+          <small>Android Development</small>
+</span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="challenges.html">Challenges</a>
+<a href="debug-drills.html">Debug drills</a>
+<a href="projects.html">Projects</a>
+<a aria-current="page" class="active" href="spaced-repetition.html">Spaced repetition</a>
+<a href="../assessments/flashcards.html">Flashcards</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">🖥️ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ====================== HERO ====================== -->
+<section aria-labelledby="hero-title" class="hero slide section-anchor" id="top">
+<p class="eyebrow" style="color:#9BE8C5;">Study tool · All 12 sessions · SM-2 scheduler</p>
+<h1 class="hero-title" id="hero-title">Spaced-Repetition Trainer</h1>
+<p class="hero-sub">One smart deck for the whole course. Each day it shows you only the cards you're about to forget, you rate how well you recalled each one, and an algorithm spreads the next review out in time. A few honest minutes a day is enough to move every core idea from "I saw that once" into permanent memory.</p>
+<div class="hero-meta">
+<span class="pill pill--green">86 cards · 10 topics</span>
+<span class="pill pill--accent">⏱ ~5–10 min/day</span>
+<span class="pill"><span class="clo-tag">CLO 1</span></span>
+<span class="pill"><span class="clo-tag">CLO 2</span></span>
+<span class="pill"><span class="clo-tag">CLO 3</span></span>
+<span class="pill"><span class="clo-tag">CLO 4</span></span>
+<span class="pill"><span class="clo-tag">CLO 5</span></span>
+<span class="pill"><span class="clo-tag">CLO 6</span></span>
+</div>
+</section>
+<!-- ====================== WHY SPACING WORKS ====================== -->
+<section aria-labelledby="h-why" class="slide section-anchor">
+<h2 id="h-why">Why spacing makes knowledge permanent</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<p class="card__title">Forgetting is the feature, not the bug</p>
+<p>The moment after you learn something, your memory of it starts to fade — that's the <strong>forgetting curve</strong>. Cramming fights it by re-reading the same thing ten times in one night; the trace decays anyway and is gone by the exam.</p>
+<p>Spaced repetition does the opposite. It lets the memory <em>start</em> to fade, then asks you to recall it right at the edge of forgetting. Each successful recall makes the trace decay more slowly, so the next review can wait longer. The result: with <strong>fewer total minutes</strong>, the knowledge lasts for months instead of hours.</p>
+</div>
+<div class="card card--teal">
+<p class="card__title">Two effects working together</p>
+<ul>
+<li><strong>The spacing effect.</strong> Reviews spread out over days beat the same number of reviews packed into one sitting. Distance in time is what builds durable memory.</li>
+<li><strong>The testing effect (active recall).</strong> <em>Pulling</em> an answer out of your own head strengthens memory far more than re-reading it. That's why every card hides the answer until you've tried — the struggle is the learning.</li>
+</ul>
+<p class="muted" style="margin-bottom:0">This trainer combines both: it tests you (recall), and it schedules each card at a growing interval (spacing).</p>
+</div>
+</div>
+<div class="card">
+<p class="card__title">What "rate it Good" actually does to the schedule</p>
+<p class="muted" style="margin-top:0">A card you keep getting right gets pushed further and further into the future — the interval grows roughly geometrically. A card you miss snaps back to the start. This is a typical "Good every time" schedule:</p>
+<div aria-hidden="true" class="curve">
+<div class="curve__bar" data-int="1d" style="height:8%"><span>1st</span></div>
+<div class="curve__bar" data-int="6d" style="height:24%"><span>2nd</span></div>
+<div class="curve__bar" data-int="~15d" style="height:55%"><span>3rd</span></div>
+<div class="curve__bar" data-int="~37d" style="height:80%"><span>4th</span></div>
+<div class="curve__bar" data-int="~90d" style="height:100%"><span>5th</span></div>
+</div>
+<p class="muted" style="margin-top:var(--space-4)">Intervals are illustrative — the real numbers come from the <abbr title="SuperMemo-2">SM-2</abbr> algorithm and adapt to <em>your</em> ratings. Cards that reach an interval of about <strong>21 days</strong> count as <strong>mature</strong>: they've earned a place in long-term memory.</p>
+</div>
+</section>
+<!-- ====================== HOW TO USE IT DAILY ====================== -->
+<section aria-labelledby="h-how" class="slide section-anchor">
+<h2 id="h-how">How to use it every day</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<p class="card__title">The daily habit (3 steps)</p>
+<ol>
+<li><strong>Open it once a day</strong> — same time if you can (right after class, or first thing each morning). Consistency beats marathon sessions.</li>
+<li><strong>Clear the queue.</strong> Read the front, say the answer out loud or in your head <em>before</em> revealing, then click <strong>Show answer</strong> and grade yourself honestly.</li>
+<li><strong>Stop when it says "All caught up."</strong> That's the schedule protecting your time — there's nothing useful to review yet. Come back tomorrow and the next batch will be waiting.</li>
+</ol>
+<p class="keys-hint">Keyboard: <kbd>Space</kbd> or <kbd>Enter</kbd> reveals the answer; then <kbd>1</kbd> Again · <kbd>2</kbd> Hard · <kbd>3</kbd> Good · <kbd>4</kbd> Easy.</p>
+</div>
+<div class="card card--teal">
+<p class="card__title">How to grade yourself honestly</p>
+<ul class="rating-key">
+<li><span class="rk rk--again">Again</span><span>You blanked or got it wrong. The card resets and comes back this session. <em>Be honest here</em> — "Again" is where real learning happens.</span></li>
+<li><span class="rk rk--hard">Hard</span><span>You got it, but it was a struggle or took a while. Shorter next interval.</span></li>
+<li><span class="rk rk--good">Good</span><span>You recalled it correctly with normal effort. The default — use it most.</span></li>
+<li><span class="rk rk--easy">Easy</span><span>Instant and effortless. Longer next interval so you don't waste time on it.</span></li>
+</ul>
+<p class="muted" style="margin-bottom:0">Grading "Good" on something you actually fumbled only cheats future-you. The algorithm is only as smart as your honesty.</p>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Make it stick</span>
+<p>New cards are introduced a few at a time (gentle pacing) so you're never buried. The badges at the top of the trainer show how many cards are <strong>due</strong>, how many <strong>new</strong> ones you can still learn today, and how many have gone <strong>mature</strong>. Watch "mature" climb — that bar <em>is</em> your long-term memory filling up. Your reviews are saved on this device only; this is your own progress, never a grade.</p>
+</div>
+</div>
+</section>
+<!-- ====================== THE TRAINER ====================== -->
+<section aria-labelledby="h-trainer" class="slide section-anchor">
+<h2 id="h-trainer">Today's review</h2>
+<p class="muted">Cards due now, plus a few new ones, drawn from across the whole course. Click <strong>Show answer</strong> after you've tried to recall it, then rate yourself.</p>
+<!-- The SRS trainer mounts here via MASTERY.srs("#srs", "#deck"). -->
+<div aria-live="polite" id="srs"><p class="muted">Loading your review deck…</p></div>
+<p class="keys-hint no-print">
+        Each rating button previews the next interval it would schedule (e.g. <strong>Good</strong> → <code>6d</code>), so your choice is informed. Reviews persist on this device between visits.
+      </p>
+</section>
+<!-- ====================== WHAT'S IN THE DECK ====================== -->
+<section aria-labelledby="h-deck" class="slide section-anchor">
+<h2 id="h-deck">What's in the deck</h2>
+<p class="muted">86 cards covering the same arc we teach in class, mapped to the six course-learning outcomes. Every card is a single, testable idea with a concise, exam-ready answer that includes the <em>why</em>.</p>
+<div class="card">
+<table aria-label="Topics covered in the spaced-repetition deck" class="topic-table">
+<thead><tr><th>Study group</th><th>Maps to</th><th>Skill-map bucket</th><th class="num">Cards</th></tr></thead>
+<tbody>
+<tr><td>Ecosystem &amp; Studio</td><td>Wk 1 · CLO 1</td><td><code>architecture</code></td><td class="num">9</td></tr>
+<tr><td>Kotlin</td><td>Wk 1 · CLO 3</td><td><code>kotlin</code></td><td class="num">11</td></tr>
+<tr><td>Lifecycle &amp; Intents</td><td>Wk 1 · CLO 1, 3</td><td><code>architecture</code></td><td class="num">9</td></tr>
+<tr><td>Compose UI</td><td>Wk 1–2 · CLO 2, 3</td><td><code>compose-ui</code></td><td class="num">10</td></tr>
+<tr><td>State</td><td>Wk 2 · CLO 2, 3</td><td><code>state</code></td><td class="num">8</td></tr>
+<tr><td>Lists &amp; Material 3</td><td>Wk 2–3 · CLO 2</td><td><code>lists</code></td><td class="num">7</td></tr>
+<tr><td>Navigation &amp; Architecture</td><td>Wk 3 · CLO 1, 2</td><td><code>architecture</code></td><td class="num">8</td></tr>
+<tr><td>Persistence</td><td>Wk 3 · CLO 4</td><td><code>data</code></td><td class="num">8</td></tr>
+<tr><td>Networking</td><td>Wk 4 · CLO 5, 6</td><td><code>networking</code></td><td class="num">9</td></tr>
+<tr><td>Integration project</td><td>Wk 4 · CLO 4, 5, 6</td><td><code>project</code></td><td class="num">7</td></tr>
+</tbody>
+</table>
+<p class="muted" style="margin:var(--space-3) 0 0; font-size:var(--fs-xs)">The left column is the human study group; the <strong>Skill-map bucket</strong> is the card's machine <code>topic</code> value — one of the eight canonical skill-tree topics that your <a href="../path.html">mastery map</a> rolls up. The label is cosmetic; only the <code>topic</code> drives roll-up, so several study groups share a bucket (Ecosystem &amp; Lifecycle → <code>architecture</code>, Persistence → <code>data</code>).</p>
+</div>
+</section>
+<!-- ====================== BUILD YOUR OWN ====================== -->
+<section aria-labelledby="h-embed" class="slide section-anchor">
+<h2 id="h-embed">Want this deck on your own page?</h2>
+<p class="muted">The whole deck is just JSON consumed by the shared <code>MASTERY.srs</code> engine. Drop a script block and a mount point on any page that links <code>assets/mastery.css</code> + <code>assets/mastery.js</code>:</p>
+<div class="codeblock" data-lang="HTML">
+<span class="codeblock__lang">HTML</span>
+<pre><code>&lt;!-- 1) The data: { id, cards: [ { id, topic, front, back } ] } --&gt;
+&lt;script type="application/json" id="deck"&gt;
+{
+  "id": "my-deck",
+  "cards": [
+    { "id": "k1", "topic": "kotlin",
+      "front": "val vs var?",
+      "back": "&lt;strong&gt;val&lt;/strong&gt; = read-only; &lt;strong&gt;var&lt;/strong&gt; = reassignable. Prefer val — fewer moving parts, fewer bugs." }
+  ]
+}
+&lt;/script&gt;
+
+&lt;!-- 2) The mount point --&gt;
+&lt;div id="srs"&gt;&lt;/div&gt;
+
+&lt;!-- 3) Mount it (the engine reads the schedule from this device) --&gt;
+&lt;script&gt;MASTERY.srs("#srs", "#deck");&lt;/script&gt;</code></pre>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">No build step</span>
+<p>Everything here is hand-written HTML/CSS/vanilla JS and works by double-clicking the file (<code>file://</code>) — no CDN, no framework, no internet required. Each card needs a <code>topic</code> so the scheduler can track maturity per topic and feed your personal mastery.</p>
+</div>
+</div>
+</section>
+<!-- ============================================================== -->
+<!--  THE DECK  —  86 cards · 10 study groups · { id, topic, front, back }  -->
+<!--  Backs are concise, correct, exam-ready, and include the "why".  -->
+<!--  NOTE: card ids carry a human prefix (eco-/lc-/cu-/pe-/na-…) for  -->
+<!--  the 10 study groups shown in the topic table, but the JSON        -->
+<!--  "topic" value is one of the 8 CANONICAL skill-tree buckets        -->
+<!--  (kotlin, compose-ui, state, lists, architecture, data,           -->
+<!--  networking, project) — that value, not the prefix, is what       -->
+<!--  mastery.js rolls up into the skill map. Ecosystem & Studio and    -->
+<!--  Lifecycle & Intents fold into "architecture"; Persistence folds   -->
+<!--  into "data". Keep new cards on a canonical "topic" so they show.  -->
+<!-- ============================================================== -->
+<script id="deck" type="application/json">
+{
+  "id": "cop4667-srs",
+  "cards": [
+
+    { "id": "eco-platform", "topic": "architecture",
+      "front": "What is Android, and who maintains it?",
+      "back": "An open-source, Linux-based mobile OS maintained by Google as <strong>AOSP</strong> (Android Open Source Project), running on phones, tablets, watches, TVs and cars. <strong>Why it matters:</strong> being open-source/Linux explains the fragmentation you design around — many devices, many API levels, many screen sizes." },
+    { "id": "eco-studio", "topic": "architecture",
+      "front": "What is Android Studio and what does it bundle?",
+      "back": "The official IntelliJ-based IDE: code editor, the Android SDK tools, the <code>Gradle</code> build system, the emulator/Device Manager, <code>Logcat</code>, the Compose preview, and profilers. <strong>Why:</strong> it's one tool that turns Kotlin source into an installed, debuggable app — you live here all course." },
+    { "id": "eco-sdk", "topic": "architecture",
+      "front": "What is the Android SDK (vs Android Studio)?",
+      "back": "The <strong>SDK</strong> is the set of platform libraries, build tools and command-line utilities you compile against; <strong>Studio</strong> is the IDE that drives them. <strong>Why:</strong> the SDK Manager lets you install specific API levels so you can build for and test against the Android versions your users actually run." },
+    { "id": "eco-apilevel", "topic": "architecture",
+      "front": "What do minSdk, targetSdk and compileSdk mean?",
+      "back": "<strong>minSdk</strong> = oldest API level the app will install on; <strong>targetSdk</strong> = the version you tested against (Android applies that version's behaviors); <strong>compileSdk</strong> = the API you build with. <strong>Why:</strong> minSdk decides your reach, targetSdk decides which runtime behaviors apply — both are business decisions, not just numbers." },
+    { "id": "eco-gradle", "topic": "architecture",
+      "front": "What does Gradle do in an Android project?",
+      "back": "It's the build automation tool: compiles code, processes resources, runs tasks and produces the installable app. Configured in <code>build.gradle(.kts)</code>; dependencies live in the <code>dependencies { }</code> block. <strong>Why:</strong> almost every \"add a library\" step is a one-line Gradle dependency + Sync." },
+    { "id": "eco-manifest", "topic": "architecture",
+      "front": "What is AndroidManifest.xml for?",
+      "back": "The required declaration the system reads <em>before</em> running any code: it names the package, declares components (activities, services), requests permissions, and marks the launcher activity. <strong>Why:</strong> if a screen or permission isn't in the manifest, Android won't let the app use it — a classic \"works in code but crashes\" cause." },
+    { "id": "eco-logcat", "topic": "architecture",
+      "front": "What is Logcat and when do you reach for it?",
+      "back": "Android Studio's real-time log viewer showing system + app messages (<code>Log.d</code>/<code>Log.e</code>), stack traces and crash reports. <strong>Why:</strong> it's your first stop when an app crashes or misbehaves — the stack trace usually points straight at the offending line." },
+    { "id": "eco-apk-aab", "topic": "architecture",
+      "front": "APK vs AAB — what's the difference?",
+      "back": "<strong>APK</strong> (Android Package) is the installable file delivered to a device; <strong>AAB</strong> (App Bundle) is the upload format for Play, from which Google generates device-optimized APKs. <strong>Why:</strong> you build APKs locally for testing, AABs for release — smaller downloads for users." },
+    { "id": "eco-res", "topic": "architecture",
+      "front": "What lives in the res/ folder and why reference it by ID?",
+      "back": "Non-code assets: layouts, <code>strings.xml</code>, colors, drawables, launcher icons, themes. Referenced by ID (<code>R.string.app_name</code>) and can have config variants (e.g. <code>values-night</code>). <strong>Why:</strong> IDs + variants let Android swap the right resource automatically for language, density, and dark mode — no code changes." },
+
+    { "id": "kt-valvar", "topic": "kotlin",
+      "front": "val vs var?",
+      "back": "<strong>val</strong> = read-only reference, assigned once; <strong>var</strong> = mutable, can be reassigned. <strong>Why prefer val:</strong> immutability means fewer moving parts and fewer bugs, and Compose relies on stable reads — default to val, reach for var only when you truly must reassign." },
+    { "id": "kt-null", "topic": "kotlin",
+      "front": "How does Kotlin handle null, and what should you avoid?",
+      "back": "Nullable types (<code>String?</code>) are distinct from non-null (<code>String</code>) <em>at compile time</em>. Use <code>?.</code> (safe call), <code>?:</code> (Elvis default) and <code>let { }</code>. <strong>Avoid <code>!!</code></strong> — it forces the value and throws <code>NullPointerException</code> if null. <strong>Why:</strong> the compiler turns runtime NPEs into compile-time errors you fix once." },
+    { "id": "kt-dataclass", "topic": "kotlin",
+      "front": "What does the data keyword give you?",
+      "back": "The compiler auto-generates <code>equals()</code>, <code>hashCode()</code>, <code>toString()</code>, <code>copy()</code> and <code>componentN()</code> from the constructor properties. <strong>Why:</strong> ideal for model/UI-state holders — value equality lets Compose and tests compare states cheaply, and <code>copy()</code> makes immutable updates one line." },
+    { "id": "kt-lambda", "topic": "kotlin",
+      "front": "What is a function type and a lambda in Kotlin?",
+      "back": "Functions are values. A function type looks like <code>(Int) -> String</code>; a lambda is the literal <code>{ x -> \"$x\" }</code>. A <strong>trailing lambda</strong> can move outside the parentheses. <strong>Why:</strong> that trailing-lambda syntax is exactly what makes Compose's <code>Column { ... }</code> content blocks read like a layout." },
+    { "id": "kt-ext", "topic": "kotlin",
+      "front": "What is an extension function?",
+      "back": "A function added to a type from outside, without inheritance: <code>fun String.shout() = uppercase()</code>, called like a member <code>\"hi\".shout()</code>. <strong>Why:</strong> the Android/Compose APIs use them everywhere (e.g. <code>Modifier</code> chains) to add behavior to existing types cleanly." },
+    { "id": "kt-when", "topic": "kotlin",
+      "front": "Why is when more than a switch statement?",
+      "back": "As an <em>expression</em> it returns a value, and over a sealed type/enum the compiler can require it be <strong>exhaustive</strong> — every case handled. <strong>Why:</strong> map a UI state (Loading/Success/Error) with <code>when</code> and the compiler refuses to compile if you forget a state. The compiler becomes your reviewer." },
+    { "id": "kt-coroutine", "topic": "kotlin",
+      "front": "What is a coroutine / a suspend function?",
+      "back": "A coroutine is a lightweight, cancellable unit of async work; a <code>suspend</code> function can pause <em>without blocking a thread</em>. Launch them in a scope like <code>viewModelScope</code>. <strong>Why:</strong> network and database work must run off the main thread — coroutines do it without callback spaghetti and cancel automatically when the screen goes away." },
+    { "id": "kt-scope", "topic": "kotlin",
+      "front": "What do the scope functions (let/apply/run/also/with) do?",
+      "back": "They run a block on an object. <strong>apply/also</strong> return the object (configuration); <strong>let/run/with</strong> return the lambda result. <strong>Why:</strong> <code>user?.let { render(it) }</code> runs only when <code>user</code> is non-null — a clean null-safe idiom you'll read constantly." },
+    { "id": "kt-sealed", "topic": "kotlin",
+      "front": "What is a sealed class / interface good for?",
+      "back": "A restricted hierarchy whose subclasses are all known at compile time. <strong>Why:</strong> combined with <code>when</code>, it models a closed set of states (Loading / Success / Error) <em>exhaustively</em> — add a new state and every <code>when</code> over it fails to compile until you handle it." },
+    { "id": "kt-hof", "topic": "kotlin",
+      "front": "What is a higher-order function?",
+      "back": "A function that takes a function as a parameter or returns one — e.g. <code>list.map { it * 2 }</code>, <code>list.filter { it > 0 }</code>. <strong>Why:</strong> Compose slots (<code>content: @Composable () -> Unit</code>) are higher-order functions — understanding them is understanding how composables nest." },
+    { "id": "kt-collections", "topic": "kotlin",
+      "front": "Difference between List and MutableList in Kotlin?",
+      "back": "<code>List</code> is read-only (no add/remove); <code>MutableList</code> allows modification. <code>listOf()</code> gives the former, <code>mutableListOf()</code> the latter. <strong>Why:</strong> exposing a read-only <code>List</code> from a ViewModel prevents callers from mutating your state behind your back — immutability by default again." },
+
+    { "id": "lc-activity", "topic": "architecture",
+      "front": "What is an Activity?",
+      "back": "An app component representing a single, focused screen / entry point. A Compose app usually has <strong>one</strong> Activity (<code>MainActivity</code>) that hosts the UI via <code>setContent { }</code>. <strong>Why:</strong> knowing it's a system-owned component (the system creates and destroys it) is what makes the lifecycle matter." },
+    { "id": "lc-lifecycle", "topic": "architecture",
+      "front": "Name the Activity lifecycle callbacks in order.",
+      "back": "<code>onCreate → onStart → onResume</code> (now in foreground) <code>→ onPause → onStop → onDestroy</code>. <strong>Why:</strong> you override them to acquire resources on the way up and release them on the way down — do it at the wrong step and you leak memory or do work the user can't see." },
+    { "id": "lc-oncreate", "topic": "architecture",
+      "front": "What goes in onCreate()?",
+      "back": "Called <strong>once</strong> when the Activity is created — where you call <code>setContent { }</code> and do one-time setup. It receives a <code>savedInstanceState</code> Bundle for restoring prior state. <strong>Why:</strong> putting repeated work here (or forgetting it runs again on recreation) is a common rotation bug." },
+    { "id": "lc-config", "topic": "architecture",
+      "front": "What happens on a configuration change like rotation?",
+      "back": "By default Android <strong>destroys and recreates</strong> the Activity, so unsaved UI state is lost. Preserve it with <code>rememberSaveable</code> or a <code>ViewModel</code>. <strong>Why:</strong> \"the text I typed disappears when I rotate\" is the #1 beginner bug — it's the lifecycle doing exactly what it's designed to." },
+    { "id": "lc-intent", "topic": "architecture",
+      "front": "What is an Intent?",
+      "back": "A messaging object that requests an action — start an Activity, deliver data, or trigger the system. <strong>Why:</strong> it's how screens and apps talk; understanding intents is what lets your app open the dialer, share text, or move to its own next screen." },
+    { "id": "lc-explicit-implicit", "topic": "architecture",
+      "front": "Explicit vs implicit Intent?",
+      "back": "<strong>Explicit:</strong> <code>Intent(this, DetailActivity::class.java)</code> targets a specific component in your app. <strong>Implicit:</strong> <code>Intent(ACTION_VIEW, uri)</code> describes what you want done and lets the system pick an app (browser, dialer, maps). <strong>Why:</strong> use explicit inside your app, implicit to delegate to other apps." },
+    { "id": "lc-context", "topic": "architecture",
+      "front": "What is a Context?",
+      "back": "A handle to the app environment used to reach resources, start activities, get system services, and create views. An Activity <em>is</em> a Context; in Compose you get one via <code>LocalContext.current</code>. <strong>Why:</strong> holding a long-lived reference to an Activity Context is a classic memory leak — prefer the application context for things that outlive a screen." },
+    { "id": "lc-bundle", "topic": "architecture",
+      "front": "What is the savedInstanceState Bundle for?",
+      "back": "A small key-value container the system passes to <code>onCreate</code> to restore transient UI state after recreation or process death. <strong>Why:</strong> it's for <em>small</em> transient state only (a scroll position, a typed string) — not your whole data set. In Compose, <code>rememberSaveable</code> writes into this mechanism." },
+    { "id": "lc-aware", "topic": "architecture",
+      "front": "What is a lifecycle-aware component?",
+      "back": "A component (like a <code>ViewModel</code> or <code>LifecycleObserver</code>) that reacts to lifecycle states so work starts/stops at the right time. <strong>Why:</strong> it prevents leaks and crashes from doing work after a screen is gone — e.g. <code>collectAsStateWithLifecycle()</code> stops collecting when the screen backgrounds." },
+
+    { "id": "cu-compose", "topic": "compose-ui",
+      "front": "What is Jetpack Compose?",
+      "back": "Android's modern, <strong>declarative</strong> UI toolkit: you describe the UI as Kotlin functions of the current state, and Compose redraws what changed when state changes. It replaces XML layouts as the recommended approach. <strong>Why:</strong> describing UI as a function of state removes a whole class of \"the screen and the data disagree\" bugs." },
+    { "id": "cu-composable", "topic": "compose-ui",
+      "front": "What does the @Composable annotation mark?",
+      "back": "A function that emits UI. Composables call other composables, must run in a Compose context, and are re-invoked (recomposed) when the state they read changes. <strong>Why:</strong> the annotation is how the Compose compiler knows which functions participate in recomposition." },
+    { "id": "cu-recomp", "topic": "compose-ui",
+      "front": "What is recomposition?",
+      "back": "Compose re-running composable functions to update the UI when their state inputs change. It's <strong>selective</strong> — only the parts that read the changed state recompose. <strong>Why:</strong> composables must be side-effect-free and able to run again any time, in any order, possibly skipped — code that assumes \"runs once\" breaks here." },
+    { "id": "cu-declarative", "topic": "compose-ui",
+      "front": "Declarative vs imperative UI?",
+      "back": "<strong>Declarative</strong> (Compose): describe what the UI should be for a given state; the framework updates it. <strong>Imperative</strong> (old Views): manually find widgets and mutate them (<code>textView.text = ...</code>). <strong>Why:</strong> declarative kills the \"I forgot to update one of the five places that show this value\" bug." },
+    { "id": "cu-modifier", "topic": "compose-ui",
+      "front": "What is a Modifier and why does order matter?",
+      "back": "An ordered chain that decorates a composable — size, padding, background, click, etc. <code>Modifier.padding(8.dp).background(Blue)</code> differs from <code>.background(Blue).padding(8.dp)</code>. <strong>Why:</strong> each modifier wraps the next, so order changes the result (padding-then-background leaves an unpainted margin; the reverse paints it)." },
+    { "id": "cu-layouts", "topic": "compose-ui",
+      "front": "What do Column, Row and Box do?",
+      "back": "<strong>Column</strong> stacks children vertically, <strong>Row</strong> horizontally, <strong>Box</strong> overlays them (z-stack). <code>Arrangement</code> and <code>Alignment</code> position the children. <strong>Why:</strong> these three compose to build nearly any layout — most screens are Columns of Rows with the occasional Box for overlays/badges." },
+    { "id": "cu-preview", "topic": "compose-ui",
+      "front": "What is @Preview for?",
+      "back": "Renders a composable in Android Studio's design pane <em>without</em> running the app on a device, and you can preview multiple states/configs. <strong>Why:</strong> it tightens the iteration loop from \"rebuild and deploy\" to \"see it instantly\" — and pushes you toward stateless, parameter-driven composables that are easy to preview." },
+    { "id": "cu-setcontent", "topic": "compose-ui",
+      "front": "What does setContent { } do?",
+      "back": "An Activity extension (called in <code>onCreate</code>) that hosts Compose; everything in the lambda is your composable UI tree. <strong>Why:</strong> it's the single bridge from the Activity/lifecycle world into the Compose world — the one place the two meet." },
+    { "id": "cu-slot", "topic": "compose-ui",
+      "front": "What is the Slot API pattern?",
+      "back": "A composable accepts a <code>@Composable</code> lambda parameter (a \"slot\") so callers supply the content — e.g. <code>Scaffold</code>'s <code>topBar</code>/<code>content</code>, or a <code>Button</code>'s label. <strong>Why:</strong> slots make components flexible and reusable without dozens of boolean flags — you pass in exactly the UI you want." },
+    { "id": "cu-dpsp", "topic": "compose-ui",
+      "front": "dp vs sp — when do you use each?",
+      "back": "<strong>dp</strong> (density-independent pixels) sizes layout so elements look consistent across screen densities; <strong>sp</strong> (scale-independent pixels) sizes text and <em>also</em> respects the user's font-size accessibility setting. <strong>Why:</strong> always use <code>sp</code> for text — hardcoding text in <code>dp</code> ignores users who enlarge their fonts." },
+
+    { "id": "st-state", "topic": "state",
+      "front": "What is \"state\" in Compose?",
+      "back": "Any value that can change over time and that the UI reads. When observable state changes, Compose recomposes the composables that read it. The mental model: <strong>UI = f(state)</strong>. <strong>Why:</strong> once you see the UI as a pure function of state, every bug becomes \"which state was wrong?\" instead of \"which widget did I forget to update?\"" },
+    { "id": "st-mutablestate", "topic": "state",
+      "front": "What does mutableStateOf do?",
+      "back": "Creates an <strong>observable</strong> state holder. Reading its <code>.value</code> inside a composable subscribes that composable to changes; writing <code>.value</code> triggers recomposition. Usually used with <code>by</code> delegation. <strong>Why:</strong> a plain <code>var</code> won't recompose anything — Compose only reacts to observable state." },
+    { "id": "st-remember", "topic": "state",
+      "front": "What does remember { } solve?",
+      "back": "It stores a value <em>across recompositions</em> so it isn't recreated every time the function runs. <code>remember { mutableStateOf(0) }</code> keeps the same state object between recompositions. <strong>Why:</strong> without <code>remember</code>, your counter resets to 0 on every recomposition — the value never sticks." },
+    { "id": "st-remembersaveable", "topic": "state",
+      "front": "remember vs rememberSaveable?",
+      "back": "<code>remember</code> survives recomposition only; <code>rememberSaveable</code> <em>also</em> survives configuration changes and process death by saving into the instance-state Bundle. <strong>Why:</strong> use <code>rememberSaveable</code> for state the user would hate to lose on rotation (typed text, selected tab) — but only small, savable values." },
+    { "id": "st-hoist", "topic": "state",
+      "front": "What is state hoisting?",
+      "back": "Moving state up to a caller and passing the value <em>down</em> plus an <code>onValueChange</code> event <em>up</em>. Pattern: <code>value: T, onValueChange: (T) -> Unit</code>. <strong>Why:</strong> it makes composables stateless, reusable and testable, and gives state a single owner — the cure for duplicated, drifting copies of the same value." },
+    { "id": "st-stateful", "topic": "state",
+      "front": "Stateful vs stateless composable?",
+      "back": "A <strong>stateful</strong> composable holds its own remembered state; a <strong>stateless</strong> one receives state + event callbacks as parameters. <strong>Why:</strong> stateless composables are easy to preview, test and reuse — hoist state out of a stateful composable to turn it into a stateless, flexible one." },
+    { "id": "st-ssot", "topic": "state",
+      "front": "What is \"single source of truth\"?",
+      "back": "Each piece of state has exactly <strong>one</strong> owner; everything else reads from it. Usually that owner is the ViewModel's exposed UI state. <strong>Why:</strong> duplicate copies of the same value inevitably drift apart — one owner means they can't disagree." },
+    { "id": "st-udf", "topic": "state",
+      "front": "What is unidirectional data flow (UDF)?",
+      "back": "State flows <strong>down</strong> from owner to UI; events flow <strong>up</strong> from UI to owner. The UI never mutates state directly — it sends events; the owner updates state, which flows back down. <strong>Why:</strong> a single, predictable direction makes data flow easy to trace and debug." },
+
+    { "id": "li-lazy", "topic": "lists",
+      "front": "What are LazyColumn / LazyRow and why \"lazy\"?",
+      "back": "Scrollable list composables that only compose and lay out the items currently visible (plus a small buffer). <strong>Why:</strong> a long list with a plain <code>Column</code> would build every row up front and jank or crash; lazy lists are Compose's efficient equivalent of <code>RecyclerView</code>." },
+    { "id": "li-items", "topic": "lists",
+      "front": "What does items() do, and why provide a key?",
+      "back": "Inside a <code>LazyColumn</code>/<code>LazyRow</code>, <code>items(list) { item -> ItemCard(item) }</code> emits one composable per element. A stable <code>key = { it.id }</code> lets Compose track items across changes. <strong>Why:</strong> without keys, inserting/reordering can re-use the wrong item's state and animations — keys keep identity straight." },
+    { "id": "li-m3", "topic": "lists",
+      "front": "What is Material Design 3?",
+      "back": "Google's current design system (\"Material You\"). The <code>androidx.compose.material3</code> library gives themed components — <code>Scaffold</code>, <code>TopAppBar</code>, <code>Card</code>, <code>Button</code> — plus dynamic color and a type/shape scale. <strong>Why:</strong> using M3 components means your app looks native and consistent for free, and adapts to the user's wallpaper-based color on Android 12+. <em>Heads-up:</em> the newer <strong>Material 3 Expressive</strong> components (springier motion, larger shape/size options) graduate to stable in <code>material3 1.5.0</code> during 2026 — same library, opt-in extras." },
+    { "id": "li-theme", "topic": "lists",
+      "front": "What does MaterialTheme provide?",
+      "back": "It supplies <code>colorScheme</code>, <code>typography</code> and <code>shapes</code> to everything inside it; children read <code>MaterialTheme.colorScheme.primary</code>, etc. <strong>Why:</strong> centralizing theme tokens means one change recolors the whole app and dark mode is automatic — far better than hardcoding colors per component." },
+    { "id": "li-scaffold", "topic": "lists",
+      "front": "What does Scaffold do, and what's the contentPadding trap?",
+      "back": "It arranges standard app structure — <code>topBar</code>, <code>bottomBar</code>, <code>floatingActionButton</code>, <code>snackbarHost</code> — and hands you a <code>contentPadding</code> to apply. <strong>Why:</strong> forgetting to apply that padding hides the top of your content behind the app bar — a very common Scaffold bug." },
+    { "id": "li-card", "topic": "lists",
+      "front": "What is a Card used for in Material 3?",
+      "back": "A surface container that groups related content with elevation/shape, commonly used as the visual unit for each row in a list. <strong>Why:</strong> wrapping list items in <code>Card</code>s gives clear visual grouping and tap targets — the standard look for feeds and item lists." },
+    { "id": "li-spacing", "topic": "lists",
+      "front": "How do you add spacing between Lazy list items?",
+      "back": "Use <code>verticalArrangement = Arrangement.spacedBy(8.dp)</code> on the <code>LazyColumn</code> (and/or <code>contentPadding</code> for edges). <strong>Why:</strong> adding a bottom <code>padding</code> modifier to each item instead double-pads adjacent items and the list edges — <code>spacedBy</code> spaces <em>between</em> items only." },
+
+    { "id": "na-navcompose", "topic": "architecture",
+      "front": "What is Navigation Compose?",
+      "back": "The <code>navigation-compose</code> library for moving between screens (destinations). A <code>NavHost</code> maps routes to composables; a <code>NavController</code> performs navigation. <strong>Why:</strong> it gives you a real back stack and route-based navigation without you hand-managing which screen is showing." },
+    { "id": "na-controller", "topic": "architecture",
+      "front": "NavController vs NavHost?",
+      "back": "<strong>NavController</strong> drives navigation (<code>navigate(route)</code>, <code>popBackStack()</code>); <strong>NavHost</strong> is the container that declares the graph and swaps in the composable for the current destination. <strong>Why:</strong> one is the \"engine,\" the other the \"map\" — you call the controller, the host renders the result." },
+    { "id": "na-viewmodel", "topic": "architecture",
+      "front": "What is a ViewModel and why use one?",
+      "back": "An architecture-component class that holds/exposes UI-related state and <strong>survives configuration changes</strong>; it runs coroutines in <code>viewModelScope</code>. Obtain it with <code>viewModel()</code>. <strong>Why:</strong> it keeps logic out of composables and keeps state alive across rotation — the right home for \"what the screen shows\" and how it changes." },
+    { "id": "na-repo", "topic": "architecture",
+      "front": "What is the repository pattern?",
+      "back": "A class that mediates between the ViewModel and data sources (network, database, DataStore), centralizing data access and deciding <em>where</em> data comes from. <strong>Why:</strong> the ViewModel asks the repository, not Retrofit or Room directly — so caching/retries have one home and sources can change without touching the UI." },
+    { "id": "na-layers", "topic": "architecture",
+      "front": "Describe the recommended app architecture layers.",
+      "back": "A <strong>UI layer</strong> (Compose + ViewModel holding UI state) and a <strong>Data layer</strong> (repositories + data sources). The UI observes state; the data layer owns the truth. <strong>Why:</strong> clear layers make the app testable and maintainable — each layer has one job and a clear boundary." },
+    { "id": "na-stateflow", "topic": "architecture",
+      "front": "What is StateFlow and how do you read it in Compose?",
+      "back": "An observable, <em>always-has-a-value</em> stream a ViewModel exposes as UI state. In Compose, read it with <code>collectAsStateWithLifecycle()</code> to turn the latest value into Compose state, tied to the lifecycle. <strong>Why:</strong> the lifecycle-aware collector stops work when the screen backgrounds and avoids stale-state bugs." },
+    { "id": "na-statein", "topic": "architecture",
+      "front": "Why expose state with stateIn(scope, WhileSubscribed(5000), Loading)?",
+      "back": "It turns a cold Flow into a hot <code>StateFlow</code> with an <strong>immediate value</strong> for Compose, keeps the upstream alive ~5s past the last collector (survives a quick rotation), and seeds the first frame with <code>Loading</code>. <strong>Why:</strong> Compose can render frame one, and a rotation doesn't needlessly restart the query." },
+    { "id": "na-vmdeps", "topic": "architecture",
+      "front": "Why shouldn't a ViewModel import Retrofit or Room directly?",
+      "back": "Because it should depend on a <strong>single repository interface</strong>, not concrete data sources. <strong>Why:</strong> that keeps it testable with fakes, gives caching/retries one home, and lets data sources change without touching UI logic — Retrofit/Room imports in a ViewModel are a code smell." },
+
+    { "id": "pe-persist", "topic": "data",
+      "front": "What is data persistence and how do you choose an option?",
+      "back": "Storing data so it survives app restarts and process death. Options: <strong>DataStore</strong> (key-value/typed prefs), <strong>Room/SQLite</strong> (structured records), <strong>files</strong>. <strong>Why:</strong> pick by the shape and size of the data — a few settings → DataStore; many structured rows you query → Room." },
+    { "id": "pe-datastore", "topic": "data",
+      "front": "What is DataStore and why prefer it over SharedPreferences?",
+      "back": "Jetpack's modern replacement for SharedPreferences: it stores small key-value/typed data <em>asynchronously</em> using coroutines and <code>Flow</code>. <strong>Why:</strong> SharedPreferences APIs can block the main thread; DataStore is main-safe and gives you a reactive <code>Flow</code> of the value." },
+    { "id": "pe-room", "topic": "data",
+      "front": "What is Room?",
+      "back": "Jetpack's persistence library — an abstraction layer over SQLite. You define <code>@Entity</code> classes, a <code>@Dao</code> with query methods, and a <code>@Database</code>, and Room generates the boilerplate with <strong>compile-time SQL verification</strong>. <strong>Why:</strong> it catches typo'd SQL at build time instead of crashing at runtime, with far less code than raw SQLite." },
+    { "id": "pe-entity-dao", "topic": "data",
+      "front": "What are @Entity and @Dao?",
+      "back": "<code>@Entity</code> marks a data class as a table (each property = a column); <code>@Dao</code> (Data Access Object) is an interface of annotated methods (<code>@Insert</code>, <code>@Query</code>, <code>@Delete</code>) that read/write those rows. <strong>Why:</strong> they let you describe schema + queries in Kotlin and let Room generate the SQL plumbing." },
+    { "id": "pe-flow", "topic": "data",
+      "front": "Why have a Room read query return Flow<List<…>> instead of a one-shot List?",
+      "back": "Room <strong>re-emits a Flow query automatically on every write</strong> to that table, so the screen updates itself after any insert/update — no manual re-fetch. <strong>Why:</strong> a one-shot <code>List</code> reads once and goes stale; the <code>Flow</code> keeps the UI in sync with the database as the single source of truth." },
+    { "id": "pe-sqlite", "topic": "data",
+      "front": "What is SQLite, and why use Room over it directly?",
+      "back": "The lightweight, file-based relational database embedded in Android. <strong>Why use Room:</strong> using SQLite directly means hand-writing SQL strings, cursor parsing and boilerplate with no compile-time checks — Room gives type-safety, less code, and verified queries on top of the same engine." },
+    { "id": "pe-mainsafe", "topic": "data",
+      "front": "Why must database I/O run off the main thread?",
+      "back": "Disk reads/writes can be slow; on the main (UI) thread they jank the UI and can trigger an <strong>ANR</strong> (Application Not Responding). <strong>Why:</strong> run Room suspend/Flow APIs from a coroutine (Room hops to a background dispatcher for you) so the UI thread stays free to draw at 60fps." },
+    { "id": "pe-sharedprefs", "topic": "data",
+      "front": "Is SharedPreferences still recommended?",
+      "back": "No — it's the legacy key-value store for small primitive settings; still seen in older code, but Google now recommends <strong>DataStore</strong>. <strong>Why:</strong> SharedPreferences' synchronous APIs can block the main thread, whereas DataStore is coroutine/Flow-based and main-safe." },
+
+    { "id": "nw-rest", "topic": "networking",
+      "front": "What is a REST API?",
+      "back": "A web-API style where a client makes HTTP requests to URL endpoints (resources) using verbs like GET and POST, and the server responds — usually with JSON. <strong>Why:</strong> nearly all app-to-backend communication in this course is REST over HTTPS; it's the default mental model for \"talk to a server.\"" },
+    { "id": "nw-methods", "topic": "networking",
+      "front": "What do the main HTTP methods and status codes mean?",
+      "back": "<strong>GET</strong> (read), <strong>POST</strong> (create/submit), <strong>PUT/PATCH</strong> (update), <strong>DELETE</strong> (remove). Codes report results: 200 OK, 201 Created, 401 Unauthorized, 404 Not Found, 500 Server Error. <strong>Why:</strong> the verb states intent and the code tells you what to do next — handle 4xx (your request) differently from 5xx (their server)." },
+    { "id": "nw-json", "topic": "networking",
+      "front": "What is JSON and how does it reach your Kotlin code?",
+      "back": "JavaScript Object Notation — a lightweight text format (<code>{ \"key\": value }</code>) most REST APIs use for bodies. A converter parses it into Kotlin <code>data class</code> objects. <strong>Why:</strong> you almost never touch raw JSON strings — you model the response as a data class and let serialization fill it in." },
+    { "id": "nw-retrofit", "topic": "networking",
+      "front": "What is Retrofit?",
+      "back": "A type-safe HTTP client for Android: you define an interface with annotated methods (<code>@GET(\"users/{id}\")</code>) and Retrofit generates the implementation, handling URL building and (with a converter) JSON parsing. <strong>Why:</strong> you declare <em>what</em> the endpoint is and Retrofit writes the <em>how</em> — far less error-prone than hand-built requests." },
+    { "id": "nw-serialization", "topic": "networking",
+      "front": "What does a serialization library (kotlinx.serialization / Moshi) do?",
+      "back": "Converts between JSON text and Kotlin objects. A converter plugs into Retrofit to turn a response body into your <code>@Serializable</code> data class automatically. <strong>Why:</strong> it's the glue between \"bytes off the wire\" and \"a typed object you can use\" — without it you'd parse JSON by hand." },
+    { "id": "nw-okhttp", "topic": "networking",
+      "front": "What is OkHttp and what is an interceptor?",
+      "back": "OkHttp is the underlying HTTP engine Retrofit uses; an <strong>Interceptor</strong> sits in the request/response pipeline to add headers (auth tokens), log traffic, or retry — without changing your API interface. <strong>Why:</strong> cross-cutting concerns like auth and logging live in one interceptor, not scattered across every call." },
+    { "id": "nw-permission", "topic": "networking",
+      "front": "What does an app need before it can reach the network?",
+      "back": "The <code>&lt;uses-permission android:name=\"android.permission.INTERNET\"/&gt;</code> declaration in the manifest. It's a normal (install-time) permission, granted automatically. <strong>Why:</strong> forget it and every request fails — a silent, confusing bug because there's no runtime prompt to remind you." },
+    { "id": "nw-errors", "topic": "networking",
+      "front": "IOException vs HttpException — what does each tell you?",
+      "back": "<strong>IOException</strong> = the request never reached a healthy server (offline/timeout) → retrying is reasonable. <strong>HttpException</strong> = reached the server, got a non-2xx (e.g. 401/404) → don't blind-retry; inspect <code>code()</code>. <strong>Why:</strong> conflating them makes you retry an auth failure forever or show \"no internet\" when the server just said 404." },
+    { "id": "nw-mainsafe", "topic": "networking",
+      "front": "Why must network calls run off the main thread?",
+      "back": "Network I/O is slow and unpredictable; on the main (UI) thread it janks the app and can ANR. Run it in a coroutine on a background dispatcher (e.g. <code>Dispatchers.IO</code>) launched from <code>viewModelScope</code>, then update state. <strong>Why:</strong> the main thread's only job is drawing the UI — never block it on the network." },
+
+    { "id": "pr-ssot", "topic": "project",
+      "front": "In an offline-first app, what is the single source of truth for the UI?",
+      "back": "The <strong>local cache (Room)</strong>. The UI observes the cache via <code>Flow</code>; the network's only job is to keep the cache fresh. <strong>Why:</strong> the app works offline and shows instantly because it never waits on the network to render — it renders the cache and refreshes in the background." },
+    { "id": "pr-refresh-fail", "topic": "project",
+      "front": "What must a refresh do when the network call fails?",
+      "back": "<strong>Leave the cache untouched</strong> and surface the failure as a signal (snackbar, or Error state if nothing is cached). <strong>Why:</strong> clearing cached data on a failed refresh punishes the user for a network blip — they'd lose data they already had over a transient error." },
+    { "id": "pr-four-states", "topic": "project",
+      "front": "What are the four UI states a data screen should model?",
+      "back": "<strong>Loading</strong> (no answer yet), <strong>Success</strong> (data to show), <strong>Empty</strong> (success but zero rows), <strong>Error</strong> (it failed). <strong>Why:</strong> collapsing Empty into Loading gives the classic \"frozen spinner\" bug; each state needs its own branch and often its own message/action." },
+    { "id": "pr-empty-vs-loading", "topic": "project",
+      "front": "A call succeeds and returns an empty list. Loading, Empty, or Error?",
+      "back": "<strong>Empty</strong> — a successful response with zero rows is not Loading. <strong>Why:</strong> Loading ends at the <em>first</em> emission, even an empty one; leaving the spinner up makes a working app look broken. Empty deserves a friendly \"nothing here yet\" (often with a Retry)." },
+    { "id": "pr-cache-network", "topic": "project",
+      "front": "Describe the cache-then-network flow the repository drives.",
+      "back": "Emit cached data immediately, kick off a network refresh, write the result back to the cache; the UI's <code>Flow</code> observer re-renders automatically. <strong>Why:</strong> the user sees data instantly (cache) and gets fresh data shortly after (network) — fast <em>and</em> correct, with the cache as the single source of truth." },
+    { "id": "pr-collector", "topic": "project",
+      "front": "Which Compose collector keeps you lifecycle-safe, and why?",
+      "back": "<code>collectAsStateWithLifecycle()</code> — it stops collecting when the screen is backgrounded, unlike a bare <code>collectAsState()</code>. <strong>Why:</strong> it saves work and avoids acting on stale state while the user isn't even looking at the screen." },
+    { "id": "pr-permission", "topic": "project",
+      "front": "Your integration build compiles but every request fails instantly with no prompt. First thing to check?",
+      "back": "The <strong>INTERNET permission</strong> in the manifest. <strong>Why:</strong> it's install-time (no runtime dialog), so a missing entry fails silently — easy to overlook because the code looks correct and there's no permission prompt to jog your memory." }
+
+  ]
+}
+</script>
+</main>
+<!-- ====================== FOOTER ====================== -->
+<footer class="footer">
+<div class="wrap">
+<span><span class="footer__brand">COP4667 Android Development</span> · Spaced-Repetition Trainer · Keiser University, B.S. Software Engineering</span>
+<span class="muted">SM-2 scheduling via the shared mastery engine. Built with the official <a href="https://developer.android.com/courses/android-basics-compose/course" rel="noopener" target="_blank">Android Basics with Compose</a> course.</span>
+<div class="row">
+<a href="../index.html">Course Hub</a>
+<a href="challenges.html">Challenges</a>
+<a href="debug-drills.html">Debug Drills</a>
+<a href="projects.html">Project Ladder</a>
+<a href="../assessments/flashcards.html">Flashcards</a>
+<a href="../assessments/quiz-1.html">Quiz 1</a>
+<a href="../assessments/post-test.html">Post-Test</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/mastery.js"></script>
+<script>
+    /* Mount the spaced-repetition trainer onto #srs using the deck JSON in #deck. */
+    (function () {
+      "use strict";
+      function ready(fn) {
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", fn);
+        } else { fn(); }
+      }
+      ready(function () {
+        if (window.MASTERY && MASTERY.srs) {
+          MASTERY.srs("#srs", "#deck");
+        } else {
+          var host = document.getElementById("srs");
+          if (host) {
+            host.innerHTML =
+              '<div class="callout callout--warn">' +
+              '<span aria-hidden="true" class="callout__icon">⚠️</span>' +
+              '<div class="callout__body">' +
+              '<span class="callout__label">Trainer could not load</span>' +
+              '<p>The mastery engine did not load (often a stale cache). ' +
+              'Hard-refresh the page (Ctrl/Cmd+Shift+R) to start your review. ' +
+              'Your saved progress is safe on this device.</p>' +
+              '</div></div>';
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

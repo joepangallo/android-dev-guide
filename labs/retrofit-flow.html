@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Networking Pipeline Visualizer. Step through how a Compose UI load request travels: ViewModel coroutine -&gt; Retrofit HTTP GET -&gt; JSON response -&gt; Kotlin data classes -&gt; StateFlow -&gt; LazyColumn. With loading/success/error UI states, live Kotlin at each layer, and teaching panels on HTTP methods, status codes, the INTERNET permission, and off-main-thread coroutines." name="description"/>
+<title>Networking Pipeline Visualizer (HTTP → JSON → UI) · COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ===== Page-specific tweaks — chrome still uses the shared contract classes ===== */
+    .lead { font-size: var(--fs-lg); color: var(--muted); max-width: 72ch; }
+    .anchor-h { scroll-margin-top: 84px; }
+    .two-col { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
+    @media (min-width: 980px) { .two-col { grid-template-columns: 1fr 320px; align-items: start; } }
+    .sticky-toc { position: sticky; top: 76px; }
+
+    /* ---- The pipeline visualizer ---- */
+    .viz { margin: var(--space-4) 0; }
+    .viz__controls { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-4); }
+    .viz__controls .spacer { flex: 1 1 auto; }
+    .viz__state-toggle { display: inline-flex; gap: 6px; align-items: center; }
+    .seg {
+      display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface);
+    }
+    .seg button {
+      appearance: none; border: none; background: none; font: inherit; font-weight: 700; font-size: var(--fs-xs);
+      padding: 7px 14px; cursor: pointer; color: var(--muted);
+    }
+    .seg button + button { border-left: 1px solid var(--line); }
+    .seg button[aria-pressed="true"].seg--load { background: color-mix(in srgb, var(--info) 18%, var(--surface)); color: var(--info); }
+    /* --green-dark on the pale green tint is only ≈2.43:1; teal-2 clears AA on the pressed label. */
+    .seg button[aria-pressed="true"].seg--ok   { background: color-mix(in srgb, var(--green) 20%, var(--surface)); color: var(--teal-2); }
+    .seg button[aria-pressed="true"].seg--err  { background: color-mix(in srgb, var(--danger) 16%, var(--surface)); color: var(--danger); }
+    [data-theme="dark"] .seg button[aria-pressed="true"].seg--ok { color: var(--green); }
+
+    /* layered stack diagram */
+    .layers { display: grid; gap: 0; margin: var(--space-3) 0; }
+    .layer {
+      position: relative;
+      display: grid; grid-template-columns: 52px 1fr; gap: var(--space-4); align-items: center;
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: var(--space-4); box-shadow: var(--shadow);
+      transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
+    }
+    .layer + .layer { margin-top: 34px; }
+    /* vertical connector + animated packet between layers */
+    .layer:not(:last-child)::after {
+      content: ""; position: absolute; left: 50%; bottom: -34px; width: 3px; height: 34px;
+      background: var(--line); transform: translateX(-50%); border-radius: 2px;
+    }
+    .layer__num {
+      width: 52px; height: 52px; display: grid; place-items: center; border-radius: 14px;
+      font-family: var(--font-mono); font-weight: 800; font-size: 1.2rem;
+      background: var(--surface-2); color: var(--muted); border: 2px solid var(--line);
+    }
+    .layer__title { margin: 0 0 2px; font-size: var(--fs-md); font-weight: 750; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .layer__desc { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+    .layer__role { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--teal-2); }
+    [data-theme="dark"] .layer__role { color: var(--green); }
+
+    /* active / visited / error states driven by JS */
+    .layer.is-active {
+      border-color: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 30%, transparent), var(--shadow);
+      transform: translateY(-1px);
+      background: color-mix(in srgb, var(--green) 7%, var(--surface));
+    }
+    .layer.is-active .layer__num { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: var(--teal); border-color: var(--green-dark); }
+    .layer.is-visited .layer__num { background: color-mix(in srgb, var(--teal-2) 16%, var(--surface)); color: var(--teal-2); border-color: var(--teal-2); }
+    [data-theme="dark"] .layer.is-visited .layer__num { color: var(--green); }
+    .layer.is-error.is-active {
+      border-color: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 28%, transparent), var(--shadow);
+      background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+    }
+    .layer.is-error.is-active .layer__num { background: linear-gradient(135deg, var(--danger), #b8383c); color: #fff; border-color: var(--danger); }
+
+    /* the moving packet */
+    .packet {
+      position: absolute; left: 50%; transform: translate(-50%, 0); top: -30px;
+      z-index: 4; pointer-events: none;
+      font-family: var(--font-mono); font-size: 10px; font-weight: 800; letter-spacing: .04em;
+      padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+      background: var(--info); color: #fff; box-shadow: var(--shadow);
+      opacity: 0; transition: opacity .2s ease;
+    }
+    .packet.is-show { opacity: 1; animation: packetBob .9s ease-in-out infinite; }
+    .packet.packet--req { background: var(--info); }
+    .packet.packet--res { background: var(--green-dark); }
+    .packet.packet--err { background: var(--danger); }
+    @keyframes packetBob { 0%,100% { transform: translate(-50%, -2px); } 50% { transform: translate(-50%, 4px); } }
+    @media (prefers-reduced-motion: reduce) { .packet.is-show { animation: none; } }
+
+    /* the stage explainer + code pane */
+    .viz__stage {
+      margin-top: var(--space-5); background: var(--surface); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: var(--space-5); box-shadow: var(--shadow); border-top: 3px solid var(--green);
+    }
+    .viz__stage-head { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; margin-bottom: var(--space-2); }
+    .viz__stage-step { font-family: var(--font-mono); font-weight: 800; color: var(--teal-2); font-size: var(--fs-sm); }
+    [data-theme="dark"] .viz__stage-step { color: var(--green); }
+    .viz__stage h3 { margin: 0; font-size: var(--fs-lg); }
+
+    /* the phone preview that mirrors the UI state */
+    .phone {
+      width: 240px; margin: 0 auto; background: var(--teal); border-radius: 26px; padding: 12px;
+      box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,.12);
+    }
+    .phone__screen {
+      background: var(--surface); border-radius: 16px; overflow: hidden; min-height: 380px;
+      display: flex; flex-direction: column;
+    }
+    .phone__bar {
+      background: linear-gradient(135deg, var(--teal-2), var(--green-dark)); color: #EAFBF2;
+      padding: 12px 14px; font-weight: 750; font-size: var(--fs-sm); display: flex; align-items: center; gap: 8px;
+    }
+    .phone__body { padding: 12px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .photo-row { display: flex; gap: 10px; align-items: center; }
+    .photo-thumb {
+      width: 46px; height: 46px; border-radius: 10px; flex: 0 0 auto;
+      background: linear-gradient(135deg, var(--green), var(--teal-2));
+      display: grid; place-items: center; color: #fff; font-size: 1.2rem;
+    }
+    .photo-meta { min-width: 0; }
+    .photo-meta b { display: block; font-size: var(--fs-sm); }
+    .photo-meta small { color: var(--muted); }
+    /* shimmer skeleton */
+    .skel { background: var(--surface-2); border-radius: 8px; position: relative; overflow: hidden; }
+    .skel::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--green) 22%, transparent), transparent);
+      transform: translateX(-100%); animation: shimmer 1.3s infinite;
+    }
+    @keyframes shimmer { 100% { transform: translateX(100%); } }
+    @media (prefers-reduced-motion: reduce) { .skel::after { animation: none; } }
+    .skel--line { height: 12px; }
+    .skel--line.w70 { width: 70%; } .skel--line.w50 { width: 50%; } .skel--line.w90 { width: 90%; }
+    .phone__center { flex: 1; display: grid; place-items: center; text-align: center; padding: 20px; color: var(--muted); }
+    .phone__err-icon { font-size: 2.4rem; }
+    .phone__retry {
+      margin-top: 10px; background: var(--green); color: var(--teal); border: none; border-radius: 999px;
+      font-weight: 800; font-size: var(--fs-xs); padding: 7px 16px; cursor: pointer; font-family: var(--font-sans);
+    }
+
+    .req-line { font-family: var(--font-mono); font-size: var(--fs-sm); }
+    /* --green is too light for small bold text on white (≈1.78:1); use a dark token for AA. */
+    .req-line .verb { color: var(--teal-2); font-weight: 800; }
+    [data-theme="dark"] .req-line .verb { color: var(--green); }
+    .status-pill { font-family: var(--font-mono); font-weight: 800; }
+
+    /* HTTP reference tables */
+    table.ref { width: 100%; border-collapse: collapse; margin: var(--space-3) 0; font-size: var(--fs-sm); }
+    table.ref th, table.ref td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    table.ref th { background: var(--surface-2); font-weight: 700; }
+    table.ref code { white-space: nowrap; }
+    /* --green-dark on white is only ≈2.76:1; teal-2 (≈8.64:1) meets AA for this small bold cell. */
+    .status-2 { color: var(--teal-2); font-weight: 800; }
+    .status-3 { color: var(--info); font-weight: 800; }
+    .status-4 { color: var(--accent); font-weight: 800; }
+    .status-5 { color: var(--danger); font-weight: 800; }
+    [data-theme="dark"] .status-2 { color: var(--green); }
+
+    .pill-list { display: flex; flex-wrap: wrap; gap: 8px; margin: var(--space-3) 0; }
+    .mini-note { font-size: var(--fs-sm); color: var(--muted); }
+    .thread-bars { display: grid; gap: 10px; margin: var(--space-3) 0; }
+    .thread { display: grid; grid-template-columns: 120px 1fr; gap: 10px; align-items: center; }
+    .thread__name { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; color: var(--teal-2); }
+    [data-theme="dark"] .thread__name { color: var(--green); }
+    .thread__track { height: 22px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); display: flex; overflow: hidden; }
+    .seg-block { display: grid; place-items: center; font-size: 10px; font-weight: 800; color: #fff; }
+    .seg-ui { background: var(--teal-2); } .seg-wait { background: var(--accent); color: var(--teal); } .seg-net { background: var(--info); } .seg-render { background: var(--green-dark); }
+  </style>
+</head>
+<body>
+<!-- ============================ TOP NAV ============================ -->
+<header>
+<div class="topbar">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">A</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="../sessions/session-07.html">S7 · Networking</a>
+<a href="../sessions/session-08.html">S8 · API + UI</a>
+<a aria-current="page" class="active" href="retrofit-flow.html">Pipeline Viz</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ============================ HERO ============================ -->
+<section aria-labelledby="hero-title" class="hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:12px;">
+<span class="pill pill--green">Interactive Lab Tool</span>
+<span class="pill">Week 2–3 · Sessions 7 &amp; 8</span>
+<span class="pill">Unit 5 — Connect to the internet</span>
+</div>
+<h1 class="hero-title" id="hero-title">Networking Pipeline Visualizer</h1>
+<p class="hero-sub">
+        Watch a single tap travel the whole stack: Compose triggers a load → the ViewModel launches a coroutine →
+        Retrofit builds an HTTP <code style="color:#EAFBF2">GET</code> → the server returns JSON → the JSON is deserialized into
+        Kotlin <code style="color:#EAFBF2">data class</code>es → <code style="color:#EAFBF2">StateFlow</code> updates and the
+        <code style="color:#EAFBF2">LazyColumn</code> renders. Step it, play it, and flip between loading / success / error UI states.
+      </p>
+<div class="hero-meta">
+<span class="pill pill--accent">🎯 CLO 5</span>
+<span class="pill pill--accent">🎯 CLO 6</span>
+<span class="pill">Kotlin · Retrofit · Coroutines · Compose · Material 3</span>
+</div>
+</section>
+<div class="two-col">
+<div>
+<!-- ===================== HOW TO USE ===================== -->
+<section aria-labelledby="how-h" class="card card--accent slide">
+<h2 class="card__title anchor-h" id="how-h">🧭 How to use this page</h2>
+<p class="lead">This is a live diagram, not a video. Drive it from the front of the room and narrate each layer as the data moves.</p>
+<div class="grid grid-2">
+<div>
+<ul>
+<li><strong>Step ›</strong> advances the request/response one layer at a time — pause here to read the Kotlin.</li>
+<li><strong>▶ Play</strong> auto-advances every ~1.6 s; <strong>⏸ Pause</strong> stops; <strong>↺ Reset</strong> returns to the idle UI.</li>
+<li>The <strong>Loading / Success / Error</strong> toggle changes what the on-screen phone renders and which final stage you land on.</li>
+<li>Each stage shows the <strong>exact Kotlin</strong> for that layer in a copyable <span class="badge">code</span> block.</li>
+</ul>
+</div>
+<div>
+<div class="callout callout--clo" role="note">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Maps to outcomes</span>
+<p style="margin:0"><span class="clo-tag">CLO 5</span> Integrate APIs (here: a cloud REST API over HTTP). <span class="clo-tag">CLO 6</span> Understand &amp; implement network protocols for backend communication.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ===================== THE VISUALIZER ===================== -->
+<section aria-labelledby="viz-h" class="slide">
+<h2 class="card__title anchor-h" id="viz-h">🛰️ The pipeline, layer by layer</h2>
+<div class="viz card">
+<div class="viz__controls">
+<button class="btn" id="vizPlay" type="button">▶ Play</button>
+<button class="btn btn--ghost" id="vizStep" type="button">Step ›</button>
+<button class="btn btn--ghost" id="vizBack" type="button">‹ Back</button>
+<button class="btn btn--ghost" id="vizReset" type="button">↺ Reset</button>
+<span class="spacer"></span>
+<span class="viz__state-toggle">
+<span class="mini-note" style="font-weight:700">Outcome:</span>
+<span aria-label="Choose the UI outcome to simulate" class="seg" role="group">
+<button aria-pressed="true" class="seg--load" data-outcome="loading" type="button">Loading</button>
+<button aria-pressed="false" class="seg--ok" data-outcome="success" type="button">Success</button>
+<button aria-pressed="false" class="seg--err" data-outcome="error" type="button">Error</button>
+</span>
+</span>
+</div>
+<div class="grid" style="grid-template-columns:1fr;gap:var(--space-5)">
+<div class="grid" style="grid-template-columns:1fr;gap:var(--space-5)">
+<!-- LAYERS -->
+<div aria-label="Networking pipeline layers" class="layers" id="vizLayers">
+<div class="layer" data-layer="0">
+<div class="layer__num">1</div>
+<div>
+<p class="layer__title">📱 Compose UI <span class="badge badge--green">@Composable</span></p>
+<p class="layer__desc">User taps <strong>Refresh</strong>. The <code>onClick</code> calls a ViewModel function — the UI itself never touches the network.</p>
+<p class="layer__role">PhotoScreen.kt · onClick → viewModel.loadPhotos()</p>
+</div>
+</div>
+<div class="layer" data-layer="1">
+<div class="layer__num">2</div>
+<div>
+<p class="layer__title">🧠 ViewModel + coroutine <span class="badge badge--teal">viewModelScope</span></p>
+<p class="layer__desc">The ViewModel sets state to <code>Loading</code> and <code>launch</code>es a coroutine so the network call runs <em>off the main thread</em>.</p>
+<p class="layer__role">PhotoViewModel.kt · viewModelScope.launch { … }</p>
+</div>
+</div>
+<div class="layer" data-layer="2">
+<div class="layer__num">3</div>
+<div>
+<p class="layer__title">🌐 Retrofit builds the HTTP request <span class="badge">suspend fun</span></p>
+<p class="layer__desc">Retrofit turns your annotated interface into a real HTTP <span class="req-line"><span class="verb">GET</span></span> with a URL and headers, dispatched on Dispatchers.IO.</p>
+<p class="layer__role">PhotoApiService.kt · @GET("photos")</p>
+</div>
+</div>
+<div class="layer" data-layer="3">
+<div class="layer__num">4</div>
+<div>
+<p class="layer__title">🖥️ Server responds with JSON <span class="badge" id="layerStatusBadge">200 OK</span></p>
+<p class="layer__desc">The backend returns an HTTP status line, headers, and a JSON body — just text over the wire.</p>
+<p class="layer__role">api.restful-api.dev/objects → application/json</p>
+</div>
+</div>
+<div class="layer" data-layer="4">
+<div class="layer__num">5</div>
+<div>
+<p class="layer__title">🔁 JSON → Kotlin data classes <span class="badge badge--amber">kotlinx.serialization</span></p>
+<p class="layer__desc">The converter maps each JSON field onto a property of your <code>data class</code>. Names must line up (or be remapped).</p>
+<p class="layer__role">PhotoDto.kt · Json.decodeFromString&lt;List&lt;PhotoDto&gt;&gt;()</p>
+</div>
+</div>
+<div class="layer" data-layer="5">
+<div class="layer__num">6</div>
+<div>
+<p class="layer__title">🎨 State updates → LazyColumn renders <span class="badge badge--green">recomposition</span></p>
+<p class="layer__desc">The ViewModel emits <code>Success(list)</code> (or <code>Error</code>); Compose observes the StateFlow and recomposes the list.</p>
+<p class="layer__role">PhotoScreen.kt · when (uiState) { … }</p>
+</div>
+</div>
+<!-- moving packet injected/positioned by JS -->
+<div aria-hidden="true" class="packet" id="vizPacket">GET</div>
+</div>
+</div>
+<!-- STAGE EXPLAINER + PHONE + CODE -->
+<div class="grid grid-2" style="align-items:start">
+<div aria-live="polite" class="viz__stage">
+<div class="viz__stage-head">
+<span class="viz__stage-step" id="stageStep">Stage 0 / 6</span>
+<h3 data-toc-skip="" id="stageTitle">Idle — nothing has happened yet</h3>
+</div>
+<p class="mini-note" id="stageBody">Press <strong>Step ›</strong> or <strong>▶ Play</strong>. Pick an outcome on the right to decide whether the request succeeds or fails.</p>
+<div id="stageExtra"></div>
+</div>
+<div>
+<div aria-label="Live preview of the app's UI state" class="phone">
+<div class="phone__screen">
+<div class="phone__bar">📷 Photo Gallery</div>
+<div class="phone__body" id="phoneBody">
+<!-- JS swaps idle / loading / success / error here -->
+<p class="phone__center">Tap <strong>Refresh</strong> to load photos.</p>
+</div>
+</div>
+</div>
+<p class="center mini-note" style="margin-top:8px">The phone mirrors the real <code>UiState</code> the ViewModel would emit.</p>
+</div>
+</div>
+<!-- LIVE CODE FOR CURRENT STAGE -->
+<div>
+<p class="mini-note" style="margin-bottom:4px"><strong>Kotlin running at this layer</strong> (updates as you step):</p>
+<div class="codeblock" id="stageCodeBlock">
+<span class="codeblock__lang">kotlin</span>
+<pre><code id="stageCode">// Press Step or Play to walk through the pipeline.
+// The exact Kotlin for the current layer appears here.</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout--tip" role="note">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">The one-sentence summary</span>
+<p style="margin:0"><strong>UI asks → ViewModel launches a coroutine → Retrofit does HTTP → server returns JSON → converter builds Kotlin objects → state changes → UI recomposes.</strong> Every networked app you build this term is a variation on this loop.</p>
+</div>
+</div>
+</section>
+<!-- ===================== FULL CODE WALKTHROUGH (TABS) ===================== -->
+<section aria-labelledby="code-h" class="card slide">
+<h2 class="card__title anchor-h" id="code-h">🧩 The full, copy-paste pipeline in code</h2>
+<p class="muted">The same six layers as a complete, current Android example. Tabs follow the data top-to-bottom. Everything here compiles against current AndroidX + Retrofit 3.0 + kotlinx.serialization. (Retrofit 3.x is a drop-in, binary-compatible successor to the 2.x line — the API you write is identical; it just bumps its baseline Kotlin/OkHttp dependencies.)</p>
+<div aria-label="Pipeline code by layer" class="tabs" role="tablist">
+<button class="tab" data-tab="deps">0 · Setup</button>
+<button class="tab" data-tab="model">5 · Data classes</button>
+<button class="tab" data-tab="api">3 · Retrofit API</button>
+<button class="tab" data-tab="net">Retrofit instance</button>
+<button class="tab" data-tab="repo">Repository</button>
+<button class="tab" data-tab="vm">2 · ViewModel</button>
+<button class="tab" data-tab="ui">1 &amp; 6 · Compose UI</button>
+</div>
+<div class="tabpanel" data-tabpanel="deps">
+<h4>Gradle dependencies + the INTERNET permission</h4>
+<p class="mini-note">Add the dependencies, the Kotlin serialization plugin, and — easy to forget — the manifest permission. Without the permission the request throws <code>SecurityException</code> at runtime.</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · build.gradle.kts (:app)</span>
+<pre><code>plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    // Compiler plugin that generates the JSON (de)serializers.
+    // Pin it to your Kotlin version (here 2.2.20) — they must match.
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"
+}
+
+dependencies {
+    // Retrofit — type-safe HTTP client (3.x is binary-compatible with 2.x)
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+
+    // kotlinx.serialization + the Retrofit converter that bridges them
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+
+    // OkHttp logging — print every request/response in Logcat while learning
+    // (Retrofit 3 baselines on OkHttp 5, so match it here)
+    implementation("com.squareup.okhttp3:logging-interceptor:5.3.0")
+
+    // ViewModel + lifecycle-aware coroutine scope (viewModelScope)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+}</code></pre>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">xml · AndroidManifest.xml</span>
+<pre><code>&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+
+    &lt;!-- REQUIRED: without this, every network call fails with SecurityException --&gt;
+    &lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+
+    &lt;!-- Optional: react to connectivity (e.g. show "offline") --&gt;
+    &lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /&gt;
+
+    &lt;application
+        android:name=".PhotoApp"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.PhotoGallery"&gt;
+        &lt;!-- activities … --&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+</div>
+<div class="callout callout--warn" role="note">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">INTERNET is a "normal" permission</span>
+<p style="margin:0">It is granted automatically at install time — there is <em>no</em> runtime permission dialog. So the only thing students must remember is to declare it in the manifest. If a call mysteriously fails with <code>SecurityException: Permission denied (missing INTERNET permission?)</code>, this line is missing.</p>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="model">
+<h4>Layer 5 — the Kotlin <code>data class</code> the JSON maps onto</h4>
+<p class="mini-note">Each property maps to a JSON key. Use <code>@SerialName</code> when the JSON key is not a valid/idiomatic Kotlin name. Mark fields the server might omit as nullable with a default.</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · PhotoDto.kt</span>
+<pre><code>import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+// Matches one object in the JSON array returned by GET /objects
+@Serializable
+data class PhotoDto(
+    val id: String,
+    val name: String,
+    // JSON key is "data" — remap it and make it optional (may be null)
+    @SerialName("data")
+    val details: PhotoData? = null
+)
+
+@Serializable
+data class PhotoData(
+    // No @SerialName needed — the property name already matches the JSON key.
+    val color: String? = null,
+    val capacity: String? = null,
+    val price: Double? = null
+)</code></pre>
+</div>
+<p class="mini-note">A common pattern is to keep the network <em>DTO</em> separate from the UI <em>model</em> and map between them, so a server change does not ripple into your Composables:</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · Photo.kt (UI model + mapper)</span>
+<pre><code>// Clean model the UI actually consumes
+data class Photo(
+    val id: String,
+    val title: String,
+    val subtitle: String
+)
+
+// Map the wire DTO -&gt; UI model in one place
+fun PhotoDto.toPhoto(): Photo = Photo(
+    id = id,
+    title = name,
+    subtitle = details?.color ?: "Unknown"
+)</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="api">
+<h4>Layer 3 — the Retrofit interface (your typed HTTP contract)</h4>
+<p class="mini-note">Annotations describe the HTTP request. Retrofit generates the implementation. <code>suspend</code> means the function can be called from a coroutine and yields without blocking the thread.</p>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p>A Retrofit API is a Kotlin <code>interface</code> with <strong>no method bodies</strong> — the annotations (<code>@GET</code>, <code>@Path</code>, …) <em>are</em> the implementation, and Retrofit reads them to <strong>generate the real networking code for you at runtime</strong>.</p>
+</div>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · PhotoApiService.kt</span>
+<pre><code>import retrofit2.http.GET
+import retrofit2.http.Headers
+import retrofit2.http.Path
+import retrofit2.http.Query
+
+interface PhotoApiService {
+
+    // GET https://api.restful-api.dev/objects
+    @Headers("Accept: application/json")
+    @GET("objects")
+    suspend fun getPhotos(): List&lt;PhotoDto&gt;
+
+    // GET .../objects?id=3&amp;id=5   (query parameters)
+    @GET("objects")
+    suspend fun getPhotosByIds(
+        @Query("id") ids: List&lt;Int&gt;
+    ): List&lt;PhotoDto&gt;
+
+    // GET .../objects/{id}        (path parameter)
+    @GET("objects/{id}")
+    suspend fun getPhoto(
+        @Path("id") id: String
+    ): PhotoDto
+}</code></pre>
+</div>
+<p>Read it line by line — notice there is <strong>not a single line of HTTP code</strong>, only descriptions:</p>
+<ul>
+<li><strong><code>interface PhotoApiService</code></strong> — it is an <code>interface</code>, not a class. There are no method bodies and no <code>= …</code> after any function; you only describe <em>what</em> each call is, never <em>how</em> it runs.</li>
+<li><strong><code>@GET("objects")</code></strong> — the annotation that <em>is</em> the implementation: "this call is an HTTP <code>GET</code> to the <code>objects</code> path" (appended to the base URL you set on the Retrofit instance). Retrofit reads this and writes the request for you.</li>
+<li><strong><code>@Headers("Accept: application/json")</code></strong> — attaches a request header. The annotation family (<code>@GET</code>, <code>@POST</code>, <code>@Path</code>, <code>@Query</code>, <code>@Body</code>, <code>@Headers</code>) is the whole vocabulary for describing the request.</li>
+<li><strong><code>suspend fun getPhotos(): List&lt;PhotoDto&gt;</code></strong> — <code>suspend</code> makes the call a coroutine: it runs <em>off the main thread</em> and resumes with the already-parsed result. The return type is the data you want back (<code>List&lt;PhotoDto&gt;</code>) — Retrofit performs the GET, hands the JSON to the converter, and gives you Kotlin objects.</li>
+<li><strong><code>@Query("id") ids: List&lt;Int&gt;</code></strong> — binds a function parameter into the URL's query string, producing <code>…/objects?id=3&amp;id=5</code>. Change the argument, the URL changes.</li>
+<li><strong><code>@GET("objects/{id}")</code> + <code>@Path("id") id: String</code></strong> — the <code>{id}</code> placeholder in the path is filled by the <code>@Path</code> parameter, so <code>getPhoto("3")</code> hits <code>…/objects/3</code>.</li>
+</ul>
+<p>The smallest possible version isolates the one new idea — an interface whose annotation describes the call, with no body anywhere:</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · the whole idea in three lines</span>
+<pre><code>interface ApiService {
+    @GET("users")                       // the annotation IS the implementation
+    suspend fun getUsers(): List&lt;User&gt;  // no body — Retrofit writes it
+}</code></pre>
+</div>
+<p class="mini-note">You never call <code>ApiService</code> directly. You hand the interface to Retrofit and it returns the generated object that actually makes the calls — see the <strong>Retrofit instance</strong> tab, where <code>retrofit.create(PhotoApiService::class.java)</code> produces it.</p>
+<div class="callout callout--warn" role="note">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion</span>
+<p>You do <strong>not</strong> write the method body, and you do <strong>not</strong> write a <code>PhotoApiServiceImpl</code> class or construct the interface yourself. An empty-looking interface is correct — that is the entire point. <code>retrofit.create(PhotoApiService::class.java)</code> returns Retrofit's <em>generated</em> implementation at runtime; the annotations are the only "code" you supply.</p>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="net">
+<h4>Building the Retrofit instance</h4>
+<p class="mini-note">One configured singleton: base URL, the JSON converter, and a logging interceptor so students can see real traffic in Logcat. Create it once and reuse it.</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · NetworkModule.kt</span>
+<pre><code>import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+
+object NetworkModule {
+
+    private const val BASE_URL = "https://api.restful-api.dev/"
+
+    // Tolerate extra JSON keys the app does not model
+    private val json = Json { ignoreUnknownKeys = true }
+
+    private val logging = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY   // BASIC/NONE in production
+    }
+
+    private val client = OkHttpClient.Builder()
+        .addInterceptor(logging)
+        .build()
+
+    private val retrofit = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(client)
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+
+    // Lazily created, reused everywhere
+    val photoApi: PhotoApiService by lazy {
+        retrofit.create(PhotoApiService::class.java)
+    }
+}</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="repo">
+<h4>The repository — turn calls into a clean result</h4>
+<p class="mini-note">The repository is where the network exception becomes a value. Catching here keeps the ViewModel simple and is part of the project's "ViewModel + repository" architecture requirement.</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · PhotoRepository.kt</span>
+<pre><code>import java.io.IOException
+import retrofit2.HttpException
+
+class PhotoRepository(
+    private val api: PhotoApiService = NetworkModule.photoApi
+) {
+    // Network work itself runs on Dispatchers.IO via Retrofit's suspend call.
+    suspend fun fetchPhotos(): Result&lt;List&lt;Photo&gt;&gt; = try {
+        val dtos = api.getPhotos()              // performs the HTTP GET
+        Result.success(dtos.map { it.toPhoto() })
+    } catch (e: IOException) {
+        // No connection, timeout, DNS failure …
+        Result.failure(e)
+    } catch (e: HttpException) {
+        // Non-2xx status code (404, 500, …)
+        Result.failure(e)
+    }
+}</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="vm">
+<h4>Layer 2 — the ViewModel + coroutine + UI state</h4>
+<p class="mini-note">A sealed interface models exactly three UI states. <code>viewModelScope.launch</code> runs the call off the main thread and is cancelled automatically when the screen goes away.</p>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🧩</span>
+<div class="callout__body">
+<span class="callout__label">One-sentence definition</span>
+<p>The <code>_uiState</code> / <code>uiState</code> pair is the same idiom from <a href="../sessions/session-08.html">Session 8</a>: a <strong>private</strong> <code>MutableStateFlow</code> only the ViewModel writes, exposed as a <strong>read-only</strong> <code>StateFlow</code> via <code>.asStateFlow()</code> that the UI only ever <em>collects</em>.</p>
+</div>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · PhotoViewModel.kt</span>
+<pre><code>import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+// Exactly the three states the UI can be in
+sealed interface PhotoUiState {
+    data object Loading : PhotoUiState
+    data class Success(val photos: List&lt;Photo&gt;) : PhotoUiState
+    data class Error(val message: String) : PhotoUiState
+}
+
+class PhotoViewModel(
+    private val repository: PhotoRepository = PhotoRepository()
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow&lt;PhotoUiState&gt;(PhotoUiState.Loading)
+    val uiState: StateFlow&lt;PhotoUiState&gt; = _uiState.asStateFlow()
+
+    init { loadPhotos() }
+
+    fun loadPhotos() {
+        // 1) show the spinner immediately
+        _uiState.value = PhotoUiState.Loading
+        // 2) launch a coroutine — network runs OFF the main thread
+        viewModelScope.launch {
+            repository.fetchPhotos()
+                .onSuccess { photos -&gt;
+                    _uiState.value = PhotoUiState.Success(photos)
+                }
+                .onFailure { e -&gt;
+                    _uiState.value =
+                        PhotoUiState.Error(e.message ?: "Something went wrong")
+                }
+        }
+    }
+}</code></pre>
+</div>
+<p>The two state lines are the whole pattern — read them as a pair:</p>
+<ul>
+<li><strong><code>private val _uiState = MutableStateFlow&lt;PhotoUiState&gt;(PhotoUiState.Loading)</code></strong> — the <em>writable</em> holder, kept <code>private</code> so only this ViewModel can change it (the leading <code>_</code> is just a naming convention for "the private backing one"). The ViewModel writes it by setting <code>_uiState.value = …</code>.</li>
+<li><strong><code>val uiState: StateFlow&lt;PhotoUiState&gt; = _uiState.asStateFlow()</code></strong> — the <em>public, read-only</em> view. <code>.asStateFlow()</code> hands out the same stream but with the write API removed, so the UI can <em>collect</em> the value but can never set it.</li>
+</ul>
+<div class="callout callout--info" role="note">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Common confusion — state down, events up</span>
+<p>The UI never writes <code>uiState</code> (it has no setter). To change state, the screen sends an <em>event</em> up — <code>onClick = { viewModel.loadPhotos() }</code> — and the ViewModel is the only thing that writes <code>_uiState</code>. Same one-directional rule as <a href="../sessions/session-08.html">Session 8</a>.</p>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="ui">
+<h4>Layers 1 &amp; 6 — the Compose UI that triggers and renders</h4>
+<p class="mini-note"><code>collectAsStateWithLifecycle()</code> turns the StateFlow into Compose state; a <code>when</code> over the sealed state renders one of three UIs. The <code>LazyColumn</code> only appears in the Success branch.</p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · PhotoScreen.kt</span>
+<pre><code>import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
+@Composable
+fun PhotoScreen(viewModel: PhotoViewModel) {
+    // Observe the StateFlow as Compose state (lifecycle-aware)
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Photo Gallery") },
+                actions = {
+                    // LAYER 1: the UI only ASKS the ViewModel to load
+                    IconButton(onClick = { viewModel.loadPhotos() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                }
+            )
+        }
+    ) { padding -&gt;
+        // LAYER 6: render exactly one UI per state
+        when (val state = uiState) {
+            is PhotoUiState.Loading -&gt; LoadingView(Modifier.padding(padding))
+            is PhotoUiState.Error   -&gt; ErrorView(
+                message = state.message,
+                onRetry = { viewModel.loadPhotos() },
+                modifier = Modifier.padding(padding)
+            )
+            is PhotoUiState.Success -&gt; PhotoList(
+                photos = state.photos,
+                modifier = Modifier.padding(padding)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PhotoList(photos: List&lt;Photo&gt;, modifier: Modifier = Modifier) {
+    LazyColumn(modifier = modifier.fillMaxSize()) {
+        items(photos, key = { it.id }) { photo -&gt;
+            ListItem(
+                headlineContent = { Text(photo.title) },
+                supportingContent = { Text(photo.subtitle) }
+            )
+            HorizontalDivider()
+        }
+    }
+}
+
+@Composable
+private fun LoadingView(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorView(message: String, onRetry: () -&gt; Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("⚠️ $message")
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = onRetry) { Text("Retry") }
+    }
+}</code></pre>
+</div>
+</div>
+</section>
+<!-- ===================== HTTP TEACHING PANEL ===================== -->
+<section aria-labelledby="http-h" class="card slide">
+<h2 class="card__title anchor-h" id="http-h">📡 HTTP refresher — methods &amp; status codes <span class="clo-tag">CLO 6</span></h2>
+<p class="muted">"REST over HTTP" is the protocol almost every mobile backend speaks. You should be able to read a request line and recognize what a status code means before you debug a single call.</p>
+<h4>The request anatomy</h4>
+<div class="codeblock">
+<span class="codeblock__lang">http · raw request</span>
+<pre><code>GET /objects HTTP/1.1
+Host: api.restful-api.dev
+Accept: application/json
+User-Agent: okhttp/5.3.0
+Connection: keep-alive
+
+(no body for GET)</code></pre>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">http · raw response</span>
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Length: 1284
+
+[
+  { "id": "1", "name": "Google Pixel 6 Pro",
+    "data": { "color": "Cloudy White", "capacity": "128 GB" } },
+  { "id": "2", "name": "Apple iPhone 12 Mini",
+    "data": { "color": "Blue", "price": 799.99 } }
+]</code></pre>
+</div>
+<div class="grid grid-2">
+<div>
+<h4>HTTP methods (verbs)</h4>
+<table class="ref">
+<thead><tr><th>Method</th><th>Means</th><th>Retrofit</th></tr></thead>
+<tbody>
+<tr><td><code>GET</code></td><td>Read data (no body, safe, idempotent)</td><td><code>@GET</code></td></tr>
+<tr><td><code>POST</code></td><td>Create a new resource (has a body)</td><td><code>@POST</code> + <code>@Body</code></td></tr>
+<tr><td><code>PUT</code></td><td>Replace a resource (idempotent)</td><td><code>@PUT</code> + <code>@Body</code></td></tr>
+<tr><td><code>PATCH</code></td><td>Partially update a resource</td><td><code>@PATCH</code></td></tr>
+<tr><td><code>DELETE</code></td><td>Remove a resource</td><td><code>@DELETE</code></td></tr>
+</tbody>
+</table>
+</div>
+<div>
+<h4>Status code families</h4>
+<table class="ref">
+<thead><tr><th>Range</th><th>Family</th><th>Examples</th></tr></thead>
+<tbody>
+<tr><td class="status-2">2xx</td><td>Success</td><td><code>200 OK</code>, <code>201 Created</code>, <code>204 No Content</code></td></tr>
+<tr><td class="status-3">3xx</td><td>Redirect</td><td><code>301</code>, <code>304 Not Modified</code></td></tr>
+<tr><td class="status-4">4xx</td><td><strong>You</strong> erred</td><td><code>400</code>, <code>401</code>, <code>403</code>, <code>404</code>, <code>429</code></td></tr>
+<tr><td class="status-5">5xx</td><td><strong>Server</strong> erred</td><td><code>500</code>, <code>502</code>, <code>503</code></td></tr>
+</tbody>
+</table>
+<p class="mini-note">In Retrofit, any non-2xx response with a suspend body call throws <code>HttpException</code>; no connection at all throws <code>IOException</code>. Catch both.</p>
+</div>
+</div>
+<div class="callout callout--info" role="note">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">HTTPS, not HTTP</span>
+<p style="margin:0">Since Android 9 (API 28) <strong>cleartext HTTP is blocked by default</strong>. Always use <code>https://</code> base URLs. If a teaching API is HTTP-only you must opt in via a network-security-config — a good moment to discuss why plaintext traffic is unsafe.</p>
+</div>
+</div>
+</section>
+<!-- ===================== WHY OFF THE MAIN THREAD ===================== -->
+<section aria-labelledby="thread-h" class="card slide">
+<h2 class="card__title anchor-h" id="thread-h">🧵 Why network work must leave the main thread</h2>
+<p>Android draws the UI on a single <strong>main (UI) thread</strong> roughly every 16 ms (60 fps). A network call can take hundreds of milliseconds to several seconds. If you block the main thread waiting for it, the UI freezes — and Android will actually throw to stop you:</p>
+<div class="grid grid-2">
+<div>
+<div class="callout callout--danger" role="note">
+<span aria-hidden="true" class="callout__icon">🛑</span>
+<div class="callout__body">
+<span class="callout__label">NetworkOnMainThreadException</span>
+<p style="margin:0">Do a network call directly on the main thread and the framework throws this immediately. It is a guardrail, not a bug — it is telling you to move the work to a background dispatcher.</p>
+</div>
+</div>
+<p class="mini-note">Coroutines solve this cleanly: <code>suspend</code> functions can pause without blocking, and <code>viewModelScope.launch</code> runs them on a background dispatcher while keeping the code readable top-to-bottom.</p>
+</div>
+<div>
+<h4>Timeline of one Refresh tap</h4>
+<div aria-hidden="true" class="thread-bars">
+<div class="thread">
+<span class="thread__name">main (UI)</span>
+<div class="thread__track">
+<span class="seg-block seg-ui" style="width:14%">tap</span>
+<span class="seg-block seg-render" style="width:18%">spinner</span>
+<span class="seg-block" style="width:50%"></span>
+<span class="seg-block seg-render" style="width:18%">list</span>
+</div>
+</div>
+<div class="thread">
+<span class="thread__name">Dispatchers.IO</span>
+<div class="thread__track">
+<span class="seg-block" style="width:18%"></span>
+<span class="seg-block seg-net" style="width:64%">HTTP GET + parse JSON</span>
+<span class="seg-block" style="width:18%"></span>
+</div>
+</div>
+</div>
+<p class="mini-note">The UI thread stays free during the slow part, so the app keeps animating. The result hops back to the main thread to update state.</p>
+</div>
+</div>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · what suspend buys you</span>
+<pre><code>// ❌ NEVER — blocks the UI thread, throws NetworkOnMainThreadException
+fun bad() {
+    val photos = URL("https://api.restful-api.dev/objects").readText()
+}
+
+// ✅ Coroutine: launched off the main thread, written like straight-line code
+fun PhotoViewModel.good() = viewModelScope.launch {
+    val photos = repository.fetchPhotos()   // suspends here, thread is freed
+    // …resumes back on the main dispatcher to update state
+}</code></pre>
+</div>
+</section>
+<!-- ===================== COMMON PITFALLS (ACCORDION) ===================== -->
+<section aria-labelledby="pit-h" class="card slide">
+<h2 class="card__title anchor-h" id="pit-h">🐛 Common pitfalls &amp; how to debug them</h2>
+<p class="muted">Tap to expand. These are the failures students hit in the first networking lab, in roughly the order they hit them.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">SecurityException / "Permission denied (missing INTERNET permission?)"</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>The <code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code> line is missing from <code>AndroidManifest.xml</code>. Add it and rebuild. INTERNET is a normal permission — no runtime prompt needed.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">NetworkOnMainThreadException</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>You ran the call on the main thread. Make the API function <code>suspend</code> and call it inside <code>viewModelScope.launch { … }</code> (Retrofit dispatches suspend calls on a background dispatcher automatically). Never use <code>runBlocking</code> on the main thread.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">JSON parses to null / fields are empty</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>Your property name does not match the JSON key. Either rename the property to match exactly, or annotate it with <code>@SerialName("json_key")</code>. Add <code>Json { ignoreUnknownKeys = true }</code> so extra server fields do not crash parsing, and mark optional fields nullable with a default (<code>val x: String? = null</code>).</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">CLEARTEXT communication not permitted</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>Your base URL is <code>http://</code>. Use <code>https://</code>. Only for a throwaway local/test server should you add a network-security-config to allow cleartext — never ship it.</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">HttpException 4xx/5xx — the request reached the server but failed</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>A non-2xx status was returned. Check the URL path, query params, and any required API key/headers. Turn on the OkHttp <code>HttpLoggingInterceptor</code> at <code>Level.BODY</code> and read the exact request and response in Logcat. <code>401/403</code> = auth, <code>404</code> = wrong URL, <code>429</code> = rate limited, <code>5xx</code> = server's problem (handle gracefully, maybe retry).</p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">It worked once, then the spinner never goes away</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>You set state to <code>Loading</code> but a thrown exception escaped before you set <code>Success</code> or <code>Error</code>. Catch in the repository and always emit a terminal state (use <code>Result</code> / try-catch as shown). An uncaught exception in a coroutine leaves the UI stuck.</p>
+</div></div>
+</div>
+</div>
+</section>
+<!-- ===================== CHECK YOUR UNDERSTANDING (QUIZ) ===================== -->
+<section aria-labelledby="quiz-h" class="card slide">
+<h2 class="card__title anchor-h" id="quiz-h">✅ Check your understanding</h2>
+<p class="muted">A quick formative check — students can self-assess after the demo. Need 70% to pass.</p>
+<div data-quiz="pipelineQuiz" data-topic="networking"></div>
+<script id="pipelineQuiz" type="application/json">
+          {
+            "title": "Networking pipeline — quick check",
+            "intro": "Six questions on the HTTP → JSON → UI pipeline. Submit to see explanations.",
+            "passingScore": 0.7,
+            "shuffle": true,
+            "questions": [
+              {
+                "id": "perm",
+                "type": "single",
+                "prompt": "Which manifest line must be present for any of these network calls to work?",
+                "options": [
+                  { "id": "a", "text": "<uses-feature android:name=\"android.hardware.wifi\" />" },
+                  { "id": "b", "text": "<uses-permission android:name=\"android.permission.INTERNET\" />" },
+                  { "id": "c", "text": "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />" },
+                  { "id": "d", "text": "Nothing — network access is always on." }
+                ],
+                "correct": ["b"],
+                "explanation": "INTERNET is a normal permission, granted at install with no runtime dialog, but it MUST be declared in AndroidManifest.xml or calls throw SecurityException."
+              },
+              {
+                "id": "thread",
+                "type": "single",
+                "prompt": "Why can't you run the HTTP call directly inside a Composable on the main thread?",
+                "options": [
+                  { "id": "a", "text": "Composables can't call functions." },
+                  { "id": "b", "text": "It would block the UI thread and Android throws NetworkOnMainThreadException." },
+                  { "id": "c", "text": "Retrofit only works in Activities." },
+                  { "id": "d", "text": "JSON can only be parsed in the background." }
+                ],
+                "correct": ["b"],
+                "explanation": "The main thread draws the UI ~every 16ms. A blocking network call freezes the app, so the framework throws NetworkOnMainThreadException. Use a coroutine on a background dispatcher."
+              },
+              {
+                "id": "verb",
+                "type": "single",
+                "prompt": "You only want to READ a list of items from the server. Which HTTP method and Retrofit annotation fit?",
+                "options": [
+                  { "id": "a", "text": "POST / @POST" },
+                  { "id": "b", "text": "DELETE / @DELETE" },
+                  { "id": "c", "text": "GET / @GET" },
+                  { "id": "d", "text": "PUT / @PUT" }
+                ],
+                "correct": ["c"],
+                "explanation": "Reading data uses GET, mapped with @GET. GET requests are safe (no side effects) and carry no body."
+              },
+              {
+                "id": "status",
+                "type": "multi",
+                "prompt": "Which status codes indicate the request did NOT succeed? (Select all that apply.)",
+                "options": [
+                  { "id": "a", "text": "200 OK" },
+                  { "id": "b", "text": "404 Not Found" },
+                  { "id": "c", "text": "201 Created" },
+                  { "id": "d", "text": "500 Internal Server Error" }
+                ],
+                "correct": ["b", "d"],
+                "explanation": "2xx codes (200, 201) are success. 4xx are client errors (404 = wrong URL) and 5xx are server errors (500). Both 4xx and 5xx are failures."
+              },
+              {
+                "id": "serial",
+                "type": "truefalse",
+                "prompt": "If a JSON key is \"data\" but your Kotlin property is named details, you can map them with @SerialName(\"data\").",
+                "correct": true,
+                "explanation": "Correct. @SerialName lets a property keep an idiomatic Kotlin name while still matching a differently-named JSON key."
+              },
+              {
+                "id": "render",
+                "type": "single",
+                "prompt": "After the ViewModel sets uiState = Success(list), what makes the LazyColumn actually appear?",
+                "options": [
+                  { "id": "a", "text": "You call findViewById and update the adapter." },
+                  { "id": "b", "text": "Compose observes the StateFlow, the state changes, and the screen recomposes into the Success branch." },
+                  { "id": "c", "text": "Retrofit redraws the screen." },
+                  { "id": "d", "text": "Nothing — you must restart the Activity." }
+                ],
+                "correct": ["b"],
+                "explanation": "Compose is declarative: collectAsStateWithLifecycle() turns the StateFlow into observable state. When it changes to Success, the `when` block recomposes and renders the LazyColumn."
+              }
+            ]
+          }
+          </script>
+</section>
+<!-- ===================== FLASHCARDS ===================== -->
+<section aria-labelledby="cards-h" class="card slide">
+<h2 class="card__title anchor-h" id="cards-h">🃏 Vocabulary flashcards</h2>
+<p class="muted">The terms that show up in every networking lecture. Click to flip; mark "Got it" to drop a card.</p>
+<div data-flashcards="pipelineCards"></div>
+<script id="pipelineCards" type="application/json">
+          [
+            { "front": "Retrofit", "back": "A type-safe HTTP client for Android/Kotlin. You declare an interface with annotations (@GET, @POST…), and Retrofit generates the implementation that performs the request.", "tag": "library" },
+            { "front": "Coroutine", "back": "A lightweight, cancellable unit of asynchronous work. suspend functions can pause without blocking a thread, letting network code read like sequential code.", "tag": "concurrency" },
+            { "front": "viewModelScope", "back": "A CoroutineScope tied to a ViewModel's lifecycle. Coroutines launched in it are cancelled automatically when the ViewModel is cleared.", "tag": "lifecycle" },
+            { "front": "StateFlow", "back": "An observable, always-has-a-value holder of state. The UI collects it (collectAsStateWithLifecycle) and recomposes whenever the value changes.", "tag": "state" },
+            { "front": "Deserialization", "back": "Converting JSON text from the server into Kotlin objects (data classes). kotlinx.serialization maps JSON keys onto properties.", "tag": "json" },
+            { "front": "DTO", "back": "Data Transfer Object — a class that mirrors the JSON wire format. Often mapped to a separate clean UI model so server changes don't leak into Composables.", "tag": "architecture" },
+            { "front": "@SerialName", "back": "Annotation that maps a Kotlin property to a JSON key with a different name, e.g. @SerialName(\"data\") val details.", "tag": "json" },
+            { "front": "HTTP status code", "back": "A 3-digit code in the response: 2xx success, 3xx redirect, 4xx client error, 5xx server error.", "tag": "http" },
+            { "front": "INTERNET permission", "back": "A normal (install-time) permission declared in the manifest. Required for any network access; no runtime dialog.", "tag": "manifest" },
+            { "front": "NetworkOnMainThreadException", "back": "Thrown when you perform networking on the UI thread. The fix: run it in a coroutine on a background dispatcher.", "tag": "threading" },
+            { "front": "Repository", "back": "An architecture layer that owns data sources (network, local DB) and exposes clean results to the ViewModel — used by the course project.", "tag": "architecture" },
+            { "front": "Recomposition", "back": "Compose re-running affected @Composable functions when observed state changes, producing the new UI. It's how a state change becomes pixels.", "tag": "compose" }
+          ]
+          </script>
+</section>
+<!-- ===================== OFFICIAL DOCS ===================== -->
+<section aria-labelledby="docs-h" class="card slide">
+<h2 class="card__title anchor-h" id="docs-h">📚 Official documentation</h2>
+<p class="muted">No textbook — these are the authoritative Android Developer resources for this material.</p>
+<ul>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-5" rel="noopener" target="_blank">Android Basics with Compose · Unit 5 — Connect to the internet</a> (Retrofit, coroutines, loading/error states)</li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-4" rel="noopener" target="_blank">Unit 4 — Navigation &amp; app architecture</a> (ViewModel, repository, UI state)</li>
+<li><a href="https://developer.android.com/kotlin/coroutines" rel="noopener" target="_blank">Kotlin coroutines on Android</a></li>
+<li><a href="https://developer.android.com/topic/libraries/architecture/coroutines" rel="noopener" target="_blank">Use coroutines with lifecycle-aware components (viewModelScope)</a></li>
+<li><a href="https://developer.android.com/training/basics/network-ops/connecting" rel="noopener" target="_blank">Connect to the network</a> (permissions, off-main-thread)</li>
+<li><a href="https://developer.android.com/develop/ui/compose/state" rel="noopener" target="_blank">State and Jetpack Compose</a> (StateFlow, recomposition)</li>
+</ul>
+<p class="mini-note">Sample API used by this page: <a href="https://restful-api.dev/" rel="noopener" target="_blank">restful-api.dev</a> — a free, no-auth HTTPS endpoint ideal for a first networking lab.</p>
+</section>
+<!-- ===================== DRILLS (AUTO-CHECKED) ===================== -->
+<section aria-labelledby="drills-h" class="card slide">
+<h2 class="card__title anchor-h" id="drills-h">🏋️ Drills — prove you own the pipeline <span class="clo-tag">CLO 5</span> <span class="clo-tag">CLO 6</span></h2>
+<p class="muted">
+        You watched the data travel; now <strong>reproduce the logic from memory</strong>. Three faded
+        challenges, each a stripped-down, pure-Kotlin core of one pipeline layer. Edit the
+        <code>// YOUR CODE</code> region and press <strong>Run</strong> — green across every case means you
+        own it. Reach for the Hint only after a real attempt; the Reference solution is there to check
+        against, not to copy first.
+      </p>
+<div class="callout callout--info" role="note">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Why drill the pure-Kotlin core?</span>
+<p style="margin:0">Retrofit and Compose aren't on this in-browser compiler, so we drill the part that actually carries the bugs: the <strong>shape of your DTO</strong>, the <strong>error taxonomy</strong> (offline vs. server vs. unknown), and <strong>which thread the work runs on</strong>. Nail these and the framework code around them is boilerplate.</p>
+</div>
+</div>
+<!-- ----- DRILL 1: write the @Serializable DTO ----- -->
+<h3>Drill 1 — write the data class for this JSON <span class="badge badge--green">auto-checked</span></h3>
+<p>
+        Here is a single object from the server's JSON array:
+      </p>
+<div class="codeblock">
+<span class="codeblock__lang">json · one element of the response</span>
+<pre><code>{
+  "id": "7",
+  "name": "Apple iPad Air",
+  "data": { "color": "Space Grey", "capacity": "256 GB" }
+}</code></pre>
+</div>
+<p>
+        Model it as Kotlin <code>data class</code>es. Two snags real JSON throws at you are baked in: the
+        nested object lives under the key <code>"data"</code> (not a great Kotlin name), and
+        <code>data</code> can be <strong>absent</strong> on some items. Below, instead of running real
+        <code>kotlinx.serialization</code> (not on this compiler), you implement the <em>same mapping by
+        hand</em> in a <code>fromFields(...)</code> factory — that forces you to make exactly the decisions
+        <code>@SerialName</code> and nullable-with-default encode. Make every case print
+        <code>✓ passed</code>.
+      </p>
+<div class="codeblock" data-challenge="lab-net-dto" data-run="kotlin" data-topic="networking">
+<div class="codeblock__lang">Kotlin · runnable challenge — model the JSON</div>
+<pre><code>// In a real app these carry @Serializable + @SerialName from kotlinx.serialization.
+// Here you build the SAME shape and mapping decisions by hand.
+
+data class PhotoData(
+    // YOUR CODE — fields for the nested object. Both may be missing in the JSON,
+    // so they must be optional (nullable with a default).
+    val placeholder: String? = null   // &lt;- replace these with the real fields
+)
+
+data class PhotoDto(
+    // YOUR CODE — id and name are always present.
+    // The nested object arrives under the JSON key "data" but should be a
+    // Kotlin property named `details`, and it may be absent.
+    val placeholder: String = ""      // &lt;- replace with the real fields
+) {
+    companion object {
+        // Simulates what the JSON converter does: build a PhotoDto from raw fields.
+        // `dataColor` / `dataCapacity` are null when the "data" object is absent.
+        fun fromFields(
+            id: String,
+            name: String,
+            hasData: Boolean,
+            dataColor: String?,
+            dataCapacity: String?
+        ): PhotoDto {
+            // YOUR CODE — assemble a PhotoDto. When hasData is false, `details`
+            // must be null; otherwise build a PhotoData from the two values.
+            return PhotoDto()  // &lt;- replace this
+        }
+    }
+}
+
+// ---- test harness (do not edit) ----
+fun main() {
+    var passed = 0; var failed = 0
+    fun check(name: String, cond: Boolean, detail: String = "") {
+        if (cond) { passed++; println("✓ passed: ${'$'}name") }
+        else { failed++; println("✗ FAILED: ${'$'}name ${'$'}detail") }
+    }
+
+    val full = PhotoDto.fromFields("7", "Apple iPad Air", true, "Space Grey", "256 GB")
+    check("id is read", full.id == "7", "expected 7, got ${'$'}{full.id}")
+    check("name is read", full.name == "Apple iPad Air")
+    check("nested object is present", full.details != null)
+    check("color maps through", full.details?.color == "Space Grey")
+    check("capacity maps through", full.details?.capacity == "256 GB")
+
+    val noData = PhotoDto.fromFields("9", "Beats Flex", false, null, null)
+    check("absent data -&gt; details is null", noData.details == null,
+          "expected null, got ${'$'}{noData.details}")
+    check("name still read when data absent", noData.name == "Beats Flex")
+
+    // The property must be `details`, not `data`: this line only compiles if you named it right.
+    val ok: PhotoData? = full.details
+    check("property is named details (compile check)", ok != null || noData.details == null)
+
+    println()
+    if (failed == 0) println("ALL TESTS PASSED 🎉")
+    else println("${'$'}failed case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>
+<code>PhotoData</code> needs two optional fields: <code>val color: String? = null</code> and
+              <code>val capacity: String? = null</code>. <code>PhotoDto</code> needs
+              <code>val id: String</code>, <code>val name: String</code>, and the nested one as
+              <code>val details: PhotoData? = null</code> (in the real app you'd put
+              <code>@SerialName("data")</code> above it so the JSON key <code>"data"</code> still maps to the
+              <code>details</code> property). In <code>fromFields</code>, return
+              <code>PhotoDto(id, name, if (hasData) PhotoData(dataColor, dataCapacity) else null)</code>.
+            </p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · the shape, plus the real annotations</span>
+<pre><code>data class PhotoData(
+    val color: String? = null,
+    val capacity: String? = null
+)
+
+data class PhotoDto(
+    val id: String,
+    val name: String,
+    val details: PhotoData? = null
+) {
+    companion object {
+        fun fromFields(
+            id: String, name: String, hasData: Boolean,
+            dataColor: String?, dataCapacity: String?
+        ): PhotoDto = PhotoDto(
+            id = id,
+            name = name,
+            details = if (hasData) PhotoData(dataColor, dataCapacity) else null
+        )
+    }
+}
+
+// In the real project, kotlinx.serialization does the mapping for you:
+//   @Serializable
+//   data class PhotoData(val color: String? = null, val capacity: String? = null)
+//
+//   @Serializable
+//   data class PhotoDto(
+//       val id: String,
+//       val name: String,
+//       @SerialName("data") val details: PhotoData? = null
+//   )</code></pre>
+</div>
+<p class="muted">
+              Two production habits are encoded here: rename awkward JSON keys with
+              <code>@SerialName</code> so your Kotlin stays idiomatic, and mark anything the server might
+              omit as <strong>nullable with a default</strong> so a missing field never crashes parsing.
+            </p>
+</div></div>
+</div>
+</div>
+<!-- ----- DRILL 2: sketch the suspend repository with loading/error states ----- -->
+<h3>Drill 2 — sketch the suspend repository's result mapping <span class="badge badge--green">auto-checked</span></h3>
+<div class="callout callout--warn" role="note">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">The mental model that bites: "any failure means no internet"</span>
+<p style="margin:0">Treating every exception as "offline → retry" hammers a server that already answered with <code>404</code> or <code>500</code>. The canonical split: <code>IOException</code> = the call never reached the server (offline, timeout, DNS) → <strong>retryable</strong>; <code>HttpException</code> = it reached the server, which returned a non-2xx → <strong>don't blind-retry</strong>; anything else → a generic bug. The repository turns those exceptions into a <code>Result</code>, and the ViewModel maps that <code>Result</code> into a sealed <code>UiState</code>.</p>
+</div>
+</div>
+<p>
+        The real <code>suspend fun fetchPhotos(): Result&lt;List&lt;Photo&gt;&gt;</code> does its <code>try/catch</code>
+        in the repository, then the ViewModel reduces that <code>Result</code> into a UI state. That reduce
+        step is the pure logic — implement it so the four UI states come out correctly, including the
+        <strong>Empty</strong> state for a successful-but-empty list.
+      </p>
+<div class="codeblock" data-challenge="lab-net-repo" data-run="kotlin" data-topic="networking">
+<div class="codeblock__lang">Kotlin · runnable challenge — map Result → UiState</div>
+<pre><code>// Stand-ins for the real Android exceptions (same role here).
+class IOException(msg: String) : Exception(msg)
+class HttpException(val codeValue: Int) : Exception("HTTP ${'$'}codeValue") {
+    fun code() = codeValue
+}
+
+data class Photo(val id: String, val title: String)
+
+// The four states a networked screen can be in.
+sealed interface UiState {
+    data object Loading : UiState
+    data object Empty : UiState
+    data class Success(val photos: List&lt;Photo&gt;) : UiState
+    data class Error(val message: String, val retryable: Boolean) : UiState
+}
+
+// The repository already produced a Result. Reduce it to a UiState.
+fun toUiState(result: Result&lt;List&lt;Photo&gt;&gt;): UiState {
+    // YOUR CODE — return:
+    //   • success, list NOT empty  -&gt; Success(list)
+    //   • success, list IS empty   -&gt; Empty
+    //   • failure, IOException     -&gt; Error("offline", retryable = true)
+    //   • failure, HttpException   -&gt; Error("server ${'$'}{code}", retryable = false)
+    //                                  e.g. Error("server 404", retryable = false)
+    //   • any other failure        -&gt; Error("unexpected", retryable = false)
+    return UiState.Loading  // &lt;- replace this
+}
+
+// ---- test harness (do not edit) ----
+fun main() {
+    var passed = 0; var failed = 0
+    fun check(name: String, expected: UiState, actual: UiState) {
+        if (expected == actual) { passed++; println("✓ passed: ${'$'}name") }
+        else { failed++; println("✗ FAILED: ${'$'}name — expected ${'$'}expected, got ${'$'}actual") }
+    }
+
+    val photos = listOf(Photo("1", "Pixel"), Photo("2", "iPhone"))
+    check("non-empty success -&gt; Success", UiState.Success(photos),
+          toUiState(Result.success(photos)))
+    check("empty success -&gt; Empty", UiState.Empty,
+          toUiState(Result.success(emptyList())))
+    check("IOException -&gt; offline + retryable",
+          UiState.Error("offline", true),
+          toUiState(Result.failure(IOException("no route to host"))))
+    check("HttpException(404) -&gt; server 404, not retryable",
+          UiState.Error("server 404", false),
+          toUiState(Result.failure(HttpException(404))))
+    check("HttpException(500) -&gt; server 500, not retryable",
+          UiState.Error("server 500", false),
+          toUiState(Result.failure(HttpException(500))))
+    check("unknown failure -&gt; unexpected",
+          UiState.Error("unexpected", false),
+          toUiState(Result.failure(IllegalStateException("boom"))))
+
+    println()
+    if (failed == 0) println("ALL TESTS PASSED 🎉")
+    else println("${'$'}failed case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>
+<code>result.fold(onSuccess = { ... }, onFailure = { ... })</code>. In <code>onSuccess</code>,
+              <code>if (it.isEmpty()) UiState.Empty else UiState.Success(it)</code>. In
+              <code>onFailure</code>, <code>when (it) { is IOException -&gt; Error("offline", true); is
+              HttpException -&gt; Error("server ${'$'}{it.code()}", false); else -&gt; Error("unexpected", false) }</code>.
+              The <code>retryable</code> flag is exactly the IOException-vs-HttpException distinction made visible.
+            </p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · the reduce, plus where it sits in the repo</span>
+<pre><code>fun toUiState(result: Result&lt;List&lt;Photo&gt;&gt;): UiState =
+    result.fold(
+        onSuccess = { if (it.isEmpty()) UiState.Empty else UiState.Success(it) },
+        onFailure = {
+            when (it) {
+                is IOException   -&gt; UiState.Error("offline", retryable = true)
+                is HttpException -&gt; UiState.Error("server ${'$'}{it.code()}", retryable = false)
+                else             -&gt; UiState.Error("unexpected", retryable = false)
+            }
+        }
+    )
+
+// In the real project the catch happens in the repository, off the main thread:
+//
+//   suspend fun fetchPhotos(): Result&lt;List&lt;Photo&gt;&gt; = try {
+//       Result.success(api.getPhotos().map { it.toPhoto() })  // suspend HTTP GET
+//   } catch (e: IOException)   { Result.failure(e) }           // offline -&gt; retry
+//   catch (e: HttpException)   { Result.failure(e) }           // non-2xx -&gt; don't blind-retry
+//
+// …and the ViewModel calls toUiState(result) inside viewModelScope.launch { }.</code></pre>
+</div>
+<p class="muted">
+              This is the exact error taxonomy used in the pipeline above and in Sessions 10–11: the
+              repository hands back a <code>Result</code>, and the ViewModel reduces it into the sealed
+              <code>UiState</code> the Compose <code>when</code> renders.
+            </p>
+</div></div>
+</div>
+</div>
+<!-- ----- DRILL 3: "why is this on the main thread?" debug drill ----- -->
+<h3>Drill 3 — "why is this on the main thread?" <span class="badge badge--amber">debug</span></h3>
+<p>
+        Read this code the way Android's runtime does. A <code>loadPhotos()</code> is supposed to keep the
+        UI thread free while the network call runs. First, <strong>predict the bug</strong>; then fix the
+        runnable model so the work is correctly marked as off-main-thread.
+      </p>
+<div class="codeblock">
+<span class="codeblock__lang">kotlin · the buggy ViewModel (what NOT to do)</span>
+<pre><code>fun loadPhotos() {
+    _uiState.value = PhotoUiState.Loading
+    // The result is read IMMEDIATELY, inline, on the calling thread:
+    val photos = repository.fetchPhotosBlocking()   // blocks until HTTP returns
+    _uiState.value = PhotoUiState.Success(photos)
+}</code></pre>
+</div>
+<div data-quiz="mainThreadDrill" data-topic="networking"></div>
+<script id="mainThreadDrill" type="application/json">
+          {
+            "title": "Which line freezes the UI — and why?",
+            "intro": "Pick the line that runs the slow network work on the main thread.",
+            "passingScore": 1,
+            "shuffle": false,
+            "questions": [
+              {
+                "id": "whichline",
+                "type": "single",
+                "prompt": "Which line will throw NetworkOnMainThreadException / freeze the UI?",
+                "options": [
+                  { "id": "a", "text": "_uiState.value = PhotoUiState.Loading" },
+                  { "id": "b", "text": "val photos = repository.fetchPhotosBlocking()" },
+                  { "id": "c", "text": "_uiState.value = PhotoUiState.Success(photos)" },
+                  { "id": "d", "text": "None — this is fine as written." }
+                ],
+                "correct": ["b"],
+                "explanation": "loadPhotos() runs on the main thread. fetchPhotosBlocking() does the HTTP call inline and BLOCKS that thread until the server answers — hundreds of ms to seconds — so the UI can't draw. Android throws NetworkOnMainThreadException. The fix is to make the call a suspend function and launch it in viewModelScope, which runs it off the main thread."
+              },
+              {
+                "id": "fix",
+                "type": "single",
+                "prompt": "What is the correct fix?",
+                "options": [
+                  { "id": "a", "text": "Wrap the call in runBlocking { } on the main thread." },
+                  { "id": "b", "text": "Make fetchPhotos() a suspend fun and call it inside viewModelScope.launch { }." },
+                  { "id": "c", "text": "Catch the exception and ignore it." },
+                  { "id": "d", "text": "Move the call into the Composable instead." }
+                ],
+                "correct": ["b"],
+                "explanation": "runBlocking on the main thread blocks it just the same. The real fix is a suspend function launched in viewModelScope: the coroutine runs the network work off the main thread (Retrofit dispatches suspend calls on a background dispatcher) and resumes on the main dispatcher to update state."
+              }
+            ]
+          }
+          </script>
+<p>
+        Now fix it. The runnable model below records <em>which thread</em> each step ran on. Move the slow
+        work into the coroutine so <code>"network"</code> is tagged <code>background</code>, not
+        <code>main</code>, while the state updates stay on <code>main</code>.
+      </p>
+<div class="codeblock" data-challenge="lab-net-mainthread" data-run="kotlin" data-topic="networking">
+<div class="codeblock__lang">Kotlin · runnable challenge — get the network off the main thread</div>
+<pre><code>// A tiny model of "what ran where". launchCoroutine { } simulates
+// viewModelScope.launch: whatever you do INSIDE it runs on "background".
+// Anything you do OUTSIDE it runs on "main" (the UI thread).
+
+val log = mutableListOf&lt;Pair&lt;String, String&gt;&gt;()   // step -&gt; thread
+
+var currentThread = "main"
+fun record(step: String) { log.add(step to currentThread) }
+
+fun launchCoroutine(block: () -&gt; Unit) {
+    val previous = currentThread
+    currentThread = "background"   // coroutine body runs off the main thread
+    block()
+    currentThread = previous       // resume on the main thread afterwards
+}
+
+fun loadPhotos() {
+    record("setLoading")           // state update — stays on main, that's fine
+
+    // YOUR CODE — the network call is slow. Run it OFF the main thread by
+    // doing it INSIDE launchCoroutine { }. Inside the coroutine, call
+    // record("network") for the HTTP work, then record("setSuccess")
+    // for the state update that follows it.
+
+    record("network")              // &lt;- BUG: this runs on main. Move it.
+    record("setSuccess")           // &lt;- and this.
+}
+
+// ---- test harness (do not edit) ----
+fun main() {
+    loadPhotos()
+    val on = log.toMap()
+    var passed = 0; var failed = 0
+    fun check(name: String, cond: Boolean, detail: String = "") {
+        if (cond) { passed++; println("✓ passed: ${'$'}name") }
+        else { failed++; println("✗ FAILED: ${'$'}name ${'$'}detail") }
+    }
+
+    check("loading shown on main thread", on["setLoading"] == "main",
+          "got ${'$'}{on["setLoading"]}")
+    check("network ran OFF the main thread", on["network"] == "background",
+          "got ${'$'}{on["network"]} — the HTTP call must be inside the coroutine")
+    check("success update ran in the coroutine", on["setSuccess"] == "background",
+          "got ${'$'}{on["setSuccess"]}")
+
+    println()
+    if (failed == 0) println("ALL TESTS PASSED 🎉")
+    else println("${'$'}failed case(s) still failing — keep going.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<p>
+              Keep <code>record("setLoading")</code> outside (it's a fast state write on the main thread).
+              Then wrap the two slow/dependent steps in the coroutine:
+              <code>launchCoroutine { record("network"); record("setSuccess") }</code>. Delete the two
+              stray <code>record(...)</code> calls that were left on the main thread. That mirrors the real
+              fix: <code>viewModelScope.launch { val r = repository.fetchPhotos(); _uiState.value = ... }</code>.
+            </p>
+</div></div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body"><div class="accordion__body-inner">
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin · the fix (model + the real ViewModel)</span>
+<pre><code>fun loadPhotos() {
+    record("setLoading")               // fast state write — fine on main
+
+    launchCoroutine {                  // == viewModelScope.launch { }
+        record("network")              // the slow HTTP call — now off-main
+        record("setSuccess")           // result handled in the coroutine
+    }
+}
+
+// The real Android version:
+//
+//   fun loadPhotos() {
+//       _uiState.value = PhotoUiState.Loading              // main thread, instant
+//       viewModelScope.launch {                            // off the main thread
+//           repository.fetchPhotos()                       // suspend HTTP GET
+//               .onSuccess { _uiState.value = PhotoUiState.Success(it) }
+//               .onFailure { _uiState.value = PhotoUiState.Error(it.message ?: "Failed") }
+//       }
+//   }</code></pre>
+</div>
+<p class="muted">
+              Setting <code>Loading</code> is a cheap write, so it stays on the main thread and the spinner
+              appears instantly. The expensive call moves inside the coroutine, which keeps the UI thread
+              free to keep drawing at 60 fps.
+            </p>
+</div></div>
+</div>
+</div>
+<div class="callout callout--clo" role="note">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">You've got it when…</span>
+<p style="margin:0">all three challenges print <strong>ALL TESTS PASSED 🎉</strong> and both debug questions show their explanation. At that point you can model a JSON payload, route every failure to the right state, and keep the network off the main thread — the whole pipeline in pure logic. Mark each one solved to bank it toward your networking mastery.</p>
+</div>
+</div>
+</section>
+<!-- ===================== SPACED RECALL + MASTERY (NETWORKING) ===================== -->
+<section aria-labelledby="recall-h" class="card slide">
+<h2 class="card__title anchor-h" id="recall-h">🧠 Spaced recall — bank the pipeline for the long term <span class="clo-tag">CLO 5</span> <span class="clo-tag">CLO 6</span></h2>
+<p class="muted">The quizzes and drills prove you can do it <em>today</em>. This little Leitner deck makes sure you still can in three weeks — when the exam and the term project actually need it. Review what's due, rate your recall honestly, and the scheduler spaces each card out. Everything here banks under your <strong>networking</strong> skill, alongside Sessions 7, 8, 10 &amp; 11.</p>
+<!-- live mastery strip: the student's OWN progress, never a grade -->
+<div data-mastery-stats=""></div>
+<div data-srs="srs-net-pipeline"></div>
+<script id="srs-net-pipeline" type="application/json">
+{
+  "id": "srs-net-pipeline",
+  "cards": [
+    { "topic": "networking", "front": "An app call fails. How do you decide whether to offer <strong>Retry</strong>?", "back": "Split by exception type: <code>IOException</code> (offline, timeout, DNS — the call never reached the server) is <strong>retryable</strong>; <code>HttpException</code> (a non-2xx answer like 404/500 — the server replied) is <strong>not</strong> a blind-retry. Anything else = an unexpected bug. That distinction is exactly the <code>retryable</code> flag." },
+    { "topic": "networking", "front": "Why must the Retrofit call be a <code>suspend</code> function launched in <code>viewModelScope</code>?", "back": "A blocking network call on the main thread freezes the UI and the framework throws <code>NetworkOnMainThreadException</code>. A suspend function pauses without blocking; <code>viewModelScope.launch</code> runs it off the main thread (Dispatchers.IO) and cancels it automatically when the ViewModel clears." },
+    { "topic": "networking", "front": "The JSON key is <code>\"data\"</code> but you want a Kotlin property called <code>details</code>. What do you write — and when do you NOT need it?", "back": "<code>@SerialName(\"data\") val details: PhotoData? = null</code>. You only need <code>@SerialName</code> when the JSON key differs from an idiomatic Kotlin name — if the key already equals the property name (e.g. <code>capacity</code>), adding it is redundant noise." },
+    { "topic": "networking", "front": "What single sealed-state idea lets one Compose <code>when</code> render loading, content, empty, and error?", "back": "A <code>sealed interface UiState</code> with <code>Loading</code>, <code>Success(list)</code>, <code>Empty</code>, and <code>Error(message, retryable)</code>. The ViewModel emits one state via <code>StateFlow</code>; <code>collectAsStateWithLifecycle()</code> observes it and the <code>when</code> recomposes into exactly one branch. 'Success but empty list' is its own screen, not 'still loading'." },
+    { "topic": "networking", "front": "Two things must be true before any network call works at all. What are they?", "back": "(1) Declare <code>&lt;uses-permission android:name=\"android.permission.INTERNET\" /&gt;</code> in the manifest (a normal permission — no runtime dialog, but omit it and you get <code>SecurityException</code>). (2) Use an <code>https://</code> base URL — cleartext HTTP is blocked by default since API 28." },
+    { "topic": "networking", "front": "Trace the full pipeline in one breath: tap → … → pixels.", "back": "UI tap calls the ViewModel → ViewModel sets <code>Loading</code> and <code>launch</code>es a coroutine → Retrofit builds the HTTP <code>GET</code> off the main thread → server returns a status + JSON body → kotlinx.serialization maps JSON onto data classes → ViewModel emits <code>Success</code>/<code>Error</code> through <code>StateFlow</code> → Compose recomposes the <code>LazyColumn</code> (or spinner / error+retry)." }
+  ]
+}
+</script>
+<p class="mini-note">New to this? Cards you've never seen are introduced a few per day; cards you've rated stay in the rotation until they're spaced out to weeks. Coming back tomorrow is the point — that's when memory actually consolidates. The same deck rolls up on your <a href="../path.html">skill map</a> under <em>networking</em>.</p>
+</section>
+<!-- print-only quick reference -->
+<section class="print-only">
+<h2>Pipeline (print quick-reference)</h2>
+<p>UI tap → ViewModel sets Loading → viewModelScope.launch coroutine → Retrofit @GET (off main thread) → server returns JSON + status → kotlinx.serialization maps JSON to data classes → ViewModel emits Success/Error via StateFlow → Compose recomposes (LazyColumn / spinner / error+retry). Manifest needs INTERNET. Use https. Catch IOException + HttpException.</p>
+</section>
+</div><!-- /main column -->
+<!-- ===================== STICKY SIDEBAR / TOC ===================== -->
+<aside aria-label="On this page">
+<div class="card sticky-toc no-print">
+<h2 class="card__title" style="font-size:var(--fs-md)">On this page</h2>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+</aside>
+</div><!-- /two-col -->
+</main>
+<!-- ============================ FOOTER ============================ -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 · Android Development</span><br/>
+<span class="muted">Lab tool — Networking Pipeline Visualizer (HTTP → JSON → UI) · CLO 5 &amp; CLO 6</span>
+</div>
+<div class="muted">
+        Keiser University · B.S. Software Engineering · Face-to-Face<br/>
+        Built with Kotlin + Jetpack Compose + Material 3. Official docs: <a href="https://developer.android.com/courses/android-basics-compose/unit-5" rel="noopener" target="_blank">Android Basics Unit 5 — Connect to the internet</a>.
+      </div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/mastery.js"></script>
+<script src="../assets/playground.js"></script>
+<script>
+  /* =======================================================================
+     Page-specific: the Networking Pipeline Visualizer engine.
+     Pure vanilla JS. Chrome (tabs/quiz/flashcards/timers/toc/copy) is the
+     shared TG library; this only drives the custom layer animation.
+     ======================================================================= */
+  (function () {
+    "use strict";
+    var doc = document;
+    function $(s, r) { return (r || doc).querySelector(s); }
+    function $all(s, r) { return Array.prototype.slice.call((r || doc).querySelectorAll(s)); }
+
+    var layersEl = $("#vizLayers");
+    if (!layersEl) return;
+    var layers = $all(".layer", layersEl);
+    var packet = $("#vizPacket");
+    var stageStep = $("#stageStep");
+    var stageTitle = $("#stageTitle");
+    var stageBody = $("#stageBody");
+    var stageExtra = $("#stageExtra");
+    var stageCode = $("#stageCode");
+    var phoneBody = $("#phoneBody");
+    var statusBadge = $("#layerStatusBadge");
+
+    var playBtn = $("#vizPlay");
+    var stepBtn = $("#vizStep");
+    var backBtn = $("#vizBack");
+    var resetBtn = $("#vizReset");
+    var outcomeBtns = $all(".seg [data-outcome]");
+
+    var STORE_KEY = "tg:cop4667:viz-outcome:retrofit-flow";
+    var outcome = "loading"; // loading | success | error
+    try { var saved = localStorage.getItem(STORE_KEY); if (saved) outcome = saved; } catch (e) {}
+
+    var TOTAL = 6;          // 6 layers => stages 1..6, plus stage 0 = idle
+    var stage = 0;          // 0 = idle
+    var playing = null;
+
+    // Stage content. index 0 = idle; 1..6 map to layers[0..5].
+    // For "error" outcome the failure surfaces at stage 4 (server) / 6 (UI).
+    var STAGES = [
+      {
+        step: "Stage 0 / 6", title: "Idle — nothing has happened yet",
+        body: "Press Step › or ▶ Play. Choose an outcome (Loading / Success / Error) to decide how the request resolves.",
+        code: "// Press Step or Play to walk through the pipeline.\n// The exact Kotlin for the current layer appears here."
+      },
+      {
+        step: "Stage 1 / 6 · Layer 1", title: "Compose UI triggers the load",
+        body: "The user taps Refresh. The onClick lambda calls a ViewModel function. The Composable does NOT touch the network — it only asks.",
+        code:
+"// PhotoScreen.kt — the UI only ASKS the ViewModel\nIconButton(onClick = { viewModel.loadPhotos() }) {\n    Icon(Icons.Default.Refresh, contentDescription = \"Refresh\")\n}"
+      },
+      {
+        step: "Stage 2 / 6 · Layer 2", title: "ViewModel sets Loading + launches a coroutine",
+        body: "The ViewModel immediately emits Loading (spinner shows), then launches a coroutine in viewModelScope so the slow work runs OFF the main thread.",
+        code:
+"// PhotoViewModel.kt\nfun loadPhotos() {\n    _uiState.value = PhotoUiState.Loading      // spinner now\n    viewModelScope.launch {                    // off the main thread\n        repository.fetchPhotos()\n            .onSuccess { _uiState.value = PhotoUiState.Success(it) }\n            .onFailure { _uiState.value = PhotoUiState.Error(it.message ?: \"Failed\") }\n    }\n}"
+      },
+      {
+        step: "Stage 3 / 6 · Layer 3", title: "Retrofit builds the HTTP GET request",
+        body: "Retrofit turns your annotated suspend function into a real HTTP GET, dispatched on a background dispatcher (Dispatchers.IO).",
+        code:
+"// PhotoApiService.kt\n@Headers(\"Accept: application/json\")\n@GET(\"objects\")\nsuspend fun getPhotos(): List<PhotoDto>\n\n// On the wire:\n// GET /objects HTTP/1.1\n// Host: api.restful-api.dev\n// Accept: application/json"
+      },
+      {
+        step: "Stage 4 / 6 · Layer 4", title: "Server responds with a status + JSON body",
+        body: "The backend returns an HTTP status line, headers, and (for 2xx) a JSON body. This is just text traveling over the wire.",
+        code:
+"HTTP/1.1 200 OK\nContent-Type: application/json\n\n[\n  { \"id\": \"1\", \"name\": \"Google Pixel 6 Pro\",\n    \"data\": { \"color\": \"Cloudy White\", \"capacity\": \"128 GB\" } },\n  { \"id\": \"2\", \"name\": \"Apple iPhone 12 Mini\",\n    \"data\": { \"color\": \"Blue\", \"price\": 799.99 } }\n]"
+      },
+      {
+        step: "Stage 5 / 6 · Layer 5", title: "JSON is deserialized into Kotlin data classes",
+        body: "The converter reads each JSON key and assigns it to the matching property. @SerialName remaps differing names; unknown keys are ignored.",
+        code:
+"// PhotoDto.kt — JSON maps onto these\n@Serializable\ndata class PhotoDto(\n    val id: String,\n    val name: String,\n    @SerialName(\"data\") val details: PhotoData? = null\n)\n\n// Json.decodeFromString<List<PhotoDto>>(body)\n//   -> listOf(PhotoDto(\"1\", \"Google Pixel 6 Pro\", ...), ...)"
+      },
+      {
+        step: "Stage 6 / 6 · Layer 6", title: "State updates → LazyColumn renders",
+        body: "The ViewModel emits Success(list). Compose observes the StateFlow, the `when` branch flips to Success, and the LazyColumn recomposes with the rows.",
+        code:
+"// PhotoScreen.kt — declarative render of the new state\nwhen (val state = uiState) {\n    is PhotoUiState.Loading -> LoadingView()\n    is PhotoUiState.Error   -> ErrorView(state.message, ::retry)\n    is PhotoUiState.Success -> LazyColumn {\n        items(state.photos, key = { it.id }) { ListItem(...) }\n    }\n}"
+      }
+    ];
+
+    // Overrides for the ERROR outcome at the server + final stage.
+    var ERROR_STAGE4 = {
+      step: "Stage 4 / 6 · Layer 4", title: "Server responds with an ERROR status (no usable body)",
+      body: "The request reached the server, but it answered with a non-2xx code (here 503). Retrofit raises HttpException; for a dropped connection it would be IOException.",
+      code:
+"HTTP/1.1 503 Service Unavailable\nContent-Type: application/json\nRetry-After: 30\n\n{ \"error\": \"Service temporarily unavailable\" }\n\n// In the repository this becomes:\n// catch (e: HttpException) -> Result.failure(e)"
+    };
+    var ERROR_STAGE6 = {
+      step: "Stage 6 / 6 · Layer 6", title: "State updates → Error UI renders (with Retry)",
+      body: "The ViewModel emits Error(message). The `when` flips to the Error branch — NOT a crash. A good app shows the message and a Retry button.",
+      code:
+"// PhotoScreen.kt\nis PhotoUiState.Error -> ErrorView(\n    message = state.message,           // \"503 Service Unavailable\"\n    onRetry = { viewModel.loadPhotos() }\n)"
+    };
+
+    function isErr() { return outcome === "error"; }
+
+    function stageData(s) {
+      if (isErr() && s === 4) return ERROR_STAGE4;
+      if (isErr() && s === 6) return ERROR_STAGE6;
+      return STAGES[s];
+    }
+
+    /* ----- phone preview rendering ----- */
+    function renderPhone() {
+      // Decide which UI to show based on stage + outcome.
+      // Before the response (stage 1-3) we always show Loading once started.
+      var ui = "idle";
+      if (stage === 0) ui = "idle";
+      else if (stage >= 1 && stage <= 3) ui = "loading";
+      // Stages 4-5 (response arriving + JSON parsing) still show the spinner for EVERY
+      // outcome — the error only surfaces in the UI at stage 6, after the state updates.
+      else if (stage === 4 || stage === 5) ui = "loading";
+      else if (stage === 6) ui = isErr() ? "error" : (outcome === "loading" ? "loading" : "success");
+      // If the chosen outcome is "loading", we never resolve — stays on spinner at the end.
+
+      if (ui === "idle") {
+        phoneBody.innerHTML = '<p class="phone__center">Tap <strong>Refresh</strong> to load photos.</p>';
+      } else if (ui === "loading") {
+        phoneBody.innerHTML =
+          '<div class="photo-row"><span class="skel photo-thumb"></span><div class="photo-meta" style="flex:1">' +
+          '<span class="skel skel--line w70" style="display:block;margin-bottom:6px"></span>' +
+          '<span class="skel skel--line w50" style="display:block"></span></div></div>' +
+          '<div class="photo-row"><span class="skel photo-thumb"></span><div class="photo-meta" style="flex:1">' +
+          '<span class="skel skel--line w90" style="display:block;margin-bottom:6px"></span>' +
+          '<span class="skel skel--line w50" style="display:block"></span></div></div>' +
+          '<div class="photo-row"><span class="skel photo-thumb"></span><div class="photo-meta" style="flex:1">' +
+          '<span class="skel skel--line w70" style="display:block;margin-bottom:6px"></span>' +
+          '<span class="skel skel--line w50" style="display:block"></span></div></div>' +
+          '<p class="center mini-note">Loading… (CircularProgressIndicator)</p>';
+      } else if (ui === "success") {
+        // Mirror EXACTLY the two objects in the raw JSON sample + stage-4 code above,
+        // so the rendered list matches the payload students just watched being parsed.
+        phoneBody.innerHTML =
+          row("📱", "Google Pixel 6 Pro", "Cloudy White") +
+          row("📱", "Apple iPhone 12 Mini", "Blue") +
+          '<p class="center mini-note">LazyColumn · 2 items</p>';
+      } else if (ui === "error") {
+        phoneBody.innerHTML =
+          '<div class="phone__center"><div class="phone__err-icon">⚠️</div>' +
+          '<p style="margin:8px 0 0"><strong>Couldn\'t load photos</strong></p>' +
+          '<p class="mini-note" style="margin:4px 0 0">503 Service Unavailable</p>' +
+          '<button class="phone__retry" type="button" id="phoneRetry">Retry</button></div>';
+        var retry = $("#phoneRetry");
+        if (retry) retry.addEventListener("click", function () { reset(); step(); });
+      }
+    }
+    function row(icon, title, sub) {
+      return '<div class="photo-row"><span class="photo-thumb">' + icon + '</span>' +
+             '<div class="photo-meta"><b>' + title + '</b><small>' + sub + '</small></div></div>';
+    }
+
+    /* ----- packet animation between layers ----- */
+    function movePacketTo(layerIdx, kind, label) {
+      if (layerIdx < 0 || layerIdx >= layers.length) { packet.classList.remove("is-show"); return; }
+      var target = layers[layerIdx];
+      packet.textContent = label;
+      packet.className = "packet packet--" + kind + " is-show";
+      // position packet at the top edge of the target layer, centered in the stack
+      var top = target.offsetTop - 14;
+      packet.style.top = top + "px";
+    }
+
+    /* ----- main render for the current stage ----- */
+    function render() {
+      var data = stageData(stage);
+      stageStep.textContent = data.step;
+      stageTitle.textContent = data.title;
+      stageBody.textContent = data.body;
+      stageCode.textContent = data.code;
+      // re-run TG copy button injection is fine; the existing button stays.
+
+      // status badge on layer 4
+      if (statusBadge) {
+        if (stage >= 4) {
+          statusBadge.textContent = isErr() ? "503 ⚠" : "200 OK";
+          statusBadge.className = isErr() ? "badge badge--danger" : "badge badge--green";
+        } else {
+          statusBadge.textContent = "awaiting…";
+          statusBadge.className = "badge";
+        }
+      }
+
+      // layer active/visited/error classes
+      layers.forEach(function (l, i) {
+        var li = i + 1; // this layer's stage number
+        l.classList.remove("is-active", "is-visited", "is-error");
+        if (stage === 0) return;
+        if (li < stage) l.classList.add("is-visited");
+        if (li === stage) {
+          l.classList.add("is-active");
+          if (isErr() && (stage === 4 || stage === 5 || stage === 6)) l.classList.add("is-error");
+        }
+        if (isErr() && li < stage && li >= 4) l.classList.add("is-error");
+      });
+
+      // packet: request travels DOWN (layers 1->4), response travels back logically
+      if (stage === 0) {
+        packet.classList.remove("is-show");
+      } else if (stage <= 3) {
+        movePacketTo(stage - 1, "req", "GET ▾");        // request descending
+      } else if (stage === 4) {
+        movePacketTo(3, isErr() ? "err" : "res", isErr() ? "503 ▴" : "200 ▴"); // response at server layer
+      } else if (stage === 5) {
+        movePacketTo(4, isErr() ? "err" : "res", isErr() ? "fail ▴" : "JSON ▴");
+      } else if (stage === 6) {
+        movePacketTo(5, isErr() ? "err" : "res", isErr() ? "Error ▴" : "Success ▴");
+      }
+
+      // extra contextual note in the stage card
+      stageExtra.innerHTML = "";
+      if (stage === 0) {
+        stageExtra.innerHTML = '<p class="mini-note" style="margin-top:8px">Current outcome: <strong>' + outcome + '</strong></p>';
+      } else if (stage === 6) {
+        if (isErr()) {
+          stageExtra.innerHTML = '<p class="mini-note" style="margin-top:8px">⚠️ An <strong>Error</strong> state is normal — design for it, don\'t crash.</p>';
+        } else if (outcome === "loading") {
+          stageExtra.innerHTML = '<p class="mini-note" style="margin-top:8px">Outcome is <strong>Loading</strong>: the response never resolves, so the spinner stays. Switch to Success to finish.</p>';
+        } else {
+          stageExtra.innerHTML = '<p class="mini-note" style="margin-top:8px">✅ Pipeline complete — the LazyColumn shows the parsed items.</p>';
+        }
+      }
+
+      renderPhone();
+      backBtn.disabled = stage === 0;
+      stepBtn.disabled = stage === TOTAL;
+    }
+
+    function step() {
+      if (stage < TOTAL) { stage++; render(); }
+      if (stage === TOTAL) { stopPlay(); }
+    }
+    function back() { if (stage > 0) { stage--; render(); } }
+    function reset() { stopPlay(); stage = 0; render(); }
+
+    function startPlay() {
+      if (playing) return;
+      if (stage === TOTAL) reset();
+      playBtn.textContent = "⏸ Pause";
+      playBtn.setAttribute("aria-pressed", "true");
+      playing = setInterval(function () {
+        if (stage >= TOTAL) { stopPlay(); return; }
+        step();
+      }, 1600);
+    }
+    function stopPlay() {
+      if (playing) { clearInterval(playing); playing = null; }
+      playBtn.textContent = "▶ Play";
+      playBtn.setAttribute("aria-pressed", "false");
+    }
+    function togglePlay() { playing ? stopPlay() : startPlay(); }
+
+    function setOutcome(value) {
+      outcome = value;
+      try { localStorage.setItem(STORE_KEY, value); } catch (e) {}
+      outcomeBtns.forEach(function (b) {
+        b.setAttribute("aria-pressed", b.getAttribute("data-outcome") === value ? "true" : "false");
+      });
+      render(); // re-render current stage with new outcome
+    }
+
+    /* ----- wire up ----- */
+    playBtn.addEventListener("click", togglePlay);
+    stepBtn.addEventListener("click", function () { stopPlay(); step(); });
+    backBtn.addEventListener("click", function () { stopPlay(); back(); });
+    resetBtn.addEventListener("click", reset);
+    outcomeBtns.forEach(function (b) {
+      b.addEventListener("click", function () { setOutcome(b.getAttribute("data-outcome")); });
+    });
+
+    // keyboard: arrows step when focus is inside the visualizer
+    layersEl.closest(".viz").addEventListener("keydown", function (e) {
+      if (e.target.closest("input, textarea")) return;
+      if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); step(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); back(); }
+    });
+
+    // recompute packet position on resize (layout shifts)
+    window.addEventListener("resize", function () { if (stage > 0) render(); });
+
+    // init: reflect saved outcome, start idle
+    outcomeBtns.forEach(function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-outcome") === outcome ? "true" : "false");
+    });
+    render();
+  })();
+  </script>
+</body>
+</html>

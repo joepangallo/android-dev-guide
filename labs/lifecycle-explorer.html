@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Android Activity Lifecycle Explorer · COP4667</title>
+<meta content="COP4667 Android Development — an interactive, clickable Activity lifecycle simulator. Fire real lifecycle events (Launch, leave to Home, return, rotate, Back, low-memory kill), watch the current state animate, read a live Logcat-style callback log, and learn exactly why each callback fires and what to do in it. Supports CLO1 and CLO2; sets up the Compose state lesson." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* ============================================================
+       Page-specific tweaks. Chrome still uses contract classes.
+       ============================================================ */
+    .lc-layout { display: grid; grid-template-columns: 1fr; gap: var(--space-5); align-items: start; }
+    @media (min-width: 1000px) {
+      .lc-layout { grid-template-columns: 1.05fr 0.95fr; }
+    }
+
+    .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: var(--fs-xs); font-weight: 800; color: #9BE8C5; margin: 0 0 .35em; }
+    .lead { font-size: var(--fs-lg); color: var(--muted); }
+    .section-anchor { scroll-margin-top: 80px; }
+
+    /* ---- Event control buttons ---- */
+    .lc-events { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin: var(--space-4) 0; }
+    .lc-event-btn {
+      appearance: none; cursor: pointer; text-align: left;
+      display: flex; flex-direction: column; gap: 3px;
+      border: 1px solid var(--line); border-radius: var(--radius-sm);
+      background: var(--surface); color: var(--ink);
+      padding: var(--space-3) var(--space-4);
+      font: inherit; font-weight: 700;
+      transition: border-color .15s ease, transform .1s ease, box-shadow .15s ease, background .15s ease;
+      border-left: 4px solid var(--green);
+    }
+    .lc-event-btn small { font-weight: 500; color: var(--muted); font-size: var(--fs-xs); }
+    .lc-event-btn:hover:not([disabled]) { border-color: var(--green); box-shadow: var(--shadow); transform: translateY(-1px); }
+    .lc-event-btn:active:not([disabled]) { transform: translateY(0); }
+    .lc-event-btn[disabled] { opacity: .42; cursor: not-allowed; }
+    .lc-event-btn .lc-event-icon { font-size: 1.05rem; }
+    .lc-event-btn--leave  { border-left-color: var(--accent); }
+    .lc-event-btn--return { border-left-color: var(--info); }
+    .lc-event-btn--rotate { border-left-color: var(--teal-2); }
+    .lc-event-btn--back   { border-left-color: var(--danger); }
+    .lc-event-btn--kill   { border-left-color: var(--danger); }
+
+    /* ---- The lifecycle diagram (SVG-free, pure CSS boxes) ---- */
+    .lc-diagram { display: flex; flex-direction: column; align-items: center; gap: 0; margin: var(--space-4) 0; }
+    .lc-node {
+      position: relative;
+      width: 100%; max-width: 320px;
+      text-align: center;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: var(--space-3) var(--space-4);
+      transition: background .25s ease, border-color .25s ease, color .25s ease, box-shadow .25s ease, transform .25s ease;
+    }
+    .lc-node .lc-cb { font-family: var(--font-mono); font-weight: 800; font-size: var(--fs-md); display: block; }
+    .lc-node .lc-state { display: block; font-size: var(--fs-xs); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+    .lc-node.is-active {
+      background: linear-gradient(135deg, var(--green), var(--green-dark));
+      border-color: var(--green-dark);
+      color: var(--teal);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 35%, transparent), var(--shadow);
+      transform: scale(1.04);
+    }
+    .lc-node.is-active .lc-cb { color: var(--teal); }
+    .lc-node.is-active .lc-state { color: #073042; }
+    .lc-node.is-pulse { animation: lc-firepulse .6s ease; }
+    @keyframes lc-firepulse {
+      0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 60%, transparent); }
+      100% { box-shadow: 0 0 0 16px transparent; }
+    }
+    /* connector arrows between nodes */
+    .lc-arrow {
+      width: 2px; height: 26px;
+      background: var(--line);
+      position: relative;
+      transition: background .25s ease;
+    }
+    .lc-arrow::after {
+      content: "▾";
+      position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%);
+      color: var(--line); font-size: 14px; line-height: 1;
+      transition: color .25s ease;
+    }
+    .lc-arrow.is-lit { background: var(--green-dark); }
+    .lc-arrow.is-lit::after { color: var(--green-dark); }
+    .lc-arrow__label {
+      position: absolute; left: calc(50% + 14px); top: 50%; transform: translateY(-50%);
+      white-space: nowrap; font-size: var(--fs-xs); color: var(--muted); font-style: italic;
+    }
+    .lc-running-badge {
+      display: inline-block; margin-top: var(--space-2);
+      font-size: var(--fs-xs); font-weight: 800; letter-spacing: .04em;
+      text-transform: uppercase; color: var(--muted);
+    }
+
+    /* The "phone" status chip */
+    .lc-status {
+      display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm);
+      margin: var(--space-3) 0;
+    }
+    .lc-status__dot {
+      width: 12px; height: 12px; border-radius: 50%; background: var(--muted);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--muted) 25%, transparent);
+      transition: background .25s ease, box-shadow .25s ease;
+    }
+    .lc-status[data-vis="visible"]   .lc-status__dot { background: var(--green-dark); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 30%, transparent); }
+    .lc-status[data-vis="partial"]   .lc-status__dot { background: var(--accent);     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+    .lc-status[data-vis="hidden"]    .lc-status__dot { background: var(--danger);      box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 30%, transparent); }
+    .lc-status[data-vis="destroyed"] .lc-status__dot { background: #6B7280;            box-shadow: 0 0 0 3px rgba(107,114,128,.3); }
+    .lc-status__txt b { color: var(--ink); }
+
+    /* ---- Logcat-style log ---- */
+    .lc-logcat {
+      background: var(--code-bg); color: var(--code-ink);
+      border-radius: var(--radius); border: 1px solid var(--teal);
+      font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.55;
+      padding: var(--space-4) var(--space-4) var(--space-3);
+      max-height: 360px; overflow-y: auto;
+      box-shadow: var(--shadow);
+    }
+    .lc-logcat__empty { color: #6FA89A; font-style: italic; }
+    .lc-logline { display: grid; grid-template-columns: auto auto 1fr; gap: 10px; padding: 2px 0; white-space: nowrap; }
+    .lc-logline:hover { background: rgba(255,255,255,.04); }
+    .lc-logline__time { color: #6FA89A; }
+    .lc-logline__lvl { font-weight: 800; }
+    .lc-logline__lvl--d { color: #5B9CFF; }   /* Debug */
+    .lc-logline__lvl--i { color: #4DE595; }   /* Info  */
+    .lc-logline__lvl--w { color: #FFC233; }   /* Warn  */
+    .lc-logline__lvl--e { color: #FF6369; }   /* Error */
+    .lc-logline__msg { white-space: normal; }
+    .lc-logline__msg .tag { background: rgba(255,255,255,.08); color: #9BE8C5; border: none; }
+    .lc-logbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin: var(--space-3) 0 0; }
+    .lc-count { font-family: var(--font-mono); font-weight: 800; color: var(--teal-2); }
+    [data-theme="dark"] .lc-count { color: var(--green); }
+
+    /* explanation panel that updates with each event */
+    .lc-explain {
+      border-left: 4px solid var(--info);
+      background: color-mix(in srgb, var(--info) 8%, var(--surface));
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: var(--space-4);
+      margin: var(--space-4) 0 0;
+    }
+    .lc-explain h4 { margin: 0 0 .4em; }
+    .lc-explain .lc-explain__do { margin-top: var(--space-3); }
+    .lc-explain ul { margin: .3em 0 0; }
+
+    .legend-row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-3) 0; }
+    .legend-chip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); }
+    .sw-active { background: var(--green); }
+    .sw-warn   { background: var(--accent); }
+    .sw-danger { background: var(--danger); }
+    .sw-idle   { background: var(--surface-2); }
+
+    .pillrow { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+  </style>
+</head>
+<body>
+<!-- ====================== TOP NAV ====================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 teaching guide home" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▶</span>
+<span>COP4667
+          <small>Android Development</small>
+</span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a aria-current="page" class="active" href="lifecycle-explorer.html">Lifecycle</a>
+<a href="../sessions/session-04.html">Lifecycle Session ›</a>
+<a href="kotlin-cheatsheet.html">Kotlin Cheatsheet</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">🖥️ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- ====================== HERO ====================== -->
+<section aria-labelledby="hero-title" class="hero slide section-anchor" id="top">
+<p class="eyebrow">Interactive Lab Tool · Activity Lifecycle</p>
+<h1 class="hero-title" id="hero-title">Android Activity Lifecycle Explorer</h1>
+<p class="hero-sub">Click real device events — Launch, leave to Home, return, rotate, Back, low-memory kill — and watch the Activity move through its states while a live Logcat-style log records every callback. Then read <em>why</em> each callback fires and what your code should do in it.</p>
+<div class="hero-meta">
+<span class="pill pill--green">🎯 CLO 1 · Android essentials &amp; ecosystem</span>
+<span class="pill pill--green">🎯 CLO 2 · UI components &amp; state</span>
+<span class="pill pill--accent">Pairs with Session 4 (Lifecycle &amp; Compose state)</span>
+<span class="pill">No install needed — runs in your browser</span>
+</div>
+</section>
+<!-- ====================== HOW TO USE ====================== -->
+<section aria-labelledby="how-to-title" class="slide section-anchor" id="how-to-use">
+<div class="grid grid-2">
+<div class="card card--accent">
+<h2 class="card__title" id="how-to-title">How to use this tool</h2>
+<ol>
+<li><strong>Press “Launch app.”</strong> Watch the diagram animate down through <code>onCreate()</code> → <code>onStart()</code> → <code>onResume()</code> and the log fill in.</li>
+<li><strong>Fire an event</strong> from the buttons (e.g. “Press Home”). The current state highlights, the callbacks for that transition append to the log, and the explanation panel updates with <em>why</em> and <em>what to do</em>.</li>
+<li><strong>Watch the “App visibility” chip</strong> — it tells you whether the user can see and/or touch your UI right now.</li>
+<li><strong>Try “Rotate device.”</strong> Notice the Activity is fully destroyed and recreated. That is the bridge to our Compose state lesson — see the green callout below.</li>
+<li><strong>Clear the log</strong> any time to reset and re-run a clean demo for students.</li>
+</ol>
+<p class="muted" style="margin-bottom:0;">Disabled buttons mean that event isn’t valid from the current state (e.g. you can’t “return” to an app that’s already in the foreground).</p>
+</div>
+</div>
+</section>
+<!-- ====================== THE SIMULATOR ====================== -->
+<section aria-labelledby="sim-title" class="slide section-anchor" id="simulator">
+<h2 id="sim-title">The live lifecycle simulator</h2>
+<p class="lead">Everything below updates together as you click. The diagram is the model in the official Android docs — states on the left of each row, the callback that runs during the transition on the node itself.</p>
+<div class="lc-layout">
+<!-- LEFT: diagram + controls -->
+<div aria-labelledby="diagram-h" class="card">
+<h3 class="card__title" id="diagram-h">① Fire device events</h3>
+<div aria-label="Lifecycle event controls" class="lc-events" role="group">
+<button class="lc-event-btn" data-event="launch" type="button">
+<span><span aria-hidden="true" class="lc-event-icon">🚀</span> Launch app</span>
+<small>Cold start from the launcher</small>
+</button>
+<button class="lc-event-btn lc-event-btn--leave" data-event="home" type="button">
+<span><span aria-hidden="true" class="lc-event-icon">🏠</span> Press Home</span>
+<small>User leaves to the launcher</small>
+</button>
+<button class="lc-event-btn lc-event-btn--leave" data-event="dialog" type="button">
+<span><span aria-hidden="true" class="lc-event-icon">🔔</span> Show dialog / pop-up</span>
+<small>Partly covers your Activity</small>
+</button>
+<button class="lc-event-btn lc-event-btn--return" data-event="return" type="button">
+<span><span aria-hidden="true" class="lc-event-icon">↩️</span> Return to app</span>
+<small>Re-open from Recents</small>
+</button>
+<button class="lc-event-btn lc-event-btn--rotate" data-event="rotate" type="button">
+<span><span aria-hidden="true" class="lc-event-icon">🔄</span> Rotate device</span>
+<small>Configuration change</small>
+</button>
+<button class="lc-event-btn lc-event-btn--back" data-event="back" type="button">
+<span><span aria-hidden="true" class="lc-event-icon">⬅️</span> Press Back</span>
+<small>Finishes the Activity</small>
+</button>
+<button class="lc-event-btn lc-event-btn--kill" data-event="kill" type="button">
+<span><span aria-hidden="true" class="lc-event-icon">💀</span> Low-memory kill</span>
+<small>System reclaims a backgrounded app</small>
+</button>
+<button class="lc-event-btn" data-event="reset" style="border-left-color:var(--muted);" type="button">
+<span><span aria-hidden="true" class="lc-event-icon">⟲</span> Reset simulator</span>
+<small>Back to “not launched”</small>
+</button>
+</div>
+<div aria-live="polite" class="lc-status" data-vis="destroyed" id="lc-status">
+<span aria-hidden="true" class="lc-status__dot"></span>
+<span class="lc-status__txt">App visibility: <b id="lc-vis-text">Not launched</b></span>
+<span class="tag" id="lc-state-tag" style="margin-left:auto;">No instance</span>
+</div>
+<h3 class="card__title" id="diagram-state-h" style="margin-top:var(--space-5);">② Watch the state machine</h3>
+<div aria-hidden="true" class="legend-row">
+<span class="legend-chip"><span class="legend-swatch sw-active"></span> Current callback</span>
+<span class="legend-chip"><span class="legend-swatch sw-idle"></span> Inactive</span>
+</div>
+<div aria-label="Activity lifecycle diagram with callbacks onCreate, onStart, onRestart, onResume, onPause, onStop and onDestroy" class="lc-diagram" id="lc-diagram" role="img">
+<div class="lc-node" data-node="onCreate">
+<span class="lc-cb">onCreate()</span><span class="lc-state">Created</span>
+</div>
+<div class="lc-arrow" data-arrow="onCreate-onStart"></div>
+<div class="lc-node" data-node="onStart">
+<span class="lc-cb">onStart()</span><span class="lc-state">Started · visible</span>
+</div>
+<div class="lc-arrow" data-arrow="onStart-onResume"></div>
+<div class="lc-node" data-node="onResume">
+<span class="lc-cb">onResume()</span><span class="lc-state">Resumed · interactive</span>
+<span class="lc-running-badge">▶ Running / foreground</span>
+</div>
+<div class="lc-arrow" data-arrow="onResume-onPause"><span class="lc-arrow__label">losing focus</span></div>
+<div class="lc-node" data-node="onPause">
+<span class="lc-cb">onPause()</span><span class="lc-state">Paused · partly hidden</span>
+</div>
+<div class="lc-arrow" data-arrow="onPause-onStop"><span class="lc-arrow__label">no longer visible</span></div>
+<div class="lc-node" data-node="onStop">
+<span class="lc-cb">onStop()</span><span class="lc-state">Stopped · in background</span>
+</div>
+<div class="lc-arrow" data-arrow="onStop-onDestroy"><span class="lc-arrow__label">finishing / reclaimed</span></div>
+<div class="lc-node" data-node="onDestroy">
+<span class="lc-cb">onDestroy()</span><span class="lc-state">Destroyed</span>
+</div>
+</div>
+<p class="muted center" style="font-size:var(--fs-xs);margin-bottom:0;">
+            Coming back from Stopped (not destroyed) runs <code>onRestart()</code> → <code>onStart()</code> → <code>onResume()</code>.
+          </p>
+</div>
+<!-- RIGHT: logcat + explanation -->
+<div>
+<div aria-labelledby="logcat-h" class="card">
+<h3 class="card__title" id="logcat-h">
+              ③ Logcat
+              <span class="tag" style="margin-left:auto;">Tag: <code>MainActivity</code></span>
+</h3>
+<p class="muted" style="margin-top:0;">This mirrors what you’d see in Android Studio’s Logcat if every callback logged its name. Newest line at the bottom, like the real tool.</p>
+<div aria-label="Lifecycle callback log" aria-live="polite" class="lc-logcat" id="lc-logcat" role="log">
+<div class="lc-logline lc-logcat__empty"><span>// Press “Launch app” to begin. Callbacks will appear here.</span></div>
+</div>
+<div class="lc-logbar">
+<button class="btn btn--ghost btn--sm" id="lc-clear" type="button">Clear log</button>
+<span class="muted" style="font-size:var(--fs-xs);">Callbacks logged: <span class="lc-count" id="lc-log-count">0</span></span>
+</div>
+</div>
+<div aria-labelledby="explain-h" class="card" style="margin-top:var(--space-5);">
+<h3 class="card__title" id="explain-h">④ Why it fired &amp; what to do</h3>
+<div aria-live="polite" class="lc-explain" id="lc-explain">
+<h4 id="lc-explain-title">Nothing has happened yet</h4>
+<p id="lc-explain-why" style="margin-bottom:0;">Fire an event on the left and this panel will explain which callbacks ran, the order they ran in, and the responsibility you have as the developer inside each one.</p>
+<div class="lc-explain__do hidden" id="lc-explain-do-wrap">
+<strong>What your code should do here:</strong>
+<ul id="lc-explain-do"></ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout--tip slide section-anchor" id="rotation-bridge">
+<span aria-hidden="true" class="callout__icon">🔗</span>
+<div class="callout__body">
+<span class="callout__label">Bridge to the Compose state lesson</span>
+<p>Rotation is a <strong>configuration change</strong>. The system destroys the Activity (<code>onPause → onStop → onDestroy</code>) and immediately recreates it (<code>onCreate → onStart → onResume</code>). Any value you held in a plain variable — or in a <code>remember { }</code> in Compose — is <strong>gone</strong>.</p>
+<p style="margin-bottom:0;">That’s exactly why our next session teaches <code>rememberSaveable</code> (survives config changes) and the <code>ViewModel</code> (survives config changes, lives until the screen is truly finished). Try “Rotate device” above, then read the recreate count, then look at the code below.</p>
+</div>
+</div>
+</section>
+<!-- ====================== TEACHING PANEL ====================== -->
+<section aria-labelledby="teaching-title" class="slide section-anchor" id="teaching">
+<h2 id="teaching-title">Teaching panel: the seven callbacks</h2>
+<p class="lead">A quick-reference for each callback — when it runs, what’s guaranteed, and the one thing students must remember.</p>
+<div aria-label="Lifecycle callbacks" class="tabs" role="tablist">
+<button class="tab" data-tab="oncreate" role="tab">onCreate</button>
+<button class="tab" data-tab="onstart" role="tab">onStart</button>
+<button class="tab" data-tab="onresume" role="tab">onResume</button>
+<button class="tab" data-tab="onpause" role="tab">onPause</button>
+<button class="tab" data-tab="onstop" role="tab">onStop</button>
+<button class="tab" data-tab="onrestart" role="tab">onRestart</button>
+<button class="tab" data-tab="ondestroy" role="tab">onDestroy</button>
+</div>
+<div class="tabpanel" data-tabpanel="oncreate" role="tabpanel">
+<div class="grid grid-2">
+<div class="card">
+<h4 class="card__title">onCreate() — the only one you must override</h4>
+<p><strong>Runs:</strong> exactly once per Activity instance, when the Activity is first created (cold start) <em>and</em> after every recreate (rotation, process restart).</p>
+<p><strong>Guaranteed:</strong> this is where you receive the saved <code>Bundle</code> (or <code>null</code> the first time). The window isn’t visible yet.</p>
+<p style="margin-bottom:0;"><strong>Do here:</strong> one-time setup — call <code>setContent { }</code> to attach your Compose UI, read <code>savedInstanceState</code>, obtain your <code>ViewModel</code>, wire up bindings.</p>
+</div>
+<div class="card card--teal">
+<h4 class="card__title">Minimal Compose Activity</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Log.d("MainActivity", "onCreate() called")
+
+        setContent {
+            MyAppTheme {
+                Surface { GreetingScreen() }
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="onstart" role="tabpanel">
+<div class="card">
+<h4 class="card__title">onStart() — the Activity becomes visible</h4>
+<p><strong>Runs:</strong> after <code>onCreate()</code>, and again every time the Activity returns from the background (after <code>onRestart()</code>). Can run many times in one instance’s life.</p>
+<p><strong>Guaranteed:</strong> the Activity is now visible to the user but <em>not yet in the foreground / interactive</em>.</p>
+<p style="margin-bottom:0;"><strong>Do here:</strong> start work that should only happen while the UI is on screen but that you can afford to do a moment before the user can touch it — register broadcast receivers that update the UI, begin showing content.</p>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="onresume" role="tabpanel">
+<div class="grid grid-2">
+<div class="card">
+<h4 class="card__title">onResume() — now in the foreground &amp; interactive</h4>
+<p><strong>Runs:</strong> right after <code>onStart()</code>, and again whenever the app returns to the foreground (e.g. after a dialog closes, or coming back from Home).</p>
+<p><strong>Guaranteed:</strong> the Activity is at the top of the stack and receiving user input — this is the <strong>Running</strong> state.</p>
+<p style="margin-bottom:0;"><strong>Do here:</strong> resume anything you paused — camera preview, sensors, animations, location updates, a game loop. Pair every acquire-in-<code>onResume</code> with a release-in-<code>onPause</code>.</p>
+</div>
+<div class="card card--teal">
+<h4 class="card__title">Acquire / release pairing</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>override fun onResume() {
+    super.onResume()
+    sensorManager.registerListener(
+        listener, accelerometer,
+        SensorManager.SENSOR_DELAY_UI
+    )
+}
+
+override fun onPause() {
+    super.onPause()
+    sensorManager.unregisterListener(listener)
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="onpause" role="tabpanel">
+<div class="card card--amber">
+<h4 class="card__title">onPause() — losing focus (keep it fast!)</h4>
+<p><strong>Runs:</strong> as soon as the Activity loses focus — a dialog appears, the user presses Home, another Activity comes to the front, or the device rotates.</p>
+<p><strong>Guaranteed:</strong> the Activity may still be partially visible (e.g. behind a translucent dialog). The next state could be <em>Resumed</em> (focus came back) or <em>Stopped</em> (fully hidden).</p>
+<p><strong>Do here:</strong> pause battery-/CPU-heavy work (camera, sensors, animations). <strong>Do NOT</strong> do heavy work or disk/network writes — the next Activity can’t resume until <code>onPause()</code> returns.</p>
+<p class="muted" style="margin-bottom:0;">Modern guidance: persist user data in <code>onStop()</code>, not here. <code>onPause()</code> is for quick releases only.</p>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="onstop" role="tabpanel">
+<div class="grid grid-2">
+<div class="card">
+<h4 class="card__title">onStop() — no longer visible</h4>
+<p><strong>Runs:</strong> when the Activity is fully hidden — the user went Home, switched apps, or this Activity is finishing.</p>
+<p><strong>Guaranteed:</strong> the Activity is in the background. The instance is kept in memory, so it can come back via <code>onRestart()</code> — <em>unless</em> the system needs the memory and kills the process.</p>
+<p style="margin-bottom:0;"><strong>Do here:</strong> persist data to a database / DataStore, release resources you don’t need while hidden, stop refresh work. This is the recommended place for relatively heavy save work.</p>
+</div>
+<div class="card card--teal">
+<h4 class="card__title">Persist on stop</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>override fun onStop() {
+    super.onStop()
+    // Heavier persistence is OK here.
+    lifecycleScope.launch {
+        draftRepository.saveDraft(currentDraft)
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="onrestart" role="tabpanel">
+<div class="card">
+<h4 class="card__title">onRestart() — returning from the background</h4>
+<p><strong>Runs:</strong> only when a <em>stopped</em> (still-alive) Activity is about to be shown again. It runs <strong>before</strong> <code>onStart()</code>. It never runs on first launch and never runs after a destroy/recreate.</p>
+<p><strong>Guaranteed:</strong> the instance survived in memory — your <code>onCreate()</code> did <em>not</em> run again, so your fields still hold their values.</p>
+<p style="margin-bottom:0;"><strong>Do here:</strong> usually nothing special; refresh anything that may be stale (re-query data, restart polling). Most logic belongs in <code>onStart()</code>/<code>onResume()</code> so the cold-start path is covered too.</p>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="ondestroy" role="tabpanel">
+<div class="card card--amber">
+<h4 class="card__title">onDestroy() — the instance is going away</h4>
+<p><strong>Runs:</strong> when the Activity is finishing (the user pressed Back or you called <code>finish()</code>) <em>or</em> the system is destroying it to recreate it (configuration change) or to reclaim resources.</p>
+<p><strong>Guaranteed:</strong> this is the last callback. Use <code>isFinishing</code> to tell a real finish from a config-change recreate.</p>
+<p style="margin-bottom:0;"><strong>Do here:</strong> final cleanup — but <strong>don’t</strong> rely on it for saving user data, because a process kill can skip it. Use <code>onStop()</code> + <code>onSaveInstanceState()</code> for durability.</p>
+</div>
+</div>
+</section>
+<!-- ====================== SAVING STATE ====================== -->
+<section aria-labelledby="saving-title" class="slide section-anchor" id="saving-state">
+<h2 id="saving-title">Saving UI state across recreation</h2>
+<p class="lead">There are three layers, from quick-and-transient to fully durable. Students confuse these constantly — clarify the boundaries explicitly.</p>
+<div class="accordion">
+<div class="accordion__item is-open">
+<button class="accordion__head" type="button">1 · rememberSaveable — survives configuration changes</button>
+<div class="accordion__body">
+<p>In Compose, <code>remember { }</code> survives recomposition but <strong>not</strong> recreation. <code>rememberSaveable { }</code> writes into the saved-instance <code>Bundle</code>, so it survives rotation and process death restore. Use it for small, screen-local UI state (a text field, a selected tab).</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>@Composable
+fun NameField() {
+    // Lost on rotation:
+    // var name by remember { mutableStateOf("") }
+
+    // Survives rotation &amp; process-death restore:
+    var name by rememberSaveable { mutableStateOf("") }
+
+    OutlinedTextField(
+        value = name,
+        onValueChange = { name = it },
+        label = { Text("Your name") }
+    )
+}</code></pre>
+</div>
+<p class="muted" style="margin-bottom:0;">Rule of thumb: if it’s small and tied to this one screen, <code>rememberSaveable</code> is enough.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">2 · ViewModel — survives config changes, holds screen state</button>
+<div class="accordion__body">
+<p>A <code>ViewModel</code> is scoped to the screen and <strong>survives configuration changes</strong> without any save/restore code — the same instance is handed back after recreation. It’s the right home for UI state and the logic that produces it. It does <em>not</em> survive process death on its own (use <code>SavedStateHandle</code> for that).</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>class CounterViewModel : ViewModel() {
+    var count by mutableStateOf(0)
+        private set
+
+    fun increment() { count++ }
+}
+
+@Composable
+fun CounterScreen(vm: CounterViewModel = viewModel()) {
+    Column {
+        Text("Count: ${vm.count}")
+        Button(onClick = vm::increment) { Text("Add") }
+    }
+}
+// Rotating the device keeps the count — same ViewModel instance.</code></pre>
+</div>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">3 · onSaveInstanceState / SavedStateHandle — survives process death</button>
+<div class="accordion__body">
+<p>When the system kills your backgrounded process for memory, the <code>ViewModel</code> is gone too. The <code>Bundle</code> saved via <code>onSaveInstanceState()</code> (or, in a ViewModel, <code>SavedStateHandle</code>) is restored when the user returns. Keep it tiny — IDs and scroll positions, not whole lists.</p>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>class SearchViewModel(
+    private val state: SavedStateHandle
+) : ViewModel() {
+    // Survives both rotation AND process death:
+    var query: String
+        get() = state["query"] ?: ""
+        set(value) { state["query"] = value }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">4 · Durable storage — survives uninstall-level expectations</button>
+<div class="accordion__body">
+<p>Anything the user expects to still be there next week — notes, settings, the offline cache — must go to durable storage in <code>onStop()</code> or as the user edits it: <strong>DataStore</strong> for key-value/preferences, <strong>Room</strong> for structured data. This is CLO 4 territory (data persistence) and the “local persistence” requirement in the course project.</p>
+<div class="callout callout--info" style="margin:0;">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Mental model</span>
+<p style="margin-bottom:0;"><strong>remember</strong> = recomposition · <strong>rememberSaveable</strong> = + rotation · <strong>ViewModel</strong> = + rotation (logic home) · <strong>SavedStateHandle</strong> = + process death · <strong>Room/DataStore</strong> = + app restart.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ====================== EVENT -> CALLBACK CHEAT TABLE ====================== -->
+<section aria-labelledby="cheat-title" class="slide section-anchor" id="cheat-table">
+<h2 id="cheat-title">Event → callback cheat sheet</h2>
+<p class="lead">The exact callback sequence for each device event. This is the table to memorize for the quiz.</p>
+<div aria-label="Event to callback sequence" class="agenda" role="table">
+<div class="agenda-row agenda-row--head" role="row">
+<span class="agenda-time" role="columnheader">Event</span>
+<span class="agenda-activity" role="columnheader">Callback sequence</span>
+<span class="agenda-dur" role="columnheader">Instance survives?</span>
+</div>
+<div class="agenda-row" role="row">
+<span class="agenda-time" role="cell">Cold launch</span>
+<span class="agenda-activity" role="cell"><code>onCreate → onStart → onResume</code></span>
+<span class="agenda-dur" role="cell">New instance</span>
+</div>
+<div class="agenda-row" role="row">
+<span class="agenda-time" role="cell">Dialog covers app</span>
+<span class="agenda-activity" role="cell"><code>onPause</code> (then <code>onResume</code> when dismissed)</span>
+<span class="agenda-dur" role="cell">Yes</span>
+</div>
+<div class="agenda-row" role="row">
+<span class="agenda-time" role="cell">Press Home / switch apps</span>
+<span class="agenda-activity" role="cell"><code>onPause → onStop</code></span>
+<span class="agenda-dur" role="cell">Yes (in background)</span>
+</div>
+<div class="agenda-row" role="row">
+<span class="agenda-time" role="cell">Return from background</span>
+<span class="agenda-activity" role="cell"><code>onRestart → onStart → onResume</code></span>
+<span class="agenda-dur" role="cell">Yes (same instance)</span>
+</div>
+<div class="agenda-row" role="row">
+<span class="agenda-time" role="cell">Rotate / config change</span>
+<span class="agenda-activity" role="cell"><code>onPause → onStop → onDestroy</code> then <code>onCreate → onStart → onResume</code></span>
+<span class="agenda-dur" role="cell">No — destroyed &amp; recreated</span>
+</div>
+<div class="agenda-row" role="row">
+<span class="agenda-time" role="cell">Press Back / finish()</span>
+<span class="agenda-activity" role="cell"><code>onPause → onStop → onDestroy</code> (<code>isFinishing == true</code>)</span>
+<span class="agenda-dur" role="cell">No — gone for good</span>
+</div>
+<div class="agenda-row" role="row">
+<span class="agenda-time" role="cell">Low-memory kill (backgrounded)</span>
+<span class="agenda-activity" role="cell">No callbacks guaranteed; on return <code>onCreate → onStart → onResume</code></span>
+<span class="agenda-dur" role="cell">No — process killed</span>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">The trap on the exam</span>
+<p style="margin-bottom:0;">Returning from a <strong>stopped</strong> app runs <code>onRestart()</code> first; returning after a <strong>process kill</strong> runs <code>onCreate()</code> (no <code>onRestart</code>). And <code>onDestroy()</code> is <em>not</em> guaranteed to run on a low-memory kill — so never put “save my data” logic there alone.</p>
+</div>
+</div>
+</section>
+<!-- ====================== COMMON EXAM QUESTIONS ====================== -->
+<section aria-labelledby="exam-title" class="slide section-anchor" id="exam-questions">
+<h2 id="exam-title">Common exam questions</h2>
+<p class="lead">These mirror the kinds of items on Quiz 1 (Session 6) and the post-test. Predict the answer, then expand it.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Q1 · List the callbacks for a cold launch, in order.</button>
+<div class="accordion__body">
+<p style="margin-bottom:0;"><code>onCreate() → onStart() → onResume()</code>. After <code>onResume()</code> the Activity is in the <em>Running</em> (Resumed) state and is interactive.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Q2 · What is the difference between onStart() and onResume()?</button>
+<div class="accordion__body">
+<p style="margin-bottom:0;">After <code>onStart()</code> the Activity is <strong>visible</strong> but not yet receiving input. After <code>onResume()</code> it is in the <strong>foreground and interactive</strong>. A translucent dialog can leave you Started-but-not-Resumed (visible, not focused).</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Q3 · Which callbacks run when you rotate the device, and why?</button>
+<div class="accordion__body">
+<p style="margin-bottom:0;">Rotation is a configuration change: <code>onPause → onStop → onDestroy</code>, then immediately <code>onCreate → onStart → onResume</code>. The Activity is destroyed so it can rebuild with resources for the new configuration (e.g. a landscape layout). State held in plain variables is lost — use <code>rememberSaveable</code> or a <code>ViewModel</code>.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Q4 · Where should you persist user data, and where should you NOT?</button>
+<div class="accordion__body">
+<p style="margin-bottom:0;">Persist in <code>onStop()</code> (or as the user edits). Do <strong>not</strong> rely on <code>onDestroy()</code> — a process kill can skip it. Keep <code>onPause()</code> fast; don’t do disk/network writes there because the next Activity can’t resume until it returns.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Q5 · Is onDestroy() always called? How do you know if it’s a real finish?</button>
+<div class="accordion__body">
+<p style="margin-bottom:0;">No — the system may kill the process without calling it. When it <em>does</em> run, check <code>isFinishing</code>: <code>true</code> means a genuine finish (Back/<code>finish()</code>); <code>false</code> means a recreate (e.g. config change).</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">Q6 · What runs when returning from the background vs. after a process kill?</button>
+<div class="accordion__body">
+<p style="margin-bottom:0;">From a stopped-but-alive app: <code>onRestart → onStart → onResume</code>. After a process kill: <code>onCreate → onStart → onResume</code> — no <code>onRestart()</code>, and <code>onCreate()</code> receives the previously saved <code>Bundle</code> so you can restore.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ====================== KNOWLEDGE CHECK QUIZ ====================== -->
+<section aria-labelledby="quiz-title" class="slide section-anchor" id="quiz">
+<h2 id="quiz-title">Knowledge check</h2>
+<p class="lead">Run this after the demo. 70% to pass. Students get instant per-question explanations.</p>
+<div data-quiz="lifecycle-quiz" data-topic="state"></div>
+<script id="lifecycle-quiz" type="application/json">
+      {
+        "title": "Activity Lifecycle — quick check",
+        "intro": "Six questions. Submit to see correctness and explanations.",
+        "passingScore": 0.7,
+        "shuffle": true,
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "prompt": "Which callback should attach your Compose UI with setContent { }?",
+            "options": [
+              { "id": "a", "text": "onResume()" },
+              { "id": "b", "text": "onCreate()" },
+              { "id": "c", "text": "onStart()" },
+              { "id": "d", "text": "onRestart()" }
+            ],
+            "correct": ["b"],
+            "explanation": "onCreate() runs once per instance and is where one-time setup — including setContent { } — belongs."
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "prompt": "You press Home, then re-open the app from Recents (it was NOT killed). What sequence runs on return?",
+            "options": [
+              { "id": "a", "text": "onCreate → onStart → onResume" },
+              { "id": "b", "text": "onResume only" },
+              { "id": "c", "text": "onRestart → onStart → onResume" },
+              { "id": "d", "text": "onStart → onResume" }
+            ],
+            "correct": ["c"],
+            "explanation": "A stopped-but-alive Activity runs onRestart() first, then onStart() and onResume(). onCreate() is NOT called because the instance survived."
+          },
+          {
+            "id": "q3",
+            "type": "multi",
+            "prompt": "Which callbacks run during a single device rotation? (Select all.)",
+            "options": [
+              { "id": "a", "text": "onPause()" },
+              { "id": "b", "text": "onStop()" },
+              { "id": "c", "text": "onDestroy()" },
+              { "id": "d", "text": "onCreate()" },
+              { "id": "e", "text": "onRestart()" }
+            ],
+            "correct": ["a", "b", "c", "d"],
+            "explanation": "Rotation destroys (onPause → onStop → onDestroy) then recreates (onCreate → onStart → onResume). onRestart() does NOT run on a recreate — only when returning from a stopped-but-alive state."
+          },
+          {
+            "id": "q4",
+            "type": "truefalse",
+            "prompt": "onDestroy() is guaranteed to run before your app's process is removed from memory.",
+            "correct": false,
+            "explanation": "False. On a low-memory kill the system can remove the process without calling onDestroy(). Persist important data in onStop() / onSaveInstanceState instead."
+          },
+          {
+            "id": "q5",
+            "type": "single",
+            "prompt": "In Compose, which keeps a value across a screen rotation with the least ceremony for small, screen-local UI state?",
+            "options": [
+              { "id": "a", "text": "remember { mutableStateOf(...) }" },
+              { "id": "b", "text": "rememberSaveable { mutableStateOf(...) }" },
+              { "id": "c", "text": "a plain val" },
+              { "id": "d", "text": "a companion object" }
+            ],
+            "correct": ["b"],
+            "explanation": "remember survives recomposition but not recreation. rememberSaveable stores into the saved-instance Bundle, so it survives rotation."
+          },
+          {
+            "id": "q6",
+            "type": "short",
+            "prompt": "Inside onDestroy(), which boolean property tells you the Activity is genuinely finishing (vs. being recreated)? Type its name.",
+            "correct": ["isFinishing", "isFinishing()", "activity.isFinishing"],
+            "explanation": "isFinishing returns true for a real finish (Back / finish()) and false for a recreate such as a configuration change."
+          }
+        ]
+      }
+      </script>
+</section>
+<!-- ====================== FLASHCARDS ====================== -->
+<section aria-labelledby="fc-title" class="slide section-anchor" id="flashcards">
+<h2 id="fc-title">Flashcards: drill the callbacks</h2>
+<p class="lead">Click a card to flip. “Got it” removes it from the deck; “Review again” keeps it. Great as a 5-minute warm-up next session.</p>
+<div data-flashcards="lifecycle-cards"></div>
+<script id="lifecycle-cards" type="application/json">
+      [
+        { "front": "onCreate()", "back": "Runs once per instance. Do one-time setup: setContent { }, read savedInstanceState, get the ViewModel. UI not visible yet.", "tag": "callback" },
+        { "front": "onStart()", "back": "Activity becomes VISIBLE (not yet interactive). Can run many times — also after onRestart().", "tag": "callback" },
+        { "front": "onResume()", "back": "Foreground + INTERACTIVE (Running state). Resume camera/sensors/animations here.", "tag": "callback" },
+        { "front": "onPause()", "back": "Losing focus. Keep it FAST — release sensors/camera. Don't do disk/network writes; the next Activity waits on it.", "tag": "callback" },
+        { "front": "onStop()", "back": "No longer visible (backgrounded). Persist data here; release things not needed while hidden.", "tag": "callback" },
+        { "front": "onRestart()", "back": "Runs only when a STOPPED-but-alive Activity returns, before onStart(). Never on first launch or after a recreate.", "tag": "callback" },
+        { "front": "onDestroy()", "back": "Final callback. May be SKIPPED on a process kill. Check isFinishing to tell a real finish from a recreate.", "tag": "callback" },
+        { "front": "What does rotation do?", "back": "Config change: onPause → onStop → onDestroy, then onCreate → onStart → onResume. State in plain vars is lost.", "tag": "concept" },
+        { "front": "Return from background (not killed)", "back": "onRestart → onStart → onResume — same instance, onCreate does NOT run.", "tag": "concept" },
+        { "front": "Return after a process kill", "back": "onCreate → onStart → onResume (no onRestart). onCreate gets the saved Bundle to restore from.", "tag": "concept" },
+        { "front": "remember vs rememberSaveable", "back": "remember survives recomposition only. rememberSaveable also survives rotation & process-death restore (stored in the Bundle).", "tag": "compose" },
+        { "front": "Why use a ViewModel?", "back": "Survives configuration changes with no save/restore code — same instance returned after recreate. Use SavedStateHandle to also survive process death.", "tag": "compose" }
+      ]
+      </script>
+</section>
+<!-- ====================== LAB EXTENSION ====================== -->
+<section aria-labelledby="lab-title" class="slide section-anchor" id="lab-extension">
+<h2 id="lab-title">Do it on a real device (15-min lab)</h2>
+<p class="lead">Prove the simulator is real: add logging to every callback, then watch Logcat as you reproduce each event on the emulator.</p>
+<div class="grid grid-2">
+<div class="card">
+<h4 class="card__title">Step-by-step</h4>
+<ol class="stepper">
+<li class="step">
+<h4>Add a log to every callback</h4>
+<p>Override all seven callbacks in <code>MainActivity</code> and log the name with a shared tag. Copy the block on the right.</p>
+</li>
+<li class="step">
+<h4>Open Logcat &amp; filter</h4>
+<p>In Android Studio open <strong>Logcat</strong> and type <code>tag:MainActivity</code> in the filter so you only see your lines.</p>
+</li>
+<li class="step">
+<h4>Reproduce each event</h4>
+<p>Launch, press Home, return, rotate (<kbd>Ctrl</kbd>+<kbd>F11</kbd> / <kbd>⌘</kbd>+ rotate), press Back. Watch the order match the cheat sheet above.</p>
+</li>
+<li class="step">
+<h4>Simulate a process kill</h4>
+<p>Background the app, then in the <strong>Logcat / App Inspection</strong> use the “Terminate” / stop button (or <code>adb shell am kill your.package</code>), then re-open. Note there is no <code>onRestart()</code>.</p>
+</li>
+</ol>
+</div>
+<div class="card card--teal">
+<h4 class="card__title">Paste-in logging template</h4>
+<div class="codeblock">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>class MainActivity : ComponentActivity() {
+
+    private val tag = "MainActivity"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Log.d(tag, "onCreate() — savedInstanceState " +
+            if (savedInstanceState == null) "null (fresh)" else "restored")
+        setContent { MyAppTheme { Surface { GreetingScreen() } } }
+    }
+
+    override fun onStart()   { super.onStart();   Log.d(tag, "onStart()") }
+    override fun onResume()  { super.onResume();  Log.d(tag, "onResume()") }
+    override fun onPause()   { super.onPause();   Log.d(tag, "onPause()") }
+    override fun onStop()    { super.onStop();    Log.d(tag, "onStop()") }
+    override fun onRestart() { super.onRestart(); Log.d(tag, "onRestart()") }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(tag, "onDestroy() — isFinishing=$isFinishing")
+    }
+}</code></pre>
+</div>
+<p class="muted" style="margin-bottom:0;">Watch <code>isFinishing</code>: <code>false</code> on rotate, <code>true</code> on Back.</p>
+</div>
+</div>
+<h3>Your checklist</h3>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">📚</span>
+<div class="callout__body">
+<span class="callout__label">Official docs</span>
+<p style="margin-bottom:0;">
+            Read the authoritative reference:
+            <a href="https://developer.android.com/guide/components/activities/activity-lifecycle" rel="noopener" target="_blank">The Activity lifecycle</a>
+           · and the Compose architecture unit:
+            <a href="https://developer.android.com/courses/android-basics-compose/unit-4" rel="noopener" target="_blank">Android Basics with Compose — Unit 4 (Navigation &amp; app architecture)</a>.
+          </p>
+</div>
+</div>
+</section>
+<!-- ====================== DRILLS ====================== -->
+<section aria-labelledby="drills-title" class="card slide section-anchor" id="drills">
+<h2 class="card__title" id="drills-title">Drills: prove you can predict the lifecycle</h2>
+<p class="lead">You ran the simulator and read the callbacks. Now <strong>retrieve from memory</strong> — that is what actually moves knowledge into long-term storage. Work through three real-world scenarios, a fast self-check quiz, an auto-checked Kotlin challenge, and a spaced micro-deck. Everything here is yours alone: pass it when the cases go green, build your streak, watch your mastery climb. No grade, ever.</p>
+<!-- ---- 1. Real-world scenarios ---- -->
+<h3 id="drills-scenarios-h">Three scenarios you <em>will</em> hit in production</h3>
+<p class="muted" style="margin-top:0;">For each one: read the symptom, predict which callbacks fire, then open the answer. Notice that every fix is one of the three state tools — that is the whole point.</p>
+<div class="grid grid-3">
+<div class="card card--amber">
+<h4 class="card__title">🔄 Rotation wipes the form</h4>
+<p>A user fills in a long sign-up form, rotates the phone to landscape to see more, and <strong>every field resets to empty</strong>. They are furious. What happened, and what is the smallest fix?</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Predict, then reveal</button>
+<div class="accordion__body">
+<p><strong>Callbacks:</strong> <code>onPause → onStop → onDestroy</code> (<code>isFinishing == false</code>), then <code>onCreate → onStart → onResume</code> on a brand-new instance.</p>
+<p style="margin-bottom:0;"><strong>Why it broke:</strong> the field values lived in <code>remember { mutableStateOf("") }</code>, which dies with the instance. <strong>Smallest fix:</strong> switch each to <code>rememberSaveable { }</code> so the value is written into the saved-instance <code>Bundle</code> and restored after the recreate. This is exactly the "rotation loses state" bug — and the reason <code>rememberSaveable</code> exists.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="card card--amber">
+<h4 class="card__title">💀 Process death after a phone call</h4>
+<p>The user is on screen 3 of your app, takes a long phone call, opens two other heavy apps, then returns 20 minutes later. The app <strong>relaunches at the home screen</strong> and their work is gone — even though a <code>ViewModel</code> held it. Why?</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Predict, then reveal</button>
+<div class="accordion__body">
+<p><strong>Callbacks:</strong> while backgrounded the system did a <strong>low-memory kill</strong> — <em>no</em> guaranteed callbacks, <code>onDestroy()</code> may be skipped. On return: <code>onCreate → onStart → onResume</code> (<strong>no</strong> <code>onRestart()</code>).</p>
+<p style="margin-bottom:0;"><strong>Why it broke:</strong> a <code>ViewModel</code> survives <em>configuration changes</em> but <strong>not process death</strong> — when the process dies, so does it. <strong>Fix:</strong> keep the small, restorable bits (selected id, query, scroll position) in a <code>SavedStateHandle</code> inside the ViewModel, and keep anything durable in Room/DataStore. <code>onCreate()</code> receives the saved <code>Bundle</code> to rebuild from.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="card card--teal">
+<h4 class="card__title">↩️ Returning from the background</h4>
+<p>The user presses Home (process <em>not</em> killed), then re-opens from Recents. Your screen needs to re-subscribe to a sensor and refresh a possibly-stale list. Which callbacks run, and where does each job go?</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">Predict, then reveal</button>
+<div class="accordion__body">
+<p><strong>Callbacks:</strong> <code>onRestart → onStart → onResume</code>. <code>onCreate()</code> does <strong>not</strong> run — the instance survived, so your fields still hold their values.</p>
+<p style="margin-bottom:0;"><strong>Where each job goes:</strong> re-acquire the sensor in <code>onResume()</code> (and release it in <code>onPause()</code> — always pair them). Refresh stale data in <code>onStart()</code>/<code>onResume()</code> so the cold-start path is covered too, not only in <code>onRestart()</code>. The state itself lives in a <code>ViewModel</code>, so it is already correct when the screen reappears.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">The one decision that links all three</span>
+<p style="margin-bottom:0;">Every scenario is answered by choosing the right tool on the <strong>survival ladder</strong>: <code>remember</code> survives recomposition · <code>rememberSaveable</code> adds rotation · <code>ViewModel</code> adds rotation + is the home for logic · <code>SavedStateHandle</code> adds process death · <strong>Room/DataStore</strong> adds app restart. In production you ask one question — "how long must this value outlive the screen?" — and the ladder gives you the answer. That is <em>why</em> hoisting state out of a composable into a <code>ViewModel</code> matters: it puts the value where the lifecycle can protect it.</p>
+</div>
+</div>
+<!-- ---- 2. Auto-checked "what callback fires?" retrieval quiz ---- -->
+<h3 id="drills-quiz-h" style="margin-top:var(--space-5);">Quick self-check: what callback fires?</h3>
+<p class="muted" style="margin-top:0;">Five scenarios, instant feedback per item. Predict the sequence before you submit — generating the answer beats re-reading it.</p>
+<div data-quiz="drills-callback-quiz" data-topic="state"></div>
+<script id="drills-callback-quiz" type="application/json">
+      {
+        "title": "What callback fires?",
+        "intro": "Map each real-world event to the callbacks it triggers. Submit to see explanations.",
+        "passingScore": 0.7,
+        "shuffle": true,
+        "questions": [
+          {
+            "id": "d1",
+            "type": "single",
+            "prompt": "A translucent confirmation dialog appears over your screen. Which callback fires (and which does NOT)?",
+            "options": [
+              { "id": "a", "text": "onPause() only — onStop() does NOT run (still visible)" },
+              { "id": "b", "text": "onPause() then onStop()" },
+              { "id": "c", "text": "onStop() then onDestroy()" },
+              { "id": "d", "text": "Nothing — a dialog is not a lifecycle event" }
+            ],
+            "correct": ["a"],
+            "explanation": "A dialog removes focus but leaves the Activity partly visible, so only onPause() runs. onStop() needs the Activity to be fully hidden. Dismissing it runs onResume() only."
+          },
+          {
+            "id": "d2",
+            "type": "single",
+            "prompt": "The phone rotates from portrait to landscape. What is the full sequence on a default Activity?",
+            "options": [
+              { "id": "a", "text": "onPause → onResume" },
+              { "id": "b", "text": "onStop → onStart" },
+              { "id": "c", "text": "onPause → onStop → onDestroy → onCreate → onStart → onResume" },
+              { "id": "d", "text": "onRestart → onStart → onResume" }
+            ],
+            "correct": ["c"],
+            "explanation": "Rotation is a configuration change: the Activity is destroyed (isFinishing == false) and immediately recreated so it can load resources for the new orientation. State in plain variables / remember {} is lost — use rememberSaveable or a ViewModel."
+          },
+          {
+            "id": "d3",
+            "type": "single",
+            "prompt": "The app was backgrounded and the OS killed its process for memory. The user taps the icon to return. What runs?",
+            "options": [
+              { "id": "a", "text": "onRestart → onStart → onResume" },
+              { "id": "b", "text": "onCreate → onStart → onResume (no onRestart)" },
+              { "id": "c", "text": "onResume only" },
+              { "id": "d", "text": "onDestroy → onCreate → onResume" }
+            ],
+            "correct": ["b"],
+            "explanation": "After a process kill there is no surviving instance, so onCreate runs (receiving the saved Bundle) — NOT onRestart. onRestart only fires when returning from a stopped-but-alive Activity."
+          },
+          {
+            "id": "d4",
+            "type": "truefalse",
+            "prompt": "A ViewModel keeps its data alive across BOTH a screen rotation and a low-memory process kill.",
+            "correct": false,
+            "explanation": "False. A ViewModel survives configuration changes (rotation) but is destroyed with the process. Pair it with SavedStateHandle to survive process death."
+          },
+          {
+            "id": "d5",
+            "type": "short",
+            "prompt": "You need to persist the user's draft so it is never lost. Name the callback that is the recommended place for that save (one word, e.g. onStop).",
+            "correct": ["onStop", "onStop()"],
+            "explanation": "Persist in onStop() (or as the user edits). Do NOT rely on onDestroy() — a process kill can skip it — and keep onPause() fast (no disk/network writes there)."
+          }
+        ]
+      }
+      </script>
+<!-- ---- 3. Faded, auto-checked Kotlin challenge ---- -->
+<h3 id="drills-challenge-h" style="margin-top:var(--space-5);">Auto-checked challenge — model the lifecycle as pure logic</h3>
+<p>
+        The simulator did the reasoning <em>for</em> you. Now <strong>fade the scaffolding</strong>: the test harness is written,
+        but the core function <code>callbacksFor(event)</code> is blanked out. Use the cheat sheet and the scenarios above to fill
+        the <code>// YOUR CODE</code> region so every case prints <code>✓ passed</code>. The "killed-then-return" case is the trap —
+        no <code>onRestart()</code>. You've got it when you see <strong>ALL TESTS PASSED 🎉</strong>.
+      </p>
+<div class="callout callout--warn" style="margin-top:0;">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Common wrong mental model</span>
+<p style="margin-bottom:0;">"Returning to the app always runs <code>onRestart()</code>." It does <em>not</em> after a process kill — that path runs <code>onCreate()</code> instead, because there is no instance left to <em>re</em>start. Encoding that difference correctly below is the whole skill.</p>
+</div>
+</div>
+<div class="codeblock" data-challenge="lifecycle-explorer-callbacks" data-run="kotlin" data-topic="state">
+<div class="codeblock__lang">Kotlin · runnable challenge — make every case go green</div>
+<pre><code>// Return the EXACT ordered list of callbacks the OS fires for each event.
+// Events: "launch", "dialog", "home", "reopen", "rotate", "back", "returnAfterKill".
+//
+// Reminders (trace these from the simulator):
+//   launch          : fresh instance -&gt; Resumed
+//   dialog          : loses focus but STAYS visible
+//   home            : leaves to launcher, instance kept alive
+//   reopen          : returning from a STOPPED-but-alive instance (has onRestart!)
+//   rotate          : config change -- full tear-down then rebuild
+//   back            : genuine finish
+//   returnAfterKill : process was killed -&gt; recreated from scratch (NO onRestart!)
+
+fun callbacksFor(event: String): List&lt;String&gt; {
+    // ----- YOUR CODE: return the right ordered list for each event -----
+    return when (event) {
+        "launch"          -&gt; TODO("onCreate, onStart, onResume")
+        "dialog"          -&gt; TODO("just the one that fires while still visible")
+        "home"            -&gt; TODO("onPause, onStop")
+        "reopen"          -&gt; TODO("includes onRestart")
+        "rotate"          -&gt; TODO("tear all the way down, then build back up")
+        "back"            -&gt; TODO("onPause, onStop, onDestroy")
+        "returnAfterKill" -&gt; TODO("like launch — NO onRestart")
+        else              -&gt; emptyList()
+    }
+    // ----- END YOUR CODE -----
+}
+
+// ---------- test harness (do not edit) ----------
+fun main() {
+    val cases = listOf(
+        "launch"          to listOf("onCreate", "onStart", "onResume"),
+        "dialog"          to listOf("onPause"),
+        "home"            to listOf("onPause", "onStop"),
+        "reopen"          to listOf("onRestart", "onStart", "onResume"),
+        "rotate"          to listOf("onPause", "onStop", "onDestroy",
+                                    "onCreate", "onStart", "onResume"),
+        "back"            to listOf("onPause", "onStop", "onDestroy"),
+        "returnAfterKill" to listOf("onCreate", "onStart", "onResume")
+    )
+    var allPass = true
+    for ((event, expected) in cases) {
+        val got = callbacksFor(event)
+        if (got == expected) {
+            println("✓ passed: $event -&gt; $got")
+        } else {
+            allPass = false
+            println("✗ FAILED: $event -&gt; expected $expected, got $got")
+        }
+    }
+    println(if (allPass) "ALL TESTS PASSED 🎉" else "Keep going — some cases are still red.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint</button>
+<div class="accordion__body">
+<p style="margin-top:0;">Each list is exactly the sequence the simulator logged. Three things trip people up: <strong>(1)</strong> <code>dialog</code> is a single <code>onPause</code> — the Activity stays visible, so no <code>onStop</code>. <strong>(2)</strong> <code>reopen</code> leads with <code>onRestart</code> (the instance survived). <strong>(3)</strong> <code>returnAfterKill</code> is identical to <code>launch</code> — there is no instance to <em>re</em>start, so <code>onCreate</code> runs, never <code>onRestart</code>. <code>rotate</code> is just <code>back</code>'s tear-down concatenated with <code>launch</code>'s build-up.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin — reference</div>
+<pre><code>fun callbacksFor(event: String): List&lt;String&gt; = when (event) {
+    "launch"          -&gt; listOf("onCreate", "onStart", "onResume")
+    "dialog"          -&gt; listOf("onPause")
+    "home"            -&gt; listOf("onPause", "onStop")
+    "reopen"          -&gt; listOf("onRestart", "onStart", "onResume")
+    "rotate"          -&gt; listOf("onPause", "onStop", "onDestroy",
+                               "onCreate", "onStart", "onResume")
+    "back"            -&gt; listOf("onPause", "onStop", "onDestroy")
+    "returnAfterKill" -&gt; listOf("onCreate", "onStart", "onResume")
+    else              -&gt; emptyList()
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<!-- ---- 4. Spaced micro-deck ---- -->
+<h3 id="drills-srs-h" style="margin-top:var(--space-5);">Spaced micro-deck</h3>
+<p class="muted" style="margin-top:0;">Flip each card, rate how well you knew it, and the scheduler resurfaces the ones you are about to forget. Come back tomorrow — spacing is what makes this stick.</p>
+<div data-srs="srs-lifecycle-explorer"></div>
+<script id="srs-lifecycle-explorer" type="application/json">
+        {
+          "id": "lifecycle-explorer-deck",
+          "cards": [
+            { "id": "lce1", "topic": "state", "front": "Rotation loses your in-memory state. Which two Compose/architecture tools fix it, and how do they differ?", "back": "rememberSaveable {} — writes small UI state into the saved Bundle, survives rotation AND process-death restore. ViewModel — survives the recreate as the SAME instance with no save/restore code, and is the home for screen logic. Use rememberSaveable for tiny screen-local state, ViewModel for state + logic." },
+            { "id": "lce2", "topic": "state", "front": "A ViewModel held the user's data, but it vanished after a long background. Why, and what is the fix?", "back": "A low-memory PROCESS KILL destroyed the ViewModel — it survives config changes, not process death. Fix: keep restorable keys in SavedStateHandle (rebuilt from the saved Bundle in onCreate), and durable data in Room/DataStore." },
+            { "id": "lce3", "topic": "state", "front": "Returning from a stopped-but-alive app vs. after a process kill — how do the callbacks differ?", "back": "Stopped-but-alive: onRestart → onStart → onResume (onCreate does NOT run; fields kept). After a process kill: onCreate → onStart → onResume (NO onRestart); onCreate receives the saved Bundle to restore from." },
+            { "id": "lce4", "topic": "state", "front": "Why hoist state out of a composable into a ViewModel at all? (one-line reason)", "back": "It puts the value where the lifecycle can protect it: a ViewModel outlives recomposition AND configuration changes, so the screen survives rotation for free and the composable stays a stateless, testable function of state." },
+            { "id": "lce5", "topic": "state", "front": "Where should you persist user data, and which callback should you NEVER rely on for it?", "back": "Persist in onStop() (or as the user edits). NEVER rely on onDestroy() alone — a process kill can skip it. Keep onPause() fast: no disk/network writes there." },
+            { "id": "lce6", "topic": "state", "front": "The survival ladder, in order of how long a value outlives the screen.", "back": "remember (recomposition) → rememberSaveable (+ rotation) → ViewModel (+ rotation, logic home) → SavedStateHandle (+ process death) → Room/DataStore (+ app restart)." }
+          ]
+        }
+        </script>
+<!-- ---- 5. Personal mastery footer ---- -->
+<div class="card no-print mt" style="margin-top:var(--space-5);">
+<div class="card__title">📈 Your progress on this lab</div>
+<p class="muted" style="margin-top:0;">Pass the challenge and clear the self-check to light this up. Your streak and topic mastery are yours alone — a measure of your own growth, never a course grade.</p>
+<div class="kpi-grid" data-mastery-streak="">
+<div class="kpi"><div class="kpi__value" data-mastery="streak-current">0</div><div class="kpi__label">day streak</div></div>
+<div class="kpi"><div class="kpi__value" data-mastery="streak-longest">0</div><div class="kpi__label">longest streak</div></div>
+<div class="kpi"><div class="kpi__value" data-mastery="topic-state">0%</div><div class="kpi__label">State mastery</div></div>
+<div class="kpi"><div class="kpi__value" data-mastery="global">0%</div><div class="kpi__label">overall mastery</div></div>
+</div>
+</div>
+</section>
+<!-- print-only summary -->
+<section class="print-only">
+<h2>Printed reference — Event → callback</h2>
+<p>Cold launch: onCreate → onStart → onResume. Home: onPause → onStop. Return (alive): onRestart → onStart → onResume. Rotate: onPause → onStop → onDestroy → onCreate → onStart → onResume. Back: onPause → onStop → onDestroy (isFinishing=true). Process kill: no guaranteed callbacks; return runs onCreate → onStart → onResume.</p>
+</section>
+</main>
+<!-- ====================== FOOTER ====================== -->
+<footer class="footer">
+<div class="wrap">
+<span><span class="footer__brand">COP4667 Android Development</span> · Keiser University · B.S. Software Engineering</span>
+<span class="muted">Interactive teaching asset · Activity Lifecycle Explorer · Supports CLO 1 &amp; CLO 2 · Built for Jetpack Compose (Kotlin, Material 3)</span>
+<span><a href="../index.html">← Back to course hub</a></span>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script>
+  /* ============================================================
+     Activity Lifecycle Explorer — page-specific interactivity.
+     Pure vanilla JS. Drives the diagram, the Logcat-style log,
+     the visibility chip, and the explanation panel.
+     ============================================================ */
+  (function () {
+    "use strict";
+
+    var diagram   = document.getElementById("lc-diagram");
+    var logcat    = document.getElementById("lc-logcat");
+    var logCount  = document.getElementById("lc-log-count");
+    var clearBtn  = document.getElementById("lc-clear");
+    var statusEl  = document.getElementById("lc-status");
+    var visText   = document.getElementById("lc-vis-text");
+    var stateTag  = document.getElementById("lc-state-tag");
+    var explTitle = document.getElementById("lc-explain-title");
+    var explWhy   = document.getElementById("lc-explain-why");
+    var explDoWrap= document.getElementById("lc-explain-do-wrap");
+    var explDo    = document.getElementById("lc-explain-do");
+
+    if (!diagram || !logcat) return; // defensive: tool not on page
+
+    // Logical state machine.
+    // "none"     -> no instance yet
+    // "resumed"  -> foreground, interactive
+    // "paused"   -> visible-but-not-focused (dialog over it)
+    // "stopped"  -> backgrounded, instance alive
+    // "killed"   -> process reclaimed (instance gone, but app was backgrounded)
+    // "destroyed"-> finished (Back/finish), gone for good
+    var state = "none";
+    var logEntries = 0;     // count of callbacks logged
+    var recreateCount = 0;  // how many times this Activity has been recreated
+    var clock = 0;          // fake monotonic seconds for log timestamps
+
+    var NODE_ORDER = ["onCreate","onStart","onResume","onPause","onStop","onDestroy"];
+
+    // Map a "current callback" to which diagram node lights up.
+    function highlightNode(cb) {
+      var nodes = diagram.querySelectorAll(".lc-node");
+      nodes.forEach(function (n) {
+        var on = n.getAttribute("data-node") === cb;
+        n.classList.toggle("is-active", on);
+        if (on) {
+          n.classList.remove("is-pulse");
+          // force reflow so the animation can replay
+          void n.offsetWidth;
+          n.classList.add("is-pulse");
+        }
+      });
+      // light arrows up to the active node (for the descending path)
+      var idx = NODE_ORDER.indexOf(cb);
+      diagram.querySelectorAll(".lc-arrow").forEach(function (a) { a.classList.remove("is-lit"); });
+      if (idx > 0) {
+        for (var i = 0; i < idx; i++) {
+          var sel = '[data-arrow="' + NODE_ORDER[i] + '-' + NODE_ORDER[i+1] + '"]';
+          var arrow = diagram.querySelector(sel);
+          if (arrow) arrow.classList.add("is-lit");
+        }
+      }
+    }
+
+    function clearHighlight() {
+      diagram.querySelectorAll(".lc-node").forEach(function (n) { n.classList.remove("is-active","is-pulse"); });
+      diagram.querySelectorAll(".lc-arrow").forEach(function (a) { a.classList.remove("is-lit"); });
+    }
+
+    function fmtClock() {
+      // pseudo timestamp HH:MM:SS.mmm growing as events fire
+      clock += 1;
+      var base = 36000 + clock; // start ~10:00:00
+      var h = Math.floor(base / 3600) % 24;
+      var m = Math.floor((base % 3600) / 60);
+      var s = base % 60;
+      var ms = (clock * 137) % 1000;
+      function p(n, w) { n = String(n); while (n.length < (w || 2)) n = "0" + n; return n; }
+      return p(h) + ":" + p(m) + ":" + p(s) + "." + p(ms, 3);
+    }
+
+    function clearEmpty() {
+      var empty = logcat.querySelector(".lc-logcat__empty");
+      if (empty) empty.remove();
+    }
+
+    // Append one Logcat-style line. level: d/i/w/e
+    function log(level, msg) {
+      clearEmpty();
+      var line = document.createElement("div");
+      line.className = "lc-logline";
+      var t = document.createElement("span");
+      t.className = "lc-logline__time"; t.textContent = fmtClock();
+      var lv = document.createElement("span");
+      lv.className = "lc-logline__lvl lc-logline__lvl--" + level; lv.textContent = level.toUpperCase();
+      var m = document.createElement("span");
+      m.className = "lc-logline__msg";
+      m.innerHTML = '<span class="tag">MainActivity</span> ' + msg;
+      line.appendChild(t); line.appendChild(lv); line.appendChild(m);
+      logcat.appendChild(line);
+      logcat.scrollTop = logcat.scrollHeight;
+    }
+
+    // log a callback line and bump the callback counter
+    function logCallback(name, note) {
+      log("d", "<strong>" + name + "</strong>" + (note ? "  // " + note : ""));
+      logEntries++;
+      logCount.textContent = String(logEntries);
+    }
+
+    function setVisibility(vis, text, tag) {
+      statusEl.setAttribute("data-vis", vis);
+      visText.textContent = text;
+      stateTag.textContent = tag;
+    }
+
+    function setExplain(title, why, doList) {
+      explTitle.textContent = title;
+      explWhy.innerHTML = why;
+      if (doList && doList.length) {
+        explDoWrap.classList.remove("hidden");
+        explDo.innerHTML = "";
+        doList.forEach(function (item) {
+          var li = document.createElement("li");
+          li.innerHTML = item;
+          explDo.appendChild(li);
+        });
+      } else {
+        explDoWrap.classList.add("hidden");
+        explDo.innerHTML = "";
+      }
+    }
+
+    // Run a sequence of callbacks with a small stagger so the
+    // diagram visibly steps through each one.
+    function runSequence(steps, finalNode) {
+      var delay = 0;
+      steps.forEach(function (step) {
+        setTimeout(function () {
+          highlightNode(step.cb);
+          logCallback(step.cb + "()", step.note);
+        }, delay);
+        delay += 430;
+      });
+      // settle on the final node
+      setTimeout(function () { if (finalNode) highlightNode(finalNode); }, delay);
+    }
+
+    // Enable/disable event buttons based on the current state.
+    function refreshButtons() {
+      var can = {
+        launch:  state === "none" || state === "destroyed" || state === "killed",
+        home:    state === "resumed" || state === "paused",
+        dialog:  state === "resumed",
+        "return": state === "stopped" || state === "killed",
+        rotate:  state === "resumed" || state === "paused",
+        back:    state === "resumed" || state === "paused",
+        kill:    state === "stopped",
+        reset:   true
+      };
+      document.querySelectorAll(".lc-event-btn").forEach(function (btn) {
+        var ev = btn.getAttribute("data-event");
+        var ok = !!can[ev];
+        btn.disabled = !ok;
+        btn.setAttribute("aria-disabled", ok ? "false" : "true");
+      });
+    }
+
+    /* ---- Event handlers ---- */
+    var handlers = {
+      launch: function () {
+        var fresh = (state === "none" || state === "destroyed");
+        if (state === "killed") { recreateCount++; }
+        log("i", "Starting activity — " + (fresh ? "cold start (fresh instance)" : "recreating after process kill"));
+        runSequence([
+          { cb: "onCreate", note: fresh ? "savedInstanceState = null" : "savedInstanceState restored from Bundle" },
+          { cb: "onStart",  note: "now visible" },
+          { cb: "onResume", note: "now interactive" }
+        ], "onResume");
+        state = "resumed";
+        setVisibility("visible", "Visible & interactive (foreground)", "Resumed");
+        setExplain(
+          "🚀 App launched — Resumed",
+          "A fresh Activity instance was created and brought to the foreground. The three callbacks ran in order: <code>onCreate()</code> built the instance and attached the Compose UI, <code>onStart()</code> made it visible, and <code>onResume()</code> made it interactive. The Activity is now in the <strong>Running</strong> state.",
+          [
+            "<code>onCreate()</code>: call <code>setContent { }</code>, get your <code>ViewModel</code>, read <code>savedInstanceState</code>.",
+            "<code>onResume()</code>: start camera, sensors, animations, location updates."
+          ]
+        );
+      },
+
+      home: function () {
+        log("i", "User pressed HOME — app going to background");
+        runSequence([
+          { cb: "onPause", note: "losing focus — keep this FAST" },
+          { cb: "onStop",  note: "no longer visible — persist data here" }
+        ], "onStop");
+        state = "stopped";
+        setVisibility("hidden", "Not visible (in background, still in memory)", "Stopped");
+        setExplain(
+          "🏠 Pressed Home — Stopped (still alive)",
+          "The user left to the launcher, so the Activity lost focus (<code>onPause()</code>) and then became fully hidden (<code>onStop()</code>). The instance is <strong>kept in memory</strong>, so returning will be cheap — no <code>onCreate()</code> needed.",
+          [
+            "<code>onPause()</code>: release sensors/camera quickly. Do NOT do disk or network writes here.",
+            "<code>onStop()</code>: persist user data (DataStore/Room), stop refresh work, release big resources."
+          ]
+        );
+      },
+
+      dialog: function () {
+        log("i", "A dialog / translucent activity appeared on top");
+        runSequence([
+          { cb: "onPause", note: "still partially visible behind the dialog" }
+        ], "onPause");
+        state = "paused";
+        setVisibility("partial", "Partly visible, not focused (behind a dialog)", "Paused");
+        setExplain(
+          "🔔 Dialog on top — Paused (not Stopped)",
+          "A dialog or translucent screen covered part of your Activity. It lost focus (<code>onPause()</code>) but is <strong>still visible</strong>, so <code>onStop()</code> does NOT run. Dismissing the dialog will bring it back with <code>onResume()</code> only.",
+          [
+            "<code>onPause()</code>: pause animations/sensors that don't need to run while unfocused — but stay fast.",
+            "Remember: visible-but-not-focused = Paused, not Stopped. Returning runs only <code>onResume()</code>."
+          ]
+        );
+      },
+
+      "return": function () {
+        if (state === "killed") {
+          // returning after a process kill => full recreate, no onRestart
+          recreateCount++;
+          log("w", "Returning, but process was killed — recreating from saved state");
+          runSequence([
+            { cb: "onCreate", note: "savedInstanceState restored (no onRestart!)" },
+            { cb: "onStart",  note: "visible again" },
+            { cb: "onResume", note: "interactive again" }
+          ], "onResume");
+          state = "resumed";
+          setVisibility("visible", "Visible & interactive (recreated after kill)", "Resumed (recreated)");
+          setExplain(
+            "↩️ Returned after a process kill — full recreate",
+            "Because the process had been killed, there is <strong>no surviving instance</strong>. The system runs <code>onCreate() → onStart() → onResume()</code> — note there is <strong>no <code>onRestart()</code></strong>. <code>onCreate()</code> receives the previously saved <code>Bundle</code> so you can restore the user's place. <span class=\"muted\">(Recreate count: " + recreateCount + ")</span>",
+            [
+              "<code>onCreate()</code>: restore from <code>savedInstanceState</code> / <code>SavedStateHandle</code> so the user doesn't lose their place.",
+              "This is why a <code>ViewModel</code> alone isn't enough — pair it with <code>SavedStateHandle</code> for process death."
+            ]
+          );
+        } else {
+          // returning from a stopped-but-alive app => onRestart path
+          log("i", "User re-opened the app from Recents");
+          runSequence([
+            { cb: "onRestart", note: "instance survived in memory" },
+            { cb: "onStart",   note: "visible again" },
+            { cb: "onResume",  note: "interactive again" }
+          ], "onResume");
+          state = "resumed";
+          setVisibility("visible", "Visible & interactive (foreground)", "Resumed");
+          setExplain(
+            "↩️ Returned from background — Resumed",
+            "The Activity was stopped but its instance survived in memory. The system runs <code>onRestart() → onStart() → onResume()</code>. <strong><code>onCreate()</code> does NOT run</strong> — your fields still hold their previous values.",
+            [
+              "<code>onRestart()</code>: optionally refresh stale data before the screen reappears.",
+              "<code>onResume()</code>: re-acquire whatever you released in <code>onPause()</code>."
+            ]
+          );
+        }
+      },
+
+      rotate: function () {
+        recreateCount++;
+        log("w", "Configuration change (rotation) — destroying & recreating activity");
+        runSequence([
+          { cb: "onPause",   note: "config change starting" },
+          { cb: "onStop",    note: "old instance hidden" },
+          { cb: "onDestroy", note: "isFinishing = false (recreate, not finish)" },
+          { cb: "onCreate",  note: "NEW instance — savedInstanceState restored" },
+          { cb: "onStart",   note: "visible" },
+          { cb: "onResume",  note: "interactive" }
+        ], "onResume");
+        state = "resumed";
+        setVisibility("visible", "Visible & interactive (NEW instance after rotate)", "Resumed (recreated)");
+        setExplain(
+          "🔄 Rotated — destroyed & recreated",
+          "Rotation is a <strong>configuration change</strong>. Android destroys the Activity (<code>onPause → onStop → onDestroy</code>, with <code>isFinishing == false</code>) and immediately recreates it (<code>onCreate → onStart → onResume</code>) so it can load resources for the new orientation. Any value in a plain variable or a Compose <code>remember { }</code> is <strong>lost</strong>. <span class=\"muted\">(Recreate count: " + recreateCount + ")</span>",
+          [
+            "Use <code>rememberSaveable { }</code> for small screen-local UI state.",
+            "Use a <code>ViewModel</code> for screen state &amp; logic — it survives the recreate automatically.",
+            "Check <code>isFinishing</code> in <code>onDestroy()</code> — it's <code>false</code> here, telling you it's a recreate."
+          ]
+        );
+      },
+
+      back: function () {
+        log("i", "User pressed BACK — finishing the activity");
+        runSequence([
+          { cb: "onPause",   note: "losing focus" },
+          { cb: "onStop",    note: "no longer visible" },
+          { cb: "onDestroy", note: "isFinishing = true (genuine finish)" }
+        ], "onDestroy");
+        state = "destroyed";
+        setVisibility("destroyed", "Finished — instance gone for good", "Destroyed");
+        setExplain(
+          "⬅️ Pressed Back — Destroyed (finishing)",
+          "Back (or calling <code>finish()</code>) tears the Activity down for good: <code>onPause → onStop → onDestroy</code> with <code>isFinishing == true</code>. This instance will not come back; launching again creates a brand-new one.",
+          [
+            "<code>onStop()</code>: make sure user data is already persisted.",
+            "<code>onDestroy()</code>: final cleanup; <code>isFinishing</code> is <code>true</code>, so you know it's a real finish — but don't rely on this callback for durability."
+          ]
+        );
+      },
+
+      kill: function () {
+        log("e", "LOW MEMORY — system reclaimed the backgrounded process");
+        log("w", "No lifecycle callbacks are guaranteed on a process kill");
+        // No callbacks fire that we can observe; the instance is simply gone.
+        clearHighlight();
+        state = "killed";
+        setVisibility("destroyed", "Process killed (was in background) — will recreate on return", "Killed");
+        setExplain(
+          "💀 Low-memory kill — no callbacks guaranteed",
+          "While your app was in the background, the system needed memory and <strong>killed the process</strong>. Crucially, <code>onDestroy()</code> is <strong>not guaranteed</strong> to run — so it can be skipped entirely. When the user returns, the Activity is recreated from scratch with <code>onCreate() → onStart() → onResume()</code> (no <code>onRestart()</code>).",
+          [
+            "Never put 'save my data' logic only in <code>onDestroy()</code> — it may never run.",
+            "Persist in <code>onStop()</code>; save transient UI state via <code>onSaveInstanceState()</code> / <code>SavedStateHandle</code>.",
+            "Try 'Return to app' next — you'll see <code>onCreate()</code>, not <code>onRestart()</code>."
+          ]
+        );
+      },
+
+      reset: function () {
+        clearHighlight();
+        state = "none";
+        recreateCount = 0;
+        setVisibility("destroyed", "Not launched", "No instance");
+        setExplain(
+          "Simulator reset",
+          "The Activity has no instance. Press <strong>Launch app</strong> to start a clean cold-start demo.",
+          null
+        );
+        log("i", "— simulator reset —");
+      }
+    };
+
+    document.querySelectorAll(".lc-event-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (btn.disabled) return;
+        var ev = btn.getAttribute("data-event");
+        var fn = handlers[ev];
+        if (fn) { fn(); refreshButtons(); }
+      });
+    });
+
+    clearBtn.addEventListener("click", function () {
+      logcat.innerHTML = '<div class="lc-logline lc-logcat__empty"><span>// Log cleared. Fire an event to continue.</span></div>';
+      logEntries = 0; clock = 0;
+      logCount.textContent = "0";
+    });
+
+    // initial render
+    refreshButtons();
+    setExplain(
+      "Nothing has happened yet",
+      "Fire an event on the left and this panel will explain which callbacks ran, the order they ran in, and the responsibility you have as the developer inside each one.",
+      null
+    );
+  })();
+  </script>
+<!-- Live, auto-checked code + the self-directed mastery surface (challenge / SRS / streak). -->
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+<script>
+  // Wire the Drills mastery tiles to the shared MASTERY engine (state topic + streak).
+  (function () {
+    function pct(n) { return (n == null ? 0 : Math.round(n)) + "%"; }
+    function paint() {
+      if (typeof window.MASTERY === "undefined") return;
+      var p = window.MASTERY.progress, st = p.streak();
+      function set(key, val) {
+        var node = document.querySelector('[data-mastery="' + key + '"]');
+        if (node) node.textContent = val;
+      }
+      set("streak-current", String(st.current));
+      set("streak-longest", String(st.longest));
+      set("topic-state", pct(p.topicMastery("state")));
+      set("global", pct(p.globalPercent()));
+    }
+    document.addEventListener("mastery:change", paint);
+    if (document.readyState !== "loading") paint();
+    else document.addEventListener("DOMContentLoaded", paint);
+  })();
+  </script>
+</body>
+</html>

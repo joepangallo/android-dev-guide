@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Debug &amp; Code-Review Drills | COP4667</title>
+<meta content="COP4667 Android Development — Debug &amp; code-review drills: 17 realistic broken or sub-optimal Kotlin/Compose snippets. Diagnose the bug or the review smell, predict the symptom, then reveal the precise fix and the principle." name="description"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+    /* Page-specific tweaks — chrome still uses contract classes only. */
+    .lead { font-size: var(--fs-lg); color: var(--muted); max-width: 72ch; }
+    .sec-anchor { scroll-margin-top: 80px; }
+
+    /* A drill: a labelled card wrapping a broken snippet, a prompt, and a reveal. */
+    .drill { margin: var(--space-6) 0; }
+    .drill__head {
+      display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3);
+      margin-bottom: var(--space-2);
+    }
+    .drill__no {
+      font-family: var(--font-mono); font-weight: 800; font-size: var(--fs-sm);
+      color: var(--muted); letter-spacing: .04em;
+    }
+    .drill__title { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.01em; }
+    .drill__tags { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+
+    /* Severity chips: a true bug vs. a code-review smell read differently. */
+    .sev {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: var(--fs-xs); font-weight: 800; line-height: 1;
+      padding: 5px 9px; border-radius: 999px; white-space: nowrap;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .sev--bug   { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent); }
+    .sev--smell { background: color-mix(in srgb, var(--accent) 22%, transparent); color: #8A5D00;     border: 1px solid transparent; }
+    [data-theme="dark"] .sev--smell { color: var(--accent); }
+    .sev--crash { background: color-mix(in srgb, var(--danger) 26%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 55%, transparent); }
+
+    .drill__prompt {
+      margin: var(--space-3) 0 0;
+      padding: var(--space-3) var(--space-4);
+      border-left: 3px solid var(--teal-2);
+      background: var(--surface-2);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-weight: 600;
+    }
+    [data-theme="dark"] .drill__prompt { border-left-color: var(--green); }
+    .drill__prompt .q { color: var(--teal-2); font-weight: 800; }
+    [data-theme="dark"] .drill__prompt .q { color: var(--green); }
+
+    /* The diagnosis blocks inside a reveal. */
+    .dx { display: grid; gap: var(--space-3); }
+    .dx h4 { margin: var(--space-3) 0 0; font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .dx h4:first-child { margin-top: 0; }
+    .principle {
+      margin: 0; padding: var(--space-3) var(--space-4);
+      background: color-mix(in srgb, var(--green) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--green) 30%, transparent);
+      border-radius: var(--radius-sm);
+    }
+    /* Light mode: --teal on the light-green principle tint computes ~12.9:1 (AA pass).
+       --green-dark was ~2.5:1 and failed even the 3:1 large-text floor. */
+    .principle strong { color: var(--teal); }
+    [data-theme="dark"] .principle strong { color: var(--green); }
+
+    /* Topic filter row */
+    .filterbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: var(--space-4) 0; }
+    .filterbar .lbl { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: var(--space-4); font-size: var(--fs-sm); color: var(--muted); margin: var(--space-3) 0; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .how ol { margin: .4em 0 0; padding-left: 1.3em; }
+    .how li { margin: .25em 0; }
+  </style>
+</head>
+<body>
+<!-- =========================== TOP NAV =========================== -->
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">▲</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="challenges.html">Challenges</a>
+<a aria-current="page" class="active" href="debug-drills.html">Debug Drills</a>
+<a href="spaced-repetition.html">Review</a>
+<a href="../labs/compose-playground.html">Lab: Playground</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">🖥️ Present</button>
+</nav>
+</div>
+</header>
+<main class="wrap" id="main">
+<!-- =========================== HERO =========================== -->
+<section aria-labelledby="hero-title" class="session-hero slide">
+<p class="row" style="gap:8px;margin:0 0 10px;">
+<span class="pill pill--green">Deliberate practice</span>
+<span class="pill">Diagnostic skill</span>
+<span class="pill">17 drills</span>
+</p>
+<h1 class="hero-title" id="hero-title">Debug &amp; Code-Review Drills</h1>
+<p class="hero-sub">
+        Reading <em>broken</em> code is the skill that separates a senior engineer from a junior. Each drill
+        below is a realistic snippet that either <strong>crashes</strong>, <strong>misbehaves at runtime</strong>,
+        or would <strong>get flagged in review</strong>. Diagnose it first — name the bug, predict the symptom —
+        then reveal the precise fix and the principle behind it.
+      </p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 1</span>
+<span class="clo-tag">CLO 2</span>
+<span class="clo-tag">CLO 3</span>
+<span class="clo-tag">CLO 4</span>
+<span class="clo-tag">CLO 5</span>
+<span class="clo-tag">CLO 6</span>
+<span class="pill">Kotlin · Compose · Lifecycle · Room · Networking</span>
+</div>
+</section>
+<!-- On-page index -->
+<div aria-label="On this page" class="card no-print">
+<div class="card__title">On this page</div>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+<!-- Topic / severity filter — progressive enhancement: without JS every drill stays visible -->
+<div class="filterbar no-print" data-drill-filter hidden>
+<span class="lbl">Topic</span>
+<button aria-pressed="true" class="pill pill--green" data-filter-topic="all" type="button">All</button>
+<button aria-pressed="false" class="pill" data-filter-topic="kotlin" type="button">Kotlin</button>
+<button aria-pressed="false" class="pill" data-filter-topic="compose-ui" type="button">Compose</button>
+<button aria-pressed="false" class="pill" data-filter-topic="state" type="button">State</button>
+<button aria-pressed="false" class="pill" data-filter-topic="architecture" type="button">Architecture</button>
+<button aria-pressed="false" class="pill" data-filter-topic="lists" type="button">Lists</button>
+<button aria-pressed="false" class="pill" data-filter-topic="data" type="button">Data</button>
+<button aria-pressed="false" class="pill" data-filter-topic="networking" type="button">Networking</button>
+<span class="lbl" style="margin-left:var(--space-3);">Severity</span>
+<button aria-pressed="true" class="pill pill--green" data-filter-sev="all" type="button">All</button>
+<button aria-pressed="false" class="pill" data-filter-sev="crash" type="button">Crash</button>
+<button aria-pressed="false" class="pill" data-filter-sev="bug" type="button">Bug</button>
+<button aria-pressed="false" class="pill" data-filter-sev="smell" type="button">Review smell</button>
+<span aria-live="polite" class="lbl" data-filter-count style="margin-left:auto;"></span>
+</div>
+<!-- =========================== HOW TO USE =========================== -->
+<section aria-labelledby="how-h" class="slide sec-anchor">
+<h2 id="how-h">How to run a drill</h2>
+<div class="card card--accent how">
+<p class="lead" style="margin-top:0;">Resist the spoiler. The diagnosis only sticks if your brain commits to an answer first.</p>
+<ol>
+<li><strong>Read the snippet</strong> and the prompt. Some are true bugs (a crash, a stale screen, a frozen UI); some are <em>code-review smells</em> — it compiles and runs, but you'd push back in review.</li>
+<li><strong>Say the diagnosis out loud:</strong> name the broken line, then <em>predict the exact symptom</em> (crash? wrong number? UI never updates? jank?).</li>
+<li><strong>For runnable drills,</strong> press <em>Run</em> to watch the bug happen (or the fix pass) on JetBrains' compiler.</li>
+<li><strong>Reveal</strong> the diagnosis + corrected code + principle. If you were right for the right reason, move on. If not, that miss is the most valuable rep on the page.</li>
+</ol>
+</div>
+<div class="legend no-print">
+<span><span class="sev sev--bug">Bug</span> compiles, but breaks at runtime</span>
+<span><span class="sev sev--crash">Crash</span> throws / force-closes</span>
+<span><span class="sev sev--smell">Review smell</span> works, but you'd flag it</span>
+</div>
+<div data-mastery-stats=""></div>
+</section>
+<!-- ================================================================= -->
+<!--  KOTLIN FUNDAMENTALS                                               -->
+<!-- ================================================================= -->
+<section aria-labelledby="kotlin-h" class="slide sec-anchor" id="kotlin">
+<h2 id="kotlin-h">Kotlin fundamentals</h2>
+<p class="lead">Bugs that crash or quietly compute the wrong answer before any UI is involved.</p>
+<!-- DRILL 1 — !! NPE -->
+<article class="drill" data-challenge="dd-kotlin-npe" data-topic="kotlin">
+<div class="drill__head">
+<span class="drill__no">Drill 01</span>
+<h3 class="drill__title" data-toc-skip>The confident <code>!!</code></h3>
+<span class="drill__tags"><span class="sev sev--crash">Crash</span><span class="tag">null-safety</span></span>
+</div>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable — predict the output, then Run</div>
+<pre><code>fun lookupAge(people: Map&lt;String, Int&gt;, name: String): Int {
+    // We "know" the name is in the map, so just force it.
+    return people[name]!!
+}
+
+fun main() {
+    val ages = mapOf("Ada" to 36, "Linus" to 54)
+    println("Ada: "   + lookupAge(ages, "Ada"))
+    println("Grace: " + lookupAge(ages, "Grace"))   // not in the map…
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">In review:</span> the author swears “the name is always there.” What is wrong, and what would you change?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p><code>people["Grace"]</code> returns <code>null</code> (Grace isn't in the map). The <code>!!</code> operator asserts non-null and, when that assertion is false, throws a <strong><code>NullPointerException</code></strong> on that exact line. The first <code>println</code> succeeds (<code>Ada: 36</code>); the second force-closes. <code>!!</code> doesn't make a value non-null — it just turns “might be null” into “crash if null,” usually far from where the real mistake is.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — handle absence explicitly</div>
+<pre><code>fun lookupAge(people: Map&lt;String, Int&gt;, name: String): Int? =
+    people[name]                       // honest: may be null
+
+fun main() {
+    val ages = mapOf("Ada" to 36, "Linus" to 54)
+    // Decide what "missing" means at the call site:
+    println("Ada: "   + (ages["Ada"]   ?: "unknown"))
+    println("Grace: " + (ages["Grace"] ?: "unknown"))   // -&gt; unknown, no crash
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Treat <code>!!</code> as a code smell, not a tool. Reach for the safe operators instead: <code>?.</code> (safe call), <code>?:</code> (Elvis / default), or <code>?.let { }</code>. Reserve <code>!!</code> for the rare case where a null is a genuine programmer bug you <em>want</em> to crash on — and even then, prefer <code>requireNotNull(x) { "why" }</code> so the failure explains itself.</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 2 — Int division precision -->
+<article class="drill" data-challenge="dd-kotlin-intdiv" data-topic="kotlin">
+<div class="drill__head">
+<span class="drill__no">Drill 02</span>
+<h3 class="drill__title" data-toc-skip>The average that's always too low</h3>
+<span class="drill__tags"><span class="sev sev--bug">Bug</span><span class="tag">numeric types</span></span>
+</div>
+<div class="codeblock" data-run="kotlin">
+<div class="codeblock__lang">Kotlin · runnable — what does this print?</div>
+<pre><code>fun average(scores: List&lt;Int&gt;): Double {
+    val total = scores.sum()
+    return total / scores.size      // looks fine…
+}
+
+fun main() {
+    val grades = listOf(90, 91)   // true average is 90.5
+    println("Average = " + average(grades))
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">Predict:</span> the function returns <code>Double</code>, so it should print a decimal. What actually prints, and why?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p><code>total</code> and <code>scores.size</code> are both <code>Int</code>, so <code>total / scores.size</code> is <strong>integer division</strong> — it happens <em>before</em> anything is widened to <code>Double</code>. For <code>listOf(90, 91)</code>: <code>181 / 2 = 90</code> (the remainder is thrown away), and <em>then</em> that <code>90</code> is widened to <code>90.0</code> — so Run prints <code>Average = 90.0</code> instead of the true <code>90.5</code>. The <code>Double</code> return type only widens the <em>already-truncated</em> <code>Int</code>; it cannot recover the lost remainder. Nasty inputs hide it (<code>listOf(90, 92)</code> → <code>182 / 2 = 91</code>, which happens to be exact), which is exactly why this ships unnoticed — a wrong answer, not a crash, which is worse.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — widen before dividing</div>
+<pre><code>fun average(scores: List&lt;Int&gt;): Double {
+    if (scores.isEmpty()) return 0.0        // also: don't divide by zero
+    return scores.sum().toDouble() / scores.size
+}
+
+fun main() {
+    println(average(listOf(90, 91)))   // 90.5, correct
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> In Kotlin, <code>Int / Int</code> is integer division and the <em>operand</em> types decide the math, not the return type. Convert <strong>before</strong> the operation (<code>.toDouble()</code> on one side is enough). And any division needs a zero-denominator guard — an empty list here would throw <code>ArithmeticException</code>.</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 3 — val list mutated -->
+<article class="drill" data-challenge="dd-kotlin-vallist" data-topic="kotlin">
+<div class="drill__head">
+<span class="drill__no">Drill 03</span>
+<h3 class="drill__title" data-toc-skip><code>val</code> ≠ immutable</h3>
+<span class="drill__tags"><span class="sev sev--smell">Review smell</span><span class="tag">immutability</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · review this</div>
+<pre><code>class Cart {
+    val items = mutableListOf&lt;String&gt;()   // exposed straight to callers
+
+    fun add(item: String) { items.add(item) }
+}
+
+// Elsewhere, a teammate writes:
+val cart = Cart()
+cart.add("Cable")
+cart.items.clear()        // …compiles. Wipes the cart from the outside.
+cart.items[0] = "hacked"  // …also compiles, if non-empty
+</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">In review:</span> <code>items</code> is a <code>val</code>, so it's safe to expose — true or false? What would you change?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>False. <code>val</code> only freezes the <em>reference</em> — you can't reassign <code>items</code> to a new list, but the <code>MutableList</code> it points to is fully editable. Exposing a <code>mutableListOf</code> publicly lets any caller <code>clear()</code>, reassign elements, or reorder your internal state, bypassing every invariant <code>Cart</code> tries to enforce. It compiles and runs; it's a design defect a reviewer should block.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — encapsulate, expose read-only</div>
+<pre><code>class Cart {
+    private val _items = mutableListOf&lt;String&gt;()   // private, mutable
+    val items: List&lt;String&gt; get() = _items          // public, read-only view
+
+    fun add(item: String) { _items.add(item) }
+    fun clear() { _items.clear() }                   // mutation only through the API
+}
+
+val cart = Cart()
+cart.add("Cable")
+// cart.items.clear()   // ❌ won't compile — List has no clear()
+</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> <code>val</code> controls the binding, not the object. Keep mutable collections <code>private</code> (the <code>_name</code> backing-field convention) and expose an immutable type (<code>List</code>, <code>Set</code>, <code>Map</code>) so all changes funnel through methods you control. This same pattern reappears in Compose (<code>private val _uiState; val uiState</code>) and in the repository layer below.</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 4 — non-exhaustive when -->
+<article class="drill" data-challenge="dd-kotlin-when" data-topic="kotlin">
+<div class="drill__head">
+<span class="drill__no">Drill 04</span>
+<h3 class="drill__title" data-toc-skip>The <code>when</code> that compiles today, breaks tomorrow</h3>
+<span class="drill__tags"><span class="sev sev--smell">Review smell</span><span class="tag">sealed / when</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · review this</div>
+<pre><code>sealed interface Payment {
+    data class Card(val last4: String) : Payment
+    data object Cash : Payment
+    // (next sprint: data object ApplePay : Payment)
+}
+
+fun label(p: Payment): String {
+    when (p) {                       // used as a STATEMENT, not an expression
+        is Payment.Card -&gt; return "Card ****" + p.last4
+        Payment.Cash    -&gt; return "Cash"
+        else            -&gt; return "Unknown"   // catch-all
+    }
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">In review:</span> there's an <code>else</code>, so every case is handled — what's the latent bug, and what would you change?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>The <code>else</code> is exactly the problem. When you add <code>ApplePay</code> next sprint, this <code>when</code> silently routes it to <code>"Unknown"</code> — no compile error, no warning, a wrong label shipped to users. Because <code>when</code> is used as a <em>statement</em> here (with early <code>return</code>s), the compiler doesn't enforce exhaustiveness, and the catch-all hides the gap. A reviewer wants the compiler to fail loudly the day a new variant appears.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — exhaustive expression, no else</div>
+<pre><code>fun label(p: Payment): String = when (p) {   // EXPRESSION: must be exhaustive
+    is Payment.Card -&gt; "Card ****" + p.last4
+    Payment.Cash    -&gt; "Cash"
+    // No else. Add ApplePay -&gt; the compiler errors here until you handle it.
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Over a <code>sealed</code> type, write <code>when</code> as an <em>expression</em> (it returns a value) and <strong>omit <code>else</code></strong>. That makes the compiler require exhaustiveness, turning “forgot a case” from a silent runtime bug into a build error. Reserve <code>else</code> for genuinely open inputs (an arbitrary <code>Int</code>, a <code>String</code>) where new cases can't be enumerated.</p>
+</div>
+</div>
+</div>
+</article>
+</section>
+<!-- ================================================================= -->
+<!--  COMPOSE & STATE                                                   -->
+<!-- ================================================================= -->
+<section aria-labelledby="compose-h" class="slide sec-anchor" id="compose">
+<h2 id="compose-h">Compose &amp; state</h2>
+<p class="lead">The recomposition model is unforgiving: a plain variable, a wrong modifier order, or a hardcoded color all read as “works on my machine” until they don't.</p>
+<!-- DRILL 5 — plain var resets on recompose -->
+<article class="drill" data-challenge="dd-compose-plainvar" data-topic="state">
+<div class="drill__head">
+<span class="drill__no">Drill 05</span>
+<h3 class="drill__title" data-toc-skip>The counter that snaps back to 0</h3>
+<span class="drill__tags"><span class="sev sev--bug">Bug</span><span class="tag">state</span><span class="tag">remember</span></span>
+</div>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Compose · what happens when you tap +1?</div>
+<pre><code>@Composable
+fun Counter() {
+    var count = 0                       // a plain local variable
+
+    Button(onClick = { count++ }) {     // increments… then vanishes
+        Text("Count: $count")
+    }
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">Predict:</span> you tap +1 five times. What does the button show, and why?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>The button keeps showing <strong>Count: 0</strong>. Two failures compound here. (1) <code>count</code> is a plain <code>var</code>, so Compose doesn't <em>observe</em> it — mutating it never schedules a recomposition. (2) Even ignoring that, <code>var count = 0</code> is re-initialized to <code>0</code> on every recomposition, because the function body runs again top-to-bottom each time. So even if something else triggered a recompose, your increment would be thrown away. State that must survive recomposition has to live in <code>remember</code>, and it has to be a type Compose watches.</p>
+<h4>Corrected code</h4>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Compose · fixed — observable, remembered state</div>
+<pre><code>@Composable
+fun Counter() {
+    var count by remember { mutableStateOf(0) }   // observed + survives recompose
+
+    Button(onClick = { count++ }) {
+        Text("Count: $count")
+    }
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Compose only reacts to reads of <em>snapshot state</em> (<code>mutableStateOf</code>, <code>StateFlow</code>, etc.), and only <code>remember</code> preserves a value across recompositions. The combo <code>var x by remember { mutableStateOf(...) }</code> gives you both: an observable value that triggers recomposition <em>and</em> survives one. (To also survive configuration changes like rotation, reach for <code>rememberSaveable</code> — see Drill 09.)</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 6 — modifier order -->
+<article class="drill" data-challenge="dd-compose-modorder" data-topic="compose-ui">
+<div class="drill__head">
+<span class="drill__no">Drill 06</span>
+<h3 class="drill__title" data-toc-skip>The padding that does nothing</h3>
+<span class="drill__tags"><span class="sev sev--bug">Bug</span><span class="tag">modifiers</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · the tap target feels wrong</div>
+<pre><code>// Intent: a green box with 16dp of inner breathing room,
+// where tapping anywhere INSIDE the padded box registers.
+Box(
+    Modifier
+        .padding(16.dp)               // ① pad first
+        .background(Color.Green)      // ② then color
+        .clickable { onTap() }        // ③ then make it clickable
+)
+</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">Diagnose:</span> the box renders, but the padding looks like a transparent gap <em>around</em> the green, and taps in that gap miss. Which line order is wrong?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>Modifiers apply <strong>in order, outside-in</strong>. Here <code>padding</code> runs <em>before</em> <code>background</code> and <code>clickable</code>, so the 16dp is added <em>outside</em> the colored, clickable region: you get a transparent margin around a smaller green box, and that margin isn't part of the click target. The intent — colored area first, padding <em>inside</em> it, ripple covering the whole thing — requires the opposite order. This compiles and renders; it's a behavior bug you only catch by looking (or tapping).</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · fixed — order encodes layout intent</div>
+<pre><code>Box(
+    Modifier
+        .background(Color.Green)      // ① paint the area
+        .clickable { onTap() }        // ② whole area is tappable (ripple included)
+        .padding(16.dp)               // ③ inset the CONTENT, inside the box
+)
+</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Modifier order is not cosmetic — each modifier wraps the next, so the chain reads outside-in. Rule of thumb: <code>size</code>/<code>background</code>/<code>clickable</code> come <em>before</em> the <code>padding</code> that should sit inside them; a <code>padding</code> placed before <code>clickable</code> shrinks the touch target. When spacing or hit areas look off, re-read the modifier chain top-to-bottom as a sequence of wrappers.</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 7 — hardcoded color vs colorScheme -->
+<article class="drill" data-challenge="dd-compose-hardcolor" data-topic="compose-ui">
+<div class="drill__head">
+<span class="drill__no">Drill 07</span>
+<h3 class="drill__title" data-toc-skip>Invisible text in dark mode</h3>
+<span class="drill__tags"><span class="sev sev--smell">Review smell</span><span class="tag">theming</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · review this</div>
+<pre><code>@Composable
+fun PriceTag(price: String) {
+    Surface {                                  // surface follows the theme…
+        Text(
+            text = price,
+            color = Color(0xFF222222),         // …but the text is hardcoded near-black
+            modifier = Modifier.padding(12.dp)
+        )
+    }
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">In review:</span> it looks perfect in the light-theme preview. Why will you still flag it?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>The <code>Surface</code> background flips to near-black in dark mode, but the hardcoded <code>Color(0xFF222222)</code> text does not — so the price becomes near-black on near-black: invisible. Hardcoding hex colors opts a composable out of the Material theme entirely. It also breaks dynamic color, high-contrast accessibility settings, and any future re-brand. It renders fine in <em>one</em> theme, which is exactly why it slips through.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · fixed — read from the colorScheme</div>
+<pre><code>@Composable
+fun PriceTag(price: String) {
+    Surface {
+        Text(
+            text = price,
+            // Semantic role, not a literal: contrasts with the surface in BOTH themes.
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(12.dp)
+        )
+    }
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Pull colors from <code>MaterialTheme.colorScheme</code> by their <em>semantic role</em> (<code>primary</code>, <code>onSurface</code>, <code>error</code>…), never as raw hex in a composable. The <code>onX</code> roles are guaranteed to contrast with their <code>X</code> background across light, dark, and dynamic themes. Define brand colors once in the theme; consume them by name everywhere else.</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 8 — derived state recomputed every recompose / business logic in composable -->
+<article class="drill sec-anchor" data-challenge="dd-compose-bizlogic" data-topic="architecture" id="architecture">
+<div class="drill__head">
+<span class="drill__no">Drill 08</span>
+<h3 class="drill__title" data-toc-skip>Business logic squatting in a composable</h3>
+<span class="drill__tags"><span class="sev sev--smell">Review smell</span><span class="tag">architecture</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · review this</div>
+<pre><code>@Composable
+fun InvoiceScreen(rawJson: String) {
+    // Parse + tax math + currency formatting, all inside the UI:
+    val lines = Json.decodeFromString&lt;List&lt;Line&gt;&gt;(rawJson)   // runs EVERY recompose
+    val subtotal = lines.sumOf { it.qty * it.unitCents }
+    val tax = (subtotal * 0.07).toInt()
+    val total = "$" + ((subtotal + tax) / 100.0)
+
+    Text("Total: $total")
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">In review:</span> it produces the right total. Name two things you'd push back on.</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>(1) <strong>Wrong layer.</strong> JSON parsing, tax rules, and currency math are <em>business logic</em>, not UI. Buried in a composable they can't be unit-tested without a UI test, can't be reused, and tangle presentation with policy. (2) <strong>Wrong frequency.</strong> Everything in a composable body re-runs on every recomposition, so this re-parses the JSON and re-runs the tax math on each frame that touches this composable — wasted work that can cause jank. The tax rate is also a magic number (<code>0.07</code>) with no name.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — logic in the VM, UI just renders</div>
+<pre><code>// --- domain / ViewModel: testable, runs once per data change ---
+private const val TAX_RATE = 0.07
+data class InvoiceUi(val total: String)
+
+class InvoiceViewModel : ViewModel() {
+    fun toUi(rawJson: String): InvoiceUi {
+        val lines = Json.decodeFromString&lt;List&lt;Line&gt;&gt;(rawJson)
+        val subtotal = lines.sumOf { it.qty * it.unitCents }
+        val tax = (subtotal * TAX_RATE).toInt()
+        return InvoiceUi(total = "$" + ((subtotal + tax) / 100.0))
+    }
+}
+
+// --- composable: dumb, just displays the prepared state ---
+@Composable
+fun InvoiceScreen(ui: InvoiceUi) {
+    Text("Total: ${ui.total}")
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> A composable's job is to <em>describe UI from state</em>, nothing else. Push parsing, calculations, and policy into the ViewModel/domain layer where they run once per data change and can be unit-tested in isolation. If you genuinely must compute a value <em>from state</em> inside a composable, wrap it in <code>remember(key) { … }</code> so it's cached instead of recomputed every recomposition — and give magic numbers like <code>0.07</code> a name (<code>TAX_RATE</code>).</p>
+</div>
+</div>
+</div>
+</article>
+</section>
+<!-- ================================================================= -->
+<!--  LIFECYCLE & STATE PRESERVATION                                    -->
+<!-- ================================================================= -->
+<section aria-labelledby="lifecycle-h" class="slide sec-anchor" id="lifecycle">
+<h2 id="lifecycle-h">Lifecycle &amp; state preservation</h2>
+<p class="lead">The bugs that only appear when you rotate the device, get a phone call, or leave the screen.</p>
+<!-- DRILL 9 — rotation loses state / rememberSaveable -->
+<article class="drill" data-challenge="dd-lifecycle-rotation" data-topic="state">
+<div class="drill__head">
+<span class="drill__no">Drill 09</span>
+<h3 class="drill__title" data-toc-skip>Survives recomposition, dies on rotation</h3>
+<span class="drill__tags"><span class="sev sev--bug">Bug</span><span class="tag">config change</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · the form a user is half-way through filling</div>
+<pre><code>@Composable
+fun SignUpForm() {
+    var email by remember { mutableStateOf("") }   // typed-in email
+
+    OutlinedTextField(
+        value = email,
+        onValueChange = { email = it },
+        label = { Text("Email") }
+    )
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">Diagnose:</span> the user types their email, then rotates the phone to landscape. What happens, and why is <code>remember</code> not enough?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>On rotation the field <strong>goes blank</strong> — the typed email is lost. A configuration change (rotation, dark-mode toggle, language change) <em>destroys and recreates the Activity</em>, which tears down and rebuilds the entire composition. <code>remember</code> only survives <em>recomposition</em>, not Activity recreation, so its stored value is gone. This is the classic “works in testing, infuriates real users” bug, because nobody rotates while clicking through quickly.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · fixed — survive config changes</div>
+<pre><code>@Composable
+fun SignUpForm() {
+    // rememberSaveable persists through Activity recreation via the saved-instance bundle
+    var email by rememberSaveable { mutableStateOf("") }
+
+    OutlinedTextField(
+        value = email,
+        onValueChange = { email = it },
+        label = { Text("Email") }
+    )
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Three tiers of survival: a plain <code>var</code> survives <em>nothing</em>; <code>remember</code> survives <em>recomposition</em>; <code>rememberSaveable</code> survives <em>configuration changes / process-death restoration</em> too (for types the Saver supports — primitives, Strings, Parcelables). Transient UI state that the user would hate to re-enter belongs in <code>rememberSaveable</code> or, better for anything long-lived, in a <code>ViewModel</code> (which also outlives configuration changes).</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 10 — leaked Context -->
+<article class="drill" data-challenge="dd-lifecycle-context" data-topic="architecture">
+<div class="drill__head">
+<span class="drill__no">Drill 10</span>
+<h3 class="drill__title" data-toc-skip>The ViewModel that holds an Activity</h3>
+<span class="drill__tags"><span class="sev sev--bug">Bug</span><span class="tag">memory leak</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · review this ViewModel</div>
+<pre><code>class ProfileViewModel(
+    private val context: Context   // an Activity is passed in here
+) : ViewModel() {
+
+    fun greeting(): String =
+        context.getString(R.string.welcome)   // convenient… but dangerous
+}
+
+// In the Activity:
+val vm = ProfileViewModel(this)   // 'this' == the Activity</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">Diagnose:</span> it compiles and the greeting works. What's the leak, and why does the ViewModel make it worse?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>A <code>ViewModel</code> deliberately <strong>outlives</strong> its Activity — that's its whole point: it survives rotation. So storing the <em>Activity</em> <code>Context</code> in it means that when the Activity is destroyed and recreated on rotation, the ViewModel still pins the <em>old</em> Activity in memory. The garbage collector can't reclaim it: a leaked Activity, holding its entire view tree. Rotate a few times and you've leaked several screens' worth of objects.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — use the application context</div>
+<pre><code>// Option A: AndroidViewModel gives you a safe, long-lived application context.
+class ProfileViewModel(app: Application) : AndroidViewModel(app) {
+    fun greeting(): String =
+        getApplication&lt;Application&gt;().getString(R.string.welcome)
+}
+
+// Option B (cleaner): don't put Android types in the VM at all.
+// Resolve the string in the composable and pass plain data in:
+//   val welcome = stringResource(R.string.welcome)
+</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Never store an Activity/View <code>Context</code> in anything that outlives the Activity — ViewModels, singletons, companion objects, static fields. If a long-lived object truly needs a context, use the <em>application</em> context (via <code>AndroidViewModel</code>). Better still, keep framework types out of the ViewModel entirely and resolve resources in the UI layer, passing only plain data down.</p>
+</div>
+</div>
+</div>
+</article>
+</section>
+<!-- ================================================================= -->
+<!--  LISTS & RENDERING                                                 -->
+<!-- ================================================================= -->
+<section aria-labelledby="lists-h" class="slide sec-anchor" id="lists">
+<h2 id="lists-h">Lists &amp; rendering</h2>
+<p class="lead">Lazy lists punish the wrong defaults: missing keys, eager <code>Column</code>s, and unobserved backing lists.</p>
+<!-- DRILL 11 — Column + for instead of LazyColumn -->
+<article class="drill" data-challenge="dd-lists-eager" data-topic="lists">
+<div class="drill__head">
+<span class="drill__no">Drill 11</span>
+<h3 class="drill__title" data-toc-skip>A feed that hitches and eats memory</h3>
+<span class="drill__tags"><span class="sev sev--smell">Review smell</span><span class="tag">LazyColumn</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · review this feed</div>
+<pre><code>@Composable
+fun Feed(posts: List&lt;Post&gt;) {                 // posts can be hundreds long
+    Column(Modifier.verticalScroll(rememberScrollState())) {
+        for (post in posts) {                  // builds EVERY row up front
+            PostCard(post)
+        }
+    }
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">In review:</span> it scrolls and shows every post. Why is it the wrong tool for a long/unbounded feed?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>A <code>Column</code> with <code>verticalScroll</code> <strong>composes and lays out every child immediately</strong>, on- or off-screen, and never recycles them. For a few items that's fine; for a feed of hundreds it builds hundreds of <code>PostCard</code>s up front, holds them all in memory, and pays layout for all of them on the first frame — slow first paint and dropped frames while scrolling. Even worse: nesting this inside another vertical scroller gives it infinite height and can crash.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · fixed — lazy, recycled, keyed</div>
+<pre><code>@Composable
+fun Feed(posts: List&lt;Post&gt;) {
+    LazyColumn {                               // no verticalScroll — it scrolls itself
+        items(posts, key = { it.id }) { post -&gt; // composes only visible rows + buffer
+            PostCard(post)
+        }
+    }
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Use <code>LazyColumn</code>/<code>LazyRow</code> for any list that is long, unbounded, or data-driven; reserve a plain <code>Column</code> for a small, fixed set of children (a 5-field form). A lazy list composes only what's visible, recycles as you scroll, and is its own scroll container — so you drop the <code>verticalScroll</code> modifier. (And always pass a stable <code>key</code> — see the next drill.)</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 12 — missing key -->
+<article class="drill" data-challenge="dd-lists-nokey" data-topic="lists">
+<div class="drill__head">
+<span class="drill__no">Drill 12</span>
+<h3 class="drill__title" data-toc-skip>The checkbox that jumps to the wrong row</h3>
+<span class="drill__tags"><span class="sev sev--bug">Bug</span><span class="tag">item key</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · a to-do list with per-row state</div>
+<pre><code>@Composable
+fun TodoList(todos: List&lt;Todo&gt;, onDelete: (Todo) -&gt; Unit) {
+    LazyColumn {
+        items(todos) { todo -&gt;                 // ← no key
+            // Each row remembers its own "expanded" toggle:
+            var expanded by remember { mutableStateOf(false) }
+            TodoRow(todo, expanded, onToggle = { expanded = !expanded },
+                    onDelete = { onDelete(todo) })
+        }
+    }
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">Diagnose:</span> the user expands row 3, then deletes row 1. What goes wrong, and why?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>Without a <code>key</code>, Compose tracks items by their <strong>position</strong> in the list. Delete row 1 and everything shifts up: the <code>remember</code>ed “expanded” state that belonged to the item at index 3 is now matched to whatever item slides into index 3. The <em>wrong row</em> appears expanded, scroll position can jump, and item animations mis-fire. It's subtle because a static list looks correct — the bug only surfaces on insert/remove/reorder.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · fixed — stable identity via key</div>
+<pre><code>@Composable
+fun TodoList(todos: List&lt;Todo&gt;, onDelete: (Todo) -&gt; Unit) {
+    LazyColumn {
+        items(todos, key = { it.id }) { todo -&gt;   // identity follows the data, not the index
+            var expanded by rememberSaveable(todo.id) { mutableStateOf(false) }
+            TodoRow(todo, expanded, onToggle = { expanded = !expanded },
+                    onDelete = { onDelete(todo) })
+        }
+    }
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Always give <code>items(...)</code> a stable, unique <code>key</code> (usually the entity's <code>id</code>) so Compose matches each row's remembered state across data changes. Keys must be unique within the list — duplicating one throws <code>IllegalArgumentException: Key "…" was already used</code> — and you must never key by the loop index, which defeats the entire purpose.</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 13 — plain list won't recompose -->
+<article class="drill" data-challenge="dd-lists-plainlist" data-topic="state">
+<div class="drill__head">
+<span class="drill__no">Drill 13</span>
+<h3 class="drill__title" data-toc-skip>The FAB that adds nothing</h3>
+<span class="drill__tags"><span class="sev sev--bug">Bug</span><span class="tag">observable state</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · tapping the FAB should add a row</div>
+<pre><code>@Composable
+fun NoteScreen() {
+    val notes = remember { mutableListOf("First note") }   // plain MutableList
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { notes.add("New note") }) { Text("+") }
+        }
+    ) { pad -&gt;
+        LazyColumn(Modifier.padding(pad)) {
+            items(notes) { Text(it) }
+        }
+    }
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">Diagnose:</span> you tap +, the list doesn't change, no crash. Where does the update get lost?</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p><code>remember { mutableListOf(...) }</code> remembers a <em>plain</em> <code>MutableList</code>. Compose <strong>does not observe</strong> mutations to it, so <code>notes.add(...)</code> updates the backing list silently but never schedules a recomposition — the UI stays frozen at one row. (The new note <em>is</em> in memory; it would even appear if some <em>other</em> state change forced a recompose. That intermittent behavior makes it maddening to debug.) You need a list type Compose watches.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Compose · fixed — an observable list</div>
+<pre><code>@Composable
+fun NoteScreen() {
+    val notes = remember { mutableStateListOf("First note") }   // OBSERVED list
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { notes.add("New note") }) { Text("+") }
+        }
+    ) { pad -&gt;
+        LazyColumn(Modifier.padding(pad)) {
+            // No key here: the list holds plain Strings and the FAB appends a
+            // duplicate "New note" each tap — keying by content would throw
+            // "Key … was already used" (see Drill 12). Key by a stable, unique
+            // id once the notes become objects.
+            items(notes) { Text(it) }
+        }
+    }
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> A plain <code>mutableListOf</code> isn't snapshot state, so mutating it never recomposes. Use <code>mutableStateListOf()</code> for an observable list, or hoist the data into a <code>ViewModel</code> as a <code>StateFlow&lt;List&lt;…&gt;&gt;</code> and emit a <em>new</em> immutable list on each change. Either way, the rule holds: <strong>recomposition is driven only by reads of observable state.</strong> (Don't add a <code>key</code> here — these entries aren't unique, and a duplicate content key would crash exactly as Drill 12 warns; key by a stable <code>id</code> only once the data has one.)</p>
+</div>
+</div>
+</div>
+</article>
+</section>
+<!-- ================================================================= -->
+<!--  PERSISTENCE & NETWORKING                                          -->
+<!-- ================================================================= -->
+<section aria-labelledby="data-h" class="slide sec-anchor" id="persistence">
+<h2 id="data-h">Persistence &amp; networking</h2>
+<p class="lead">The data layer is where “it works on the emulator” meets ANRs, crashes on real devices, and reactive UIs that never refresh.</p>
+<!-- DRILL 14 — Room on main thread + DAO returns List not Flow -->
+<article class="drill" data-challenge="dd-data-mainthread" data-topic="data">
+<div class="drill__head">
+<span class="drill__no">Drill 14</span>
+<h3 class="drill__title" data-toc-skip>Room on the main thread</h3>
+<span class="drill__tags"><span class="sev sev--crash">Crash</span><span class="tag">Room</span><span class="tag">coroutines</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · DAO + the call site</div>
+<pre><code>@Dao
+interface NoteDao {
+    @Query("SELECT * FROM notes")
+    fun getAll(): List&lt;Note&gt;          // blocking, one-shot
+}
+
+// In a composable / on a click:
+val notes = db.noteDao().getAll()    // runs on the calling (main) thread</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">Diagnose:</span> two distinct problems here — one is a crash, one is why the list never live-updates. Name both.</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p><strong>(1) Main-thread DB access.</strong> Calling a blocking, synchronous DAO query on the UI thread freezes the app while it hits disk; on a real device with real data this drops frames and triggers an ANR (“Application Not Responding”). By default Room <em>throws</em> <code>IllegalStateException: Cannot access database on the main thread</code> to stop you — a crash that's actually protecting users. <strong>(2) One-shot, not reactive.</strong> Returning a plain <code>List&lt;Note&gt;</code> reads the table <em>once</em>; insert a note later and the UI has no idea — it never refreshes until something re-queries manually.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — off-thread + reactive</div>
+<pre><code>@Dao
+interface NoteDao {
+    // Flow: emits a fresh list automatically whenever the table changes.
+    @Query("SELECT * FROM notes")
+    fun observeAll(): Flow&lt;List&lt;Note&gt;&gt;
+
+    // suspend: Room runs it off the main thread for you.
+    @Insert
+    suspend fun insert(note: Note)
+}
+
+// In the ViewModel — collected as state, never blocking the UI:
+val notes: StateFlow&lt;List&lt;Note&gt;&gt; =
+    noteDao.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> Disk and network are slow and must never touch the main thread — use <code>suspend</code> DAO functions (Room dispatches them off-thread) and run repository work in <code>viewModelScope</code> / on <code>Dispatchers.IO</code>. For anything the UI must stay in sync with, have the DAO return <code>Flow&lt;…&gt;</code>, not a one-shot <code>List</code>: Room re-emits on every table change, and the UI reacts for free. One-shot reads silently go stale.</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 15 — missing @PrimaryKey -->
+<article class="drill" data-challenge="dd-data-pk" data-topic="data">
+<div class="drill__head">
+<span class="drill__no">Drill 15</span>
+<h3 class="drill__title" data-toc-skip>The entity that won't compile (or shouldn't)</h3>
+<span class="drill__tags"><span class="sev sev--crash">Crash</span><span class="tag">Room schema</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · review this entity</div>
+<pre><code>@Entity(tableName = "users")
+data class User(
+    val id: Int,            // intended to be the unique row id…
+    val name: String,
+    val email: String
+)
+// build fails: "An entity must have at least 1 field annotated with @PrimaryKey"</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">Diagnose:</span> the build error names the problem. Fix it — and explain why <code>autoGenerate</code> is usually what you want.</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>Every Room <code>@Entity</code> must declare a primary key — the column that uniquely identifies a row — yet <code>id</code> here is just an ordinary field. Room refuses to generate the table and fails the build (a compile-time crash, which is the friendly kind). Even after you tag <code>id</code>, leaving it a caller-supplied <code>Int</code> invites duplicate or zero ids; you almost always want the database to mint the id for you.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — keyed + auto-generated id</div>
+<pre><code>@Entity(tableName = "users")
+data class User(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,  // DB assigns it
+    val name: String,
+    val email: String
+)
+// Insert with id = 0; Room generates and returns the real id.</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> A primary key is mandatory and must be unique per row. Prefer <code>@PrimaryKey(autoGenerate = true)</code> on a <code>Long</code> defaulted to <code>0</code> so the database owns id generation — no collisions, no “who picks the next id?” logic in your code. Reserve a manual key for cases where a natural, guaranteed-unique business id already exists (and even then, validate it).</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 16 — repository mutates a list in place / mutable data layer -->
+<article class="drill" data-challenge="dd-data-repo" data-topic="data">
+<div class="drill__head">
+<span class="drill__no">Drill 16</span>
+<h3 class="drill__title" data-toc-skip>A repository that mutates shared state</h3>
+<span class="drill__tags"><span class="sev sev--smell">Review smell</span><span class="tag">data layer</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · review this repository</div>
+<pre><code>class TaskRepository {
+    // A single shared, mutable list handed out to everyone:
+    val tasks = mutableListOf&lt;Task&gt;()
+
+    fun all(): MutableList&lt;Task&gt; = tasks            // returns the live list
+
+    fun add(task: Task) { tasks.add(task) }
+}
+
+// A caller does this, "just to show completed first":
+repo.all().sortByDescending { it.done }            // mutates the repo's own list!
+</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">In review:</span> name the smell, the concrete bug it enables, and what you'd change.</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>The repository hands out its <em>own internal</em> <code>MutableList</code>. Any caller can <code>sortByDescending</code>, <code>clear()</code>, or reassign elements and silently corrupt the single source of truth — exactly what the call site does when it “just sorts for display.” On a background thread this is also a data race. The mutable, shared, leaky state defeats the whole point of a repository: to be the controlled gateway to data. It compiles and often “works” until two parts of the app fight over the same list.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — immutable boundary, copy to mutate</div>
+<pre><code>class TaskRepository {
+    private val _tasks = MutableStateFlow&lt;List&lt;Task&gt;&gt;(emptyList())
+    val tasks: StateFlow&lt;List&lt;Task&gt;&gt; = _tasks.asStateFlow()   // read-only, observable
+
+    fun add(task: Task) {
+        _tasks.update { current -&gt; current + task }   // emit a NEW immutable list
+    }
+}
+
+// Callers sort a COPY for display; the repo's state is untouched:
+val sorted = repo.tasks.value.sortedByDescending { it.done }
+</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> A data layer should expose <em>immutable</em> snapshots (<code>List</code>, <code>StateFlow&lt;List&lt;…&gt;&gt;</code>), keep its mutable state <code>private</code>, and update by emitting a <em>new</em> list rather than editing one in place. This makes the source of truth tamper-proof, recomposition-friendly (a new reference signals change), and free of accidental cross-thread mutation. Same lesson as Drill 03 — <code>val</code> on a mutable collection is not encapsulation — scaled up to the architecture boundary.</p>
+</div>
+</div>
+</div>
+</article>
+<!-- DRILL 17 — Retrofit call + swallowed exception (networking) -->
+<article class="drill" data-challenge="dd-net-swallow" data-topic="networking">
+<div class="drill__head">
+<span class="drill__no">Drill 17</span>
+<h3 class="drill__title" data-toc-skip>The network screen that's silently always stale</h3>
+<span class="drill__tags"><span class="sev sev--bug">Bug</span><span class="tag">Retrofit</span><span class="tag">coroutines</span></span>
+</div>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · review this ViewModel network call</div>
+<pre><code>interface WeatherApi {
+    @GET("forecast")
+    suspend fun forecast(@Query("city") city: String): Forecast
+}
+
+class WeatherViewModel(private val api: WeatherApi) : ViewModel() {
+    var ui by mutableStateOf&lt;Forecast?&gt;(null)
+        private set
+
+    fun load(city: String) {
+        viewModelScope.launch {
+            try {
+                ui = api.forecast(city)
+            } catch (e: Exception) {
+                // TODO: handle later
+            }                                  // ← every failure vanishes here
+        }
+    }
+}</code></pre>
+</div>
+<p class="drill__prompt"><span class="q">In review:</span> the happy path works on the emulator. Name the bug the user hits in the real world, and the review smell that hides it.</p>
+<div class="ms-reveal">
+<button class="ms-reveal__btn" type="button">Reveal diagnosis, fix &amp; principle</button>
+<div class="ms-reveal__body">
+<div class="dx">
+<h4>Diagnosis</h4>
+<p>The threading is actually fine — a Retrofit <code>suspend</code> function moves itself off the main thread, and <code>viewModelScope</code> ties the coroutine to the ViewModel's lifetime (so it's cancelled when the screen goes away, no leak). The real problem is the <strong>empty <code>catch (e: Exception) { }</code></strong>. On a dropped connection, a 500, a timeout, or a JSON parse failure, the exception is caught and <em>thrown away</em>: <code>ui</code> is never updated, no error is surfaced, nothing is logged. The screen just keeps showing whatever stale data it had (or a permanent blank), and the user has no idea anything failed. Swallowing <code>Exception</code> wholesale also hides <code>CancellationException</code>, which a coroutine <em>must</em> rethrow for cancellation to work.</p>
+<h4>Corrected code</h4>
+<div class="codeblock">
+<div class="codeblock__lang">Kotlin · fixed — model loading/error as state, rethrow cancellation</div>
+<pre><code>sealed interface WeatherUi {
+    data object Loading : WeatherUi
+    data class Ready(val forecast: Forecast) : WeatherUi
+    data class Error(val message: String) : WeatherUi
+}
+
+class WeatherViewModel(private val api: WeatherApi) : ViewModel() {
+    var ui by mutableStateOf&lt;WeatherUi&gt;(WeatherUi.Loading)
+        private set
+
+    fun load(city: String) {
+        viewModelScope.launch {
+            ui = WeatherUi.Loading
+            ui = try {
+                WeatherUi.Ready(api.forecast(city))
+            } catch (e: IOException) {          // catch the specific failure…
+                WeatherUi.Error("No connection — pull to retry.")
+            } catch (e: HttpException) {
+                WeatherUi.Error("Server error ${e.code()}.")
+            }
+            // CancellationException is NOT caught here, so it propagates and
+            // cancellation still works. Never `catch (e: Exception)` blindly.
+        }
+    }
+}</code></pre>
+</div>
+<p class="principle"><strong>Principle —</strong> A network call has three outcomes, not one — model them as state (<code>Loading</code> / <code>Ready</code> / <code>Error</code>), never an empty <code>catch</code>. Catch the <em>specific</em> exceptions you can handle (<code>IOException</code>, <code>HttpException</code>) and turn them into user-visible state; an empty catch block is the loudest review smell there is. And in a coroutine, never swallow <code>CancellationException</code> — catching <code>Exception</code> broadly breaks structured-concurrency cancellation, so let it propagate.</p>
+</div>
+</div>
+</div>
+</article>
+</section>
+<!-- =========================== WRAP-UP =========================== -->
+<section aria-labelledby="wrap-h" class="slide sec-anchor">
+<h2 id="wrap-h">Where these reflexes go next</h2>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Keep the diagnostic muscle warm</span>
+<p>You diagnosed crashes (<code>!!</code> NPE, Room on the main thread, missing <code>@PrimaryKey</code>), runtime
+        misbehavior (stale state, dead modifiers, lost rotation state, a frozen FAB, a silently-stale network screen),
+        and review smells (mutable data layers, business logic in composables, hardcoded colors, magic numbers,
+        empty <code>catch</code> blocks). Reading broken code is a
+        trainable skill — these are reps.</p>
+<ol style="margin:.3em 0 0;">
+<li><strong><a href="challenges.html">Challenges</a></strong> — now <em>write</em> the correct version from a faded scaffold, with auto-checked tests.</li>
+<li><strong><a href="spaced-repetition.html">Spaced repetition</a></strong> — fold these principles into your daily deck so they stay sharp.</li>
+<li><strong><a href="../index.html">Course Hub</a></strong> — jump back to the session whose pitfall surprised you and re-read the concept.</li>
+</ol>
+</div>
+</div>
+<p class="muted" style="margin-top:var(--space-4);">Mark each drill solved once you can state the diagnosis <em>and</em> the principle from memory — not just recognize the fix when you see it.</p>
+</section>
+</main>
+<!-- =========================== FOOTER =========================== -->
+<footer class="footer">
+<div class="wrap">
+<div>
+<span class="footer__brand">COP4667 Android Development</span> · Practice · Debug &amp; Code-Review Drills
+      </div>
+<div class="muted">
+        Keiser University · B.S. Software Engineering · Face-to-Face · 3.0 credit hours.
+        Built with Kotlin + Jetpack Compose (Material 3). Live code runs on
+        <a href="https://play.kotlinlang.org/" rel="noopener" target="_blank">JetBrains' Kotlin compiler</a>.
+      </div>
+<div class="no-print">
+<a href="../index.html">← Course Hub</a> ·
+        <a href="challenges.html">Challenges</a> ·
+        <a href="spaced-repetition.html">Review</a>
+</div>
+</div>
+</footer>
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+<!-- Progressive-enhancement drill filter. No-JS users see every drill (the bar stays hidden). -->
+<script>
+(function () {
+  var bar = document.querySelector("[data-drill-filter]");
+  if (!bar) return;
+  var drills = Array.prototype.slice.call(document.querySelectorAll(".drill[data-topic]"));
+  if (!drills.length) return;
+
+  // Cache each drill's topic + severity (read once).
+  var meta = drills.map(function (d) {
+    var sevEl = d.querySelector(".sev--crash, .sev--bug, .sev--smell");
+    var sev = "bug";
+    if (sevEl) {
+      if (sevEl.classList.contains("sev--crash")) sev = "crash";
+      else if (sevEl.classList.contains("sev--smell")) sev = "smell";
+      else sev = "bug";
+    }
+    return { el: d, topic: d.getAttribute("data-topic") || "", sev: sev };
+  });
+
+  var state = { topic: "all", sev: "all" };
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.sec-anchor[id]"));
+  var countEl = bar.querySelector("[data-filter-count]");
+
+  function apply() {
+    var shown = 0;
+    meta.forEach(function (m) {
+      var ok = (state.topic === "all" || m.topic === state.topic) &&
+               (state.sev === "all" || m.sev === state.sev);
+      m.el.hidden = !ok;
+      if (ok) shown++;
+    });
+    // Hide a topic-section heading + lead if all its drills are filtered out.
+    sections.forEach(function (sec) {
+      var inSec = meta.filter(function (m) { return sec.contains(m.el); });
+      if (!inSec.length) return; // leave the How-to / wrap-up sections alone
+      var anyShown = inSec.some(function (m) { return !m.el.hidden; });
+      sec.hidden = !anyShown;
+    });
+    if (countEl) {
+      countEl.textContent = (state.topic === "all" && state.sev === "all")
+        ? ""
+        : shown + " of " + meta.length + " drills";
+    }
+  }
+
+  function wire(attr, key) {
+    var btns = Array.prototype.slice.call(bar.querySelectorAll("[" + attr + "]"));
+    btns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state[key] = btn.getAttribute(attr);
+        btns.forEach(function (b) {
+          var on = b === btn;
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+          b.classList.toggle("pill--green", on);
+        });
+        apply();
+      });
+    });
+  }
+
+  wire("data-filter-topic", "topic");
+  wire("data-filter-sev", "sev");
+  bar.hidden = false; // reveal only now that the handlers are live
+})();
+</script>
+</body>
+</html>

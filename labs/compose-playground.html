@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="COP4667 Android Development — Jetpack Compose Layout &amp; State Playground. A no-Android-required visual tool: configure a Column/Row/Box layout, arrangement, alignment, children, and Modifiers on a fake phone screen and watch a synchronized Kotlin + Jetpack Compose (Material 3) code block regenerate live. Includes a real recomposition counter demo, presets, and modifier-order experiments." name="description"/>
+<title>Jetpack Compose Layout &amp; State Playground — COP4667</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<link href="../assets/mastery.css" rel="stylesheet"/>
+<style>
+  /* ============================================================
+     PAGE-SPECIFIC TWEAKS ONLY — chrome uses the shared design system.
+     Everything below styles the playground widget + device frame.
+     ============================================================ */
+
+  /* Two-column workbench: controls on the left, preview + code on the right */
+  .pg {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: var(--space-5);
+    align-items: start;
+  }
+  @media (max-width: 1040px) { .pg { grid-template-columns: 1fr; } }
+
+  .pg__controls { position: sticky; top: 74px; }
+  @media (max-width: 1040px) { .pg__controls { position: static; } }
+
+  /* Right column stacks the device preview above the generated code */
+  .pg__stage { display: grid; gap: var(--space-5); }
+
+  /* --- Control groups --- */
+  .ctl-group { margin: 0 0 var(--space-4); }
+  .ctl-group:last-child { margin-bottom: 0; }
+  .ctl-group__head {
+    font-size: var(--fs-xs);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--teal-2);
+    margin: 0 0 var(--space-2);
+    display: flex; align-items: center; gap: 6px;
+  }
+  [data-theme="dark"] .ctl-group__head { color: var(--green); }
+
+  .ctl-row { display: grid; grid-template-columns: 92px 1fr; gap: var(--space-2); align-items: center; margin: 0 0 var(--space-2); }
+  .ctl-row > label { font-size: var(--fs-sm); font-weight: 600; color: var(--muted); }
+  .ctl-row--stack { grid-template-columns: 1fr; }
+
+  /* Native form controls themed to the design system */
+  .pg select, .pg input[type="text"], .pg input[type="number"] {
+    width: 100%;
+    font: inherit;
+    font-size: var(--fs-sm);
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .pg select:focus, .pg input:focus { outline: none; box-shadow: var(--focus); }
+  .pg input[type="range"] { width: 100%; accent-color: var(--green-dark); }
+  .pg input[type="color"] {
+    width: 38px; height: 30px; padding: 0; border: 1px solid var(--line);
+    border-radius: 8px; background: none; cursor: pointer; vertical-align: middle;
+  }
+  .range-row { display: grid; grid-template-columns: 1fr 52px; gap: var(--space-2); align-items: center; }
+  .range-row output { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; color: var(--teal-2); text-align: right; }
+  [data-theme="dark"] .range-row output { color: var(--green); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: 4px 0; }
+  .switch-row > span { font-size: var(--fs-sm); font-weight: 600; }
+  .switch-row code { font-size: .8em; }
+
+  /* --- The fake phone (device frame) --- */
+  .device-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
+  .device {
+    position: relative;
+    width: 300px;
+    height: 600px;
+    background: #0b0f12;
+    border-radius: 38px;
+    padding: 12px;
+    box-shadow: 0 0 0 2px #2a3338, 0 18px 40px rgba(7,48,66,.35);
+    flex: 0 0 auto;
+  }
+  .device::before { /* notch / camera island */
+    content: "";
+    position: absolute;
+    top: 18px; left: 50%; transform: translateX(-50%);
+    width: 86px; height: 22px;
+    background: #0b0f12;
+    border-radius: 999px;
+    z-index: 3;
+  }
+  .device__screen {
+    position: relative;
+    width: 100%; height: 100%;
+    border-radius: 28px;
+    overflow: hidden;
+    background: #ffffff;
+    display: flex; flex-direction: column;
+  }
+  [data-theme="dark"] .device__screen { background: #10171c; }
+  /* Material 3 top app bar inside the device */
+  .device__appbar {
+    flex: 0 0 auto;
+    height: 52px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 14px;
+    background: var(--green);
+    color: var(--teal);
+    font-weight: 800;
+    font-size: 15px;
+    z-index: 2;
+  }
+  .device__appbar .device__menu { margin-left: auto; opacity: .85; font-weight: 700; }
+  /* This is the actual Compose "content" host the playground renders into */
+  .device__content {
+    flex: 1 1 auto;
+    overflow: auto;
+    min-height: 0;
+  }
+  .device__nav {
+    flex: 0 0 auto;
+    height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted);
+    font-size: 11px;
+    border-top: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+
+  /* The container that maps to Column / Row / Box */
+  .cmp-container { box-sizing: border-box; min-height: 100%; }
+  .cmp-container.is-fillW { width: 100%; }
+
+  /* Children rendered by the playground */
+  .cmp-node { box-sizing: border-box; max-width: 100%; }
+  .cmp-text {
+    color: #0E1A1F;
+    font-size: 15px;
+    line-height: 1.4;
+    font-family: var(--font-sans);
+    word-break: break-word;
+  }
+  [data-theme="dark"] .cmp-text { color: #E6F1EE; }
+  .cmp-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--green-dark);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  }
+  .cmp-button:active { transform: translateY(1px); }
+  .cmp-image {
+    display: grid; place-items: center;
+    width: 88px; height: 88px;
+    border-radius: 14px;
+    background:
+      repeating-conic-gradient(#cfe9dd 0% 25%, #b7ddcd 0% 50%) 50% / 22px 22px;
+    color: var(--teal-2);
+    font-size: 26px;
+    border: 1px solid rgba(7,48,66,.15);
+  }
+  .cmp-spacer {
+    background: repeating-linear-gradient(45deg, rgba(255,179,0,.18) 0 6px, transparent 6px 12px);
+    border: 1px dashed rgba(255,179,0,.55);
+    border-radius: 6px;
+  }
+  /* selection highlight on the currently-edited child */
+  .cmp-node.is-selected { outline: 2px solid var(--info); outline-offset: 2px; }
+
+  /* Children list editor */
+  .child-list { display: grid; gap: 6px; margin: var(--space-2) 0; }
+  .child-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    font-size: var(--fs-sm);
+  }
+  .child-item.is-selected { border-color: var(--info); box-shadow: 0 0 0 2px color-mix(in srgb, var(--info) 30%, transparent); }
+  .child-item__kind { font-weight: 700; }
+  .child-item__icon { width: 20px; text-align: center; }
+  .child-item__label { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-btn {
+    appearance: none; border: 1px solid var(--line); background: var(--surface);
+    color: var(--ink); border-radius: 7px; width: 26px; height: 26px;
+    cursor: pointer; font-weight: 800; font-size: 13px; line-height: 1; display: grid; place-items: center;
+  }
+  .mini-btn:hover { border-color: var(--green); color: var(--green-dark); }
+  .mini-btn--danger:hover { border-color: var(--danger); color: var(--danger); }
+
+  .add-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-2); }
+  .add-row .btn { flex: 1 1 auto; justify-content: center; }
+
+  /* Per-child modifier editor */
+  .child-editor { border-top: 1px dashed var(--line); margin-top: var(--space-3); padding-top: var(--space-3); }
+  .child-editor[hidden] { display: none; }
+  .child-editor__title { font-size: var(--fs-sm); font-weight: 800; margin: 0 0 var(--space-2); color: var(--teal-2); }
+  [data-theme="dark"] .child-editor__title { color: var(--green); }
+
+  .preset-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .preset-row .btn { flex: 1 1 calc(50% - 6px); justify-content: center; }
+
+  /* state demo readout */
+  .state-readout {
+    display: inline-flex; align-items: baseline; gap: 8px;
+    font-family: var(--font-mono);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+  }
+  .state-readout b { font-size: 1.3rem; color: var(--green-dark); }
+  [data-theme="dark"] .state-readout b { color: var(--green); }
+  .recompose-flash { animation: pg-flash .5s ease; }
+  @keyframes pg-flash { 0% { background: color-mix(in srgb, var(--green) 45%, transparent); } 100% { background: var(--surface-2); } }
+
+  /* small legend chips inside device for spacer/state */
+  .device__hint {
+    position: absolute; bottom: 46px; left: 0; right: 0;
+    text-align: center; font-size: 10px; color: var(--muted);
+    pointer-events: none;
+  }
+
+  .map-line { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; font-size: var(--fs-sm); }
+  .map-line code { white-space: normal; }
+</style>
+</head>
+<body>
+<!-- ========================= TOP NAV ========================= -->
+<header>
+<div class="topbar no-print">
+<div class="wrap">
+<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">⚛</span>
+<span>COP4667<small>Android Development</small></span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a aria-current="page" href="compose-playground.html">Compose Playground</a>
+<a href="../sessions/session-04.html">UI &amp; Compose (S4)</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">☀️ Light</span>
+</button>
+<button aria-label="Enter present mode" class="nav__btn" data-present="" type="button">▶ Present</button>
+</nav>
+</div>
+</div>
+</header>
+<main id="main">
+<div class="wrap">
+<!-- ========================= HERO ========================= -->
+<section aria-labelledby="hero-title" class="hero slide">
+<div class="hero-meta" style="margin-top:0;margin-bottom:var(--space-3)">
+<span class="pill pill--green">Interactive Lab</span>
+<span class="pill">Supports Sessions 4–5 · Week 2</span>
+<span class="pill">No Android Studio required</span>
+</div>
+<h1 class="hero-title" id="hero-title">Jetpack Compose Layout &amp; State Playground</h1>
+<p class="hero-sub">Configure a Compose layout in the browser and watch real Kotlin regenerate live. Map containers, arrangement, alignment, and <code style="color:#EAFBF2;background:rgba(255,255,255,.12)">Modifier</code> chains to a phone preview — then prove recomposition with a working state counter.</p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 2</span>
+<span class="clo-tag">CLO 3</span>
+<span class="pill pill--accent">Compose · Material 3 · Kotlin</span>
+<span class="pill">Unit 2 &amp; Unit 3</span>
+</div>
+</section>
+<!-- ========================= HOW TO USE ========================= -->
+<div class="grid grid-2 mb">
+<section aria-labelledby="howto-title" class="card card--accent slide">
+<h2 class="card__title" id="howto-title">🎯 How to use this</h2>
+<ol style="margin:0;padding-left:1.2em">
+<li>Pick a <strong>container</strong> (Column, Row, or Box). The phone preview and the Kotlin code update instantly.</li>
+<li>Set <strong>arrangement</strong> (main axis spacing) and <strong>alignment</strong> (cross axis).</li>
+<li><strong>Add children</strong> — Text, Button, Image, or Spacer — then click one to edit its <code>Modifier</code> (padding, <code>fillMaxWidth</code>, <code>weight</code>, background).</li>
+<li>Flip on the <strong>state demo</strong> and tap the counter in the phone to see <em>recomposition</em> happen for real.</li>
+<li>Read the generated <strong>Kotlin</strong> below, hit <em>Copy</em>, and paste it straight into a <code>@Composable</code> in Android Studio.</li>
+</ol>
+<p class="muted" style="margin-bottom:0">Your last configuration is saved automatically in this browser.</p>
+</section>
+</div>
+<!-- ========================= THE PLAYGROUND ========================= -->
+<section aria-labelledby="pg-title" class="slide">
+<h2 id="pg-title">The playground</h2>
+<div class="pg">
+<!-- ---------- CONTROL PANEL ---------- -->
+<div class="pg__controls">
+<div class="card pg" style="display:block">
+<h3 class="card__title" style="margin-top:0">⚙️ Controls</h3>
+<!-- Presets -->
+<div class="ctl-group">
+<div class="ctl-group__head">✨ Presets</div>
+<div class="preset-row">
+<button class="btn btn--ghost btn--sm" data-preset="profile" type="button">Profile card</button>
+<button class="btn btn--ghost btn--sm" data-preset="buttonrow" type="button">Button row</button>
+<button class="btn btn--ghost btn--sm" data-preset="modifier" type="button">Modifier order</button>
+<button class="btn btn--ghost btn--sm" data-preset="box" type="button">Box overlay</button>
+</div>
+<button class="btn btn--ghost btn--sm mt" id="pg-reset" style="width:100%;justify-content:center" type="button">↺ Reset to default</button>
+</div>
+<!-- Container -->
+<div class="ctl-group">
+<div class="ctl-group__head">📦 Container</div>
+<div class="ctl-row">
+<label for="ctl-container">Layout</label>
+<select aria-label="Container composable" id="ctl-container">
+<option value="Column">Column (vertical)</option>
+<option value="Row">Row (horizontal)</option>
+<option value="Box">Box (stacked)</option>
+</select>
+</div>
+<!-- Column/Row: arrangement + alignment -->
+<div id="ctl-linear">
+<div class="ctl-row">
+<label for="ctl-arrangement" id="lbl-arr">Arrangement</label>
+<select aria-labelledby="lbl-arr" id="ctl-arrangement"></select>
+</div>
+<div class="ctl-row">
+<label for="ctl-alignment" id="lbl-align">Alignment</label>
+<select aria-labelledby="lbl-align" id="ctl-alignment"></select>
+</div>
+</div>
+<!-- Box: contentAlignment -->
+<div hidden="" id="ctl-box">
+<div class="ctl-row">
+<label for="ctl-box-align">contentAlignment</label>
+<select aria-label="Box content alignment" id="ctl-box-align">
+<option value="TopStart">TopStart</option>
+<option value="TopCenter">TopCenter</option>
+<option value="TopEnd">TopEnd</option>
+<option value="CenterStart">CenterStart</option>
+<option selected="" value="Center">Center</option>
+<option value="CenterEnd">CenterEnd</option>
+<option value="BottomStart">BottomStart</option>
+<option value="BottomCenter">BottomCenter</option>
+<option value="BottomEnd">BottomEnd</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Container modifiers -->
+<div class="ctl-group">
+<div class="ctl-group__head">🎨 Container Modifier</div>
+<div class="ctl-row">
+<label for="ctl-pad">padding</label>
+<div class="range-row">
+<input aria-label="Container padding in dp" id="ctl-pad" max="48" min="0" step="2" type="range" value="16"/>
+<output id="out-pad">16dp</output>
+</div>
+</div>
+<div class="switch-row">
+<span>fillMaxSize <code>()</code></span>
+<input aria-label="Container fillMaxSize" checked="" id="ctl-fill" type="checkbox"/>
+</div>
+<div class="ctl-row" style="grid-template-columns:92px 1fr auto">
+<label for="ctl-bg">background</label>
+<select aria-label="Container background color" id="ctl-bg">
+<option value="">none (transparent)</option>
+<option value="0xFFE8F5E9">Green 50</option>
+<option value="0xFFE3F2FD">Blue 50</option>
+<option value="0xFFFFF8E1">Amber 50</option>
+<option value="0xFFF3E5F5">Purple 50</option>
+</select>
+<input aria-label="Custom background color" id="ctl-bg-custom" title="Custom hex color" type="color" value="#e8f5e9"/>
+</div>
+</div>
+<!-- Children editor -->
+<div class="ctl-group">
+<div class="ctl-group__head">🧩 Children</div>
+<ul aria-label="Child composables" class="child-list" id="child-list"></ul>
+<div class="add-row">
+<button class="btn btn--sm" data-add="Text" type="button">+ Text</button>
+<button class="btn btn--sm" data-add="Button" type="button">+ Button</button>
+<button class="btn btn--sm" data-add="Image" type="button">+ Image</button>
+<button class="btn btn--sm" data-add="Spacer" type="button">+ Spacer</button>
+</div>
+<!-- Per-child Modifier editor -->
+<div class="child-editor" hidden="" id="child-editor">
+<p class="child-editor__title" id="child-editor-title">Editing child</p>
+<div class="ctl-row" id="ce-text-row">
+<label for="ce-text">text</label>
+<input aria-label="Text content" id="ce-text" maxlength="40" type="text"/>
+</div>
+<div class="ctl-row" hidden="" id="ce-size-row">
+<label for="ce-size">size</label>
+<div class="range-row">
+<input aria-label="Image / spacer size in dp" id="ce-size" max="160" min="24" step="4" type="range" value="88"/>
+<output id="ce-size-out">88dp</output>
+</div>
+</div>
+<div class="ctl-row">
+<label for="ce-pad">padding</label>
+<div class="range-row">
+<input aria-label="Child padding in dp" id="ce-pad" max="32" min="0" step="2" type="range" value="0"/>
+<output id="ce-pad-out">0dp</output>
+</div>
+</div>
+<div class="switch-row">
+<span>fillMaxWidth <code>()</code></span>
+<input aria-label="Child fillMaxWidth" id="ce-fillw" type="checkbox"/>
+</div>
+<div class="switch-row" id="ce-weight-row">
+<span>weight <code>(1f)</code> <small class="muted">(Row/Column only)</small></span>
+<input aria-label="Child weight 1f" id="ce-weight" type="checkbox"/>
+</div>
+<div class="ctl-row" style="grid-template-columns:92px 1fr auto">
+<label for="ce-bg">background</label>
+<select aria-label="Child background color" id="ce-bg">
+<option value="">none</option>
+<option value="0xFF3DDC84">Android green</option>
+<option value="0xFFFFB300">Amber</option>
+<option value="0xFF3B82F6">Blue</option>
+<option value="0xFFE5484D">Red</option>
+</select>
+<input aria-label="Custom child background" id="ce-bg-custom" title="Custom hex color" type="color" value="#3ddc84"/>
+</div>
+<div class="callout callout--info" id="ce-order" style="margin:var(--space-3) 0 0;padding:var(--space-3)">
+<span aria-hidden="true" class="callout__icon">⇅</span>
+<div class="callout__body">
+<span class="callout__label">Modifier order</span>
+<p style="margin-bottom:6px;font-size:var(--fs-sm)">Which comes first in the chain?</p>
+<div class="switch-row" style="padding:0">
+<span><code id="ce-order-text">padding → background</code></span>
+<button aria-label="Swap padding and background order" class="mini-btn" id="ce-order-swap" title="Swap modifier order" type="button">⇅</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- State demo -->
+<div class="ctl-group">
+<div class="ctl-group__head">⚡ State demo</div>
+<div class="switch-row">
+<span>Add a counter (<code>remember { mutableStateOf }</code>)</span>
+<input aria-label="Enable state counter demo" id="ctl-state" type="checkbox"/>
+</div>
+<p class="muted" style="font-size:var(--fs-sm);margin:6px 0 0">When on, a counter button is injected into the layout. Tapping it mutates state → Compose recomposes. The badge counts recompositions for real.</p>
+</div>
+</div>
+</div>
+<!-- ---------- PREVIEW + CODE ---------- -->
+<div class="pg__stage">
+<!-- Device frame -->
+<div class="card" style="text-align:center">
+<h3 class="card__title" style="justify-content:center">📱 Live preview <span class="tag" id="pg-summary" style="margin-left:8px"></span></h3>
+<div class="device-wrap">
+<div aria-label="Phone preview of the configured Compose layout" class="device" role="group">
+<div class="device__screen">
+<div class="device__appbar">
+<span aria-hidden="true">☰</span>
+<span>Playground</span>
+<span aria-hidden="true" class="device__menu">⋮</span>
+</div>
+<div class="device__content" id="device-content"></div>
+<div aria-hidden="true" class="device__nav">◁  ◯  □</div>
+</div>
+</div>
+<div class="row" hidden="" id="state-bar" style="justify-content:center">
+<span class="state-readout">count = <b id="state-count">0</b></span>
+<span class="state-readout">recompositions = <b id="state-recomp">0</b></span>
+</div>
+</div>
+</div>
+<!-- Generated Kotlin -->
+<div class="card" style="padding-bottom:var(--space-4)">
+<h3 class="card__title" style="margin-top:0">📝 Generated Kotlin (Jetpack Compose · Material 3)</h3>
+<p class="muted" style="margin-top:0">This regenerates every time you change a control. It is valid, current Compose you can paste into a <code>@Composable</code>.</p>
+<div class="codeblock" data-lang="kotlin">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code id="gen-code">// configure the controls to generate code</code></pre>
+</div>
+<!-- live config ↔ code mapping -->
+<div class="callout callout--tip" style="margin-bottom:0">
+<span aria-hidden="true" class="callout__icon">💡</span>
+<div class="callout__body">
+<span class="callout__label">Config → code map</span>
+<div id="map-lines"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================= CONCEPT TABS ========================= -->
+<section aria-labelledby="concepts-title" class="slide">
+<h2 id="concepts-title">The four ideas behind every Compose screen</h2>
+<div aria-label="Compose concepts" class="tabs" role="tablist">
+<button class="tab" data-tab="containers" role="tab">Containers</button>
+<button class="tab" data-tab="arrange">Arrange vs Align</button>
+<button class="tab" data-tab="modifiers">Modifiers</button>
+<button class="tab" data-tab="state">State</button>
+</div>
+<div class="tabpanel" data-tabpanel="containers">
+<div class="grid grid-3">
+<div class="card card--accent">
+<h4 style="margin-top:0">Column</h4>
+<p class="muted">Stacks children top→bottom. Main axis = <strong>vertical</strong>. Use <code>verticalArrangement</code> + <code>horizontalAlignment</code>.</p>
+</div>
+<div class="card card--teal">
+<h4 style="margin-top:0">Row</h4>
+<p class="muted">Lays children left→right. Main axis = <strong>horizontal</strong>. Use <code>horizontalArrangement</code> + <code>verticalAlignment</code>.</p>
+</div>
+<div class="card card--amber">
+<h4 style="margin-top:0">Box</h4>
+<p class="muted">Stacks children on the <strong>z-axis</strong> (overlapping). Position with <code>contentAlignment</code> and per-child <code>Modifier.align()</code>.</p>
+</div>
+</div>
+<div class="codeblock" data-lang="kotlin">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>// The three layout primitives — pick by axis
+Column { /* children flow vertically  */ }
+Row    { /* children flow horizontally */ }
+Box    { /* children stack / overlap   */ }</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="arrange">
+<p>Two different jobs that students constantly confuse:</p>
+<ul>
+<li><strong>Arrangement</strong> distributes children along the <em>main axis</em> (the direction the container flows). Think: spacing <em>between</em> and <em>around</em> children — <code>spacedBy</code>, <code>SpaceBetween</code>, <code>Center</code>.</li>
+<li><strong>Alignment</strong> positions children along the <em>cross axis</em> (perpendicular). Think: left / center / right (for a Column) or top / center / bottom (for a Row).</li>
+</ul>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">The flip students forget</span>
+<p style="margin-bottom:0">In a <code>Column</code> the main axis is vertical → <code>verticalArrangement</code>. In a <code>Row</code> it is horizontal → <code>horizontalArrangement</code>. Switch the container in the playground and watch the property name change.</p>
+</div>
+</div>
+<div class="codeblock" data-lang="kotlin">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>Column(
+    verticalArrangement = Arrangement.spacedBy(8.dp), // main axis
+    horizontalAlignment = Alignment.CenterHorizontally // cross axis
+) { /* ... */ }
+
+Row(
+    horizontalArrangement = Arrangement.SpaceBetween,  // main axis
+    verticalAlignment = Alignment.CenterVertically     // cross axis
+) { /* ... */ }</code></pre>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="modifiers">
+<p>A <code>Modifier</code> is an <strong>ordered, chained</strong> description of size, layout, drawing, and behavior. <strong>Order matters</strong> because each modifier wraps the next.</p>
+<div class="grid grid-2">
+<div class="codeblock" data-lang="kotlin">
+<span class="codeblock__lang">padding → background</span>
+<pre><code>Text(
+    "Hi",
+    modifier = Modifier
+        .padding(16.dp)   // space reserved FIRST
+        .background(Green) // green fills the INNER box
+)
+// → green patch is SMALL (inside the padding)</code></pre>
+</div>
+<div class="codeblock" data-lang="kotlin">
+<span class="codeblock__lang">background → padding</span>
+<pre><code>Text(
+    "Hi",
+    modifier = Modifier
+        .background(Green) // green fills the OUTER box
+        .padding(16.dp)    // padding is INSIDE the green
+)
+// → green patch is LARGE (padding is inside it)</code></pre>
+</div>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">👀</span>
+<div class="callout__body">
+<span class="callout__label">See it live</span>
+<p style="margin-bottom:0">Add a Text child, give it a background and padding, then use the <strong>Modifier order</strong> swap button. The colored patch grows or shrinks — that is order-sensitivity, visible.</p>
+</div>
+</div>
+</div>
+<div class="tabpanel" data-tabpanel="state">
+<p>Compose is <strong>declarative</strong>: the UI is a function of state. You don't mutate views — you change state and Compose <em>recomposes</em> (re-runs the affected functions) to match.</p>
+<div class="codeblock" data-lang="kotlin">
+<span class="codeblock__lang">Kotlin</span>
+<pre><code>@Composable
+fun Counter() {
+    // remember survives recomposition; mutableStateOf is observable
+    var count by remember { mutableStateOf(0) }
+
+    Button(onClick = { count++ }) {
+        Text("Clicked $count times")
+    }
+    // tapping changes `count` → Compose re-runs Counter() → UI updates
+}</code></pre>
+</div>
+<div class="callout callout--tip">
+<span aria-hidden="true" class="callout__icon">⚡</span>
+<div class="callout__body">
+<span class="callout__label">For an Int, prefer mutableIntStateOf</span>
+<p style="margin-bottom:0"><code>mutableStateOf(0)</code> is the right baseline to learn, but it boxes the <code>Int</code> into a <code>State&lt;Int&gt;</code> object. For a primitive counter, Compose ships specialized, autoboxing-free variants: <code>var count by remember { mutableIntStateOf(0) }</code> (also <code>mutableLongStateOf</code>, <code>mutableFloatStateOf</code>, <code>mutableDoubleStateOf</code>). Reach for them for hot, frequently-updated primitive state; <code>mutableStateOf</code> stays correct for everything else.</p>
+</div>
+</div>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">remember vs rememberSaveable</span>
+<p style="margin-bottom:0"><code>remember</code> survives recomposition but is lost on configuration change (e.g. rotation). Use <code>rememberSaveable</code> to also survive that, and hoist state to a <code>ViewModel</code> for anything that should outlive the screen.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================= PRACTICE PROMPTS ========================= -->
+<section aria-labelledby="practice-title" class="slide">
+<h2 id="practice-title">Guided challenges</h2>
+<p class="muted">Work these in the playground, then rebuild them in Android Studio. Each one maps to a full <a href="#drills">drill below</a> with a target screen, an acceptance check, and an auto-graded Kotlin challenge. Check them off as you go — your progress is saved in this browser.</p>
+<ul class="checklist" data-persist="pg-guided-challenges">
+<li><label><input data-key="pg-profile" type="checkbox"/><span>Build the <a href="#drills-title">centered profile card</a>: <code>Column</code> · <code>verticalArrangement = spacedBy(16.dp)</code> · <code>horizontalAlignment = CenterHorizontally</code> · <code>fillMaxSize()</code> on a Green&nbsp;50 background, with Image → Text → Text → Button children.</span></label></li>
+<li><label><input data-key="pg-actionbar" type="checkbox"/><span>Build the <a href="#drills-title">Cancel / Confirm action bar</a>: switch to <code>Row</code> and watch the property names flip to <code>horizontalArrangement = SpaceBetween</code> + <code>verticalAlignment = CenterVertically</code>, with two Buttons pinned to opposite edges.</span></label></li>
+<li><label><input data-key="pg-overlay" type="checkbox"/><span>Build the <a href="#drills-title">image-with-overlay-caption</a>: a <code>Box</code> with <code>contentAlignment = Center</code> where the Image is drawn first (behind) and the caption Text last (on top) — proving child order is z-order.</span></label></li>
+<li><label><input data-key="pg-modorder" type="checkbox"/><span>Run the <a href="#drills-title">Modifier-order pitfall</a> drill: predict, then prove, why <code>.size().padding()</code> and <code>.padding().size()</code> reserve different footprints for the same numbers.</span></label></li>
+<li><label><input data-key="pg-challenges" type="checkbox"/><span>Solve every paired Kotlin challenge until it prints <strong>ALL TESTS PASSED 🎉</strong>, then mark it solved to log it on your mastery path.</span></label></li>
+</ul>
+</section>
+<!-- ========================= QUIZ ========================= -->
+<section aria-labelledby="quiz-title" class="slide">
+<h2 id="quiz-title">Check your understanding</h2>
+<div data-quiz="pg-quiz" data-topic="compose-ui" id="pg-quiz-mount"></div>
+<script id="pg-quiz" type="application/json">
+    {
+      "title": "Compose Layout & State — quick check",
+      "intro": "Five questions on containers, arrangement/alignment, Modifier order, and state. 70% to pass.",
+      "passingScore": 0.7,
+      "shuffle": true,
+      "questions": [
+        {
+          "id": "q1",
+          "type": "single",
+          "prompt": "In a Column, which property controls spacing of children along the main (vertical) axis?",
+          "options": [
+            { "id": "a", "text": "horizontalAlignment" },
+            { "id": "b", "text": "verticalArrangement" },
+            { "id": "c", "text": "contentAlignment" },
+            { "id": "d", "text": "verticalAlignment" }
+          ],
+          "correct": ["b"],
+          "explanation": "A Column flows vertically, so its main axis is vertical → verticalArrangement. horizontalAlignment handles the cross axis."
+        },
+        {
+          "id": "q2",
+          "type": "single",
+          "prompt": "Which container stacks its children on top of each other (z-axis)?",
+          "options": [
+            { "id": "a", "text": "Column" },
+            { "id": "b", "text": "Row" },
+            { "id": "c", "text": "Box" },
+            { "id": "d", "text": "Surface" }
+          ],
+          "correct": ["c"],
+          "explanation": "Box overlaps children; position them with contentAlignment or per-child Modifier.align()."
+        },
+        {
+          "id": "q3",
+          "type": "truefalse",
+          "prompt": "Modifier.padding(16.dp).background(Green) and Modifier.background(Green).padding(16.dp) render identically.",
+          "correct": false,
+          "explanation": "Order matters. padding-then-background draws green inside the padding (smaller patch); background-then-padding fills green first then pads inside it (larger patch)."
+        },
+        {
+          "id": "q4",
+          "type": "single",
+          "prompt": "What does Modifier.weight(1f) do on a child inside a Row?",
+          "options": [
+            { "id": "a", "text": "Makes the child take all remaining horizontal space, sharing by weight" },
+            { "id": "b", "text": "Sets the font weight to bold" },
+            { "id": "c", "text": "Adds 1dp of padding" },
+            { "id": "d", "text": "Centers the child vertically" }
+          ],
+          "correct": ["a"],
+          "explanation": "weight distributes remaining main-axis space among weighted children proportionally. It is only available inside Row/Column scope."
+        },
+        {
+          "id": "q5",
+          "type": "short",
+          "prompt": "Fill in the blank: to make a value observable so Compose recomposes when it changes, you wrap it in remember { ______(0) }.",
+          "correct": ["mutableStateOf", "mutableStateOf()"],
+          "explanation": "mutableStateOf creates an observable State; remember keeps it across recompositions. Together: var count by remember { mutableStateOf(0) }."
+        }
+      ]
+    }
+    </script>
+</section>
+<!-- ========================= FLASHCARDS ========================= -->
+<section aria-labelledby="cards-title" class="slide">
+<h2 id="cards-title">Vocabulary flashcards</h2>
+<p class="muted">The Compose layout/state terms you must own before the Week 2 milestone.</p>
+<div data-flashcards="pg-cards"></div>
+<script id="pg-cards" type="application/json">
+    [
+      { "front": "Column", "back": "Lays children out vertically (top → bottom). Main axis = vertical. Uses verticalArrangement + horizontalAlignment.", "tag": "container" },
+      { "front": "Row", "back": "Lays children out horizontally (start → end). Main axis = horizontal. Uses horizontalArrangement + verticalAlignment.", "tag": "container" },
+      { "front": "Box", "back": "Stacks children on the z-axis so they overlap. Position with contentAlignment and per-child Modifier.align().", "tag": "container" },
+      { "front": "Arrangement", "back": "Distributes children along the MAIN axis: spacedBy(), Center, SpaceBetween, SpaceAround, SpaceEvenly.", "tag": "layout" },
+      { "front": "Alignment", "back": "Positions children along the CROSS axis: Start/Center/End (Column) or Top/Center/Bottom (Row).", "tag": "layout" },
+      { "front": "Modifier", "back": "An ordered chain describing size, layout, drawing, and behavior. Order matters — each modifier wraps the next.", "tag": "modifier" },
+      { "front": "Modifier.weight(1f)", "back": "Inside Row/Column, gives a child a share of the remaining main-axis space, proportional to its weight.", "tag": "modifier" },
+      { "front": "fillMaxWidth() / fillMaxSize()", "back": "Modifier sizing: occupy 100% of the available width (or both dimensions) of the parent.", "tag": "modifier" },
+      { "front": "remember { ... }", "back": "Stores a value across recompositions. Lost on configuration change unless you use rememberSaveable.", "tag": "state" },
+      { "front": "mutableStateOf(x)", "back": "Creates an observable State<T>. When its .value changes, Compose schedules recomposition of readers.", "tag": "state" },
+      { "front": "Recomposition", "back": "Compose re-running composable functions whose observed state changed, to update the UI. The UI is a function of state.", "tag": "state" },
+      { "front": "State hoisting", "back": "Moving state up to a caller (or ViewModel) so a composable becomes stateless, reusable, and testable.", "tag": "state" }
+    ]
+    </script>
+</section>
+<!-- ========================= LINKS ========================= -->
+<section aria-labelledby="links-title" class="slide">
+<h2 id="links-title">Official references</h2>
+<div class="grid grid-2">
+<div class="card">
+<h4 style="margin-top:0">Layout &amp; UI</h4>
+<ul style="margin-bottom:0">
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-2" rel="noopener" target="_blank">Android Basics with Compose — Unit 2 (app UI, state)</a></li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/unit-3" rel="noopener" target="_blank">Unit 3 — Lists &amp; Material Design</a></li>
+<li><a href="https://developer.android.com/develop/ui/compose/layouts/basics" rel="noopener" target="_blank">Compose layout basics (Column/Row/Box, arrangement, alignment)</a></li>
+<li><a href="https://developer.android.com/develop/ui/compose/modifiers" rel="noopener" target="_blank">Compose Modifiers</a></li>
+</ul>
+</div>
+<div class="card">
+<h4 style="margin-top:0">State &amp; the bigger picture</h4>
+<ul style="margin-bottom:0">
+<li><a href="https://developer.android.com/develop/ui/compose/state" rel="noopener" target="_blank">State and Jetpack Compose</a></li>
+<li><a href="https://developer.android.com/courses/android-basics-compose/course" rel="noopener" target="_blank">Android Basics with Compose (full course)</a></li>
+<li><a href="https://hyperskill.org/courses/18-kotlin-core" rel="noopener" target="_blank">Hyperskill — Kotlin Core</a></li>
+<li><a href="../sessions/session-04.html">Course Session 4 — Building the UI with Compose</a></li>
+</ul>
+</div>
+</div>
+</section>
+</div>
+<!-- ===================== LIVE, RUNNABLE COMPOSE (playground.js) ===================== -->
+<section aria-labelledby="til-h" class="card slide" id="try-it-live">
+<h2 class="card__title" id="til-h">► Run the real thing</h2>
+<div class="callout callout--warn">
+<span class="callout__icon">►</span>
+<div class="callout__body">
+<span class="callout__label">Live Compose — experimental</span>
+<p>The simulator above is a fast, always-offline approximation. This block is the <strong>real</strong> Compose program: press <strong>Run</strong> to compile it to WebAssembly on JetBrains’ servers and render genuine Compose UI. Compose-on-web is <strong>experimental</strong> — if it’s slow or won’t compile on your network, the simulator above and <strong>Android Studio</strong> are the reliable paths.</p>
+</div>
+</div>
+<p class="mt"><strong>Stateful counter.</strong> Real <code>remember { mutableStateOf(...) }</code> — edit it, add a row, change the theme, and re-run.</p>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Kotlin + Compose · runnable</div>
+<pre><code>import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
+
+fun main() {
+    ComposeViewport(document.body!!) { App() }
+}
+
+@Composable
+fun App() {
+    MaterialTheme {
+        var count by remember { mutableIntStateOf(0) } // primitive Int: autoboxing-free
+        Column(
+            Modifier.fillMaxWidth().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Count: $count", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(16.dp))
+            Row {
+                Button(onClick = { count-- }) { Text("Minus") }
+                Spacer(Modifier.width(12.dp))
+                Button(onClick = { count++ }) { Text("Plus") }
+            }
+        }
+    }
+}</code></pre>
+</div>
+</section>
+<!-- ========================= DRILLS ========================= -->
+<section aria-labelledby="drills-title" class="card slide" id="drills">
+<h2 class="card__title" id="drills-title">🛠️ Drills — recreate the screen, then prove the logic</h2>
+<p class="muted" style="margin-top:0">Engineers don't get strong by re-reading layout docs — they get strong by <strong>rebuilding a target from scratch</strong> and getting fast feedback. Each drill below gives you a screen to recreate <em>in the simulator above</em> (and then for real in Android Studio), plus a small <strong>auto-checked Kotlin challenge</strong> that drills the layout reasoning underneath it. Open the acceptance check only after your screen matches — then run the challenge until you see <strong>ALL TESTS PASSED 🎉</strong> and mark it solved to log your mastery.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">How to work a recreate-the-UI drill</span>
+<p style="margin-bottom:0"><strong>1.</strong> Read the target and the spec. <strong>2.</strong> Build it in the <a href="#pg-title">playground</a> above using only the controls. <strong>3.</strong> Compare against the target. <strong>4.</strong> Reveal the acceptance check and confirm each line. <strong>5.</strong> Copy the generated Kotlin into a <code>@Composable</code> in Android Studio and run it for real. <strong>6.</strong> Solve the paired Kotlin challenge so the layout <em>rule</em> is yours, not just the result.</p>
+</div>
+</div>
+<!-- ---------- DRILL 1: Profile card ---------- -->
+<h3 class="mt">Drill 1 — Recreate: centered profile card</h3>
+<div class="grid grid-2">
+<div class="card card--accent" style="margin:0">
+<h4 style="margin-top:0">🖼️ Target screen</h4>
+<p class="muted" style="margin-top:0">A vertically-centered profile, on a pale-green panel that fills the screen:</p>
+<ul style="margin-bottom:0">
+<li>An <strong>avatar</strong> (Image) ~96 dp at the top.</li>
+<li>A bold <strong>name</strong> line: <code>"Ada Lovelace"</code>.</li>
+<li>A muted <strong>role</strong> line: <code>"Android Developer"</code>.</li>
+<li>A <strong>Follow</strong> button at the bottom.</li>
+<li>Children evenly spaced (<strong>16 dp gaps</strong>), centered on the cross axis, on a <strong>Green 50</strong> background filling the whole screen.</li>
+</ul>
+</div>
+<div class="card" style="margin:0">
+<h4 style="margin-top:0">📋 Build spec</h4>
+<ul style="margin-bottom:0">
+<li>Container: <code>Column</code></li>
+<li>Arrangement: <code>spacedBy(16.dp)</code> (main / vertical axis)</li>
+<li>Alignment: <code>CenterHorizontally</code> (cross axis)</li>
+<li>Container <code>Modifier</code>: <code>fillMaxSize()</code> + <code>padding(24.dp)</code> + <code>background(Green 50)</code></li>
+<li>Children, in order: <code>Image</code> → <code>Text</code> → <code>Text</code> → <code>Button</code></li>
+</ul>
+<p class="muted" style="margin-bottom:0">Shortcut: the <strong>Profile card</strong> preset wires this exact layout — but build it by hand first, then check yourself against the preset.</p>
+</div>
+</div>
+<p class="mt"><strong>Acceptance check</strong> — reveal only after your simulator screen matches the target:</p>
+<p data-reveal="" style="margin-top:0">
+✅ Container reads <code>Column</code> · ✅ the config→code map shows <code>verticalArrangement = Arrangement.spacedBy(16.dp)</code> · ✅ <code>horizontalAlignment = Alignment.CenterHorizontally</code> · ✅ container Modifier shows <code>.fillMaxSize().background(Color(0xFFE8F5E9)).padding(24.dp)</code> · ✅ four children in the order Image, Text, Text, Button · ✅ the avatar sits centered with even gaps above and below each line. If any line is off, tweak the matching control and re-check.
+</p>
+<p><strong>Now prove the rule.</strong> A profile row often shows <em>"Name · Role"</em> as one formatted label. Write the pure-Kotlin formatter the UI would call (Compose itself isn't on this in-browser JVM classpath, so we drill the <em>logic</em> the composable wraps). Press <strong>Run</strong> for instant pass/fail.</p>
+<div class="codeblock" data-challenge="cpg-profile-label" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>data class Profile(val name: String, val role: String?)
+
+// ---------- YOUR CODE ----------
+// Return the single-line label a Text() in the card would show.
+//  • If role is present and non-blank -&gt; "Name · Role"   (note the " · " separator)
+//  • If role is null OR blank         -&gt; just "Name"
+//  • Always trim leading/trailing spaces off name and role before using them.
+fun profileLabel(p: Profile): String {
+    return "" // &lt;- replace this
+}
+// -------- END YOUR CODE --------
+
+fun main() {
+    var pass = true
+    fun check(name: String, got: String, want: String) {
+        if (got == want) println("✓ passed: $name")
+        else { pass = false; println("✗ FAILED: $name — expected \"$want\", got \"$got\"") }
+    }
+
+    check("name + role", profileLabel(Profile("Ada Lovelace", "Android Developer")),
+        "Ada Lovelace · Android Developer")
+    check("null role drops separator", profileLabel(Profile("Grace Hopper", null)),
+        "Grace Hopper")
+    check("blank role drops separator", profileLabel(Profile("Alan Kay", "   ")),
+        "Alan Kay")
+    check("trims surrounding space", profileLabel(Profile("  Ada  ", "  Dev  ")),
+        "Ada · Dev")
+
+    if (pass) println("ALL TESTS PASSED 🎉") else println("Keep going — fix the ✗ lines above.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body">
+<p>Trim first: <code>val n = p.name.trim()</code> and <code>val r = p.role?.trim()</code>. Then decide with one expression: <code>if (r.isNullOrBlank()) n else "$n · $r"</code>. <code>isNullOrBlank()</code> handles the null case <em>and</em> the all-spaces case in a single call.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun profileLabel(p: Profile): String {
+    val n = p.name.trim()
+    val r = p.role?.trim()
+    return if (r.isNullOrBlank()) n else "$n · $r"
+}</code></pre></div>
+<p class="mini-note">In the real card this is the string you'd hand to <code>Text(profileLabel(profile))</code> — keeping the formatting decision out of the composable keeps the UI dumb and the rule testable.</p>
+</div>
+</div>
+</div>
+<!-- ---------- DRILL 2: Button row (SpaceBetween) ---------- -->
+<h3 class="mt">Drill 2 — Recreate: a Cancel / Confirm action bar</h3>
+<div class="grid grid-2">
+<div class="card card--teal" style="margin:0">
+<h4 style="margin-top:0">🖼️ Target screen</h4>
+<p class="muted" style="margin-top:0">A bottom action bar with two buttons pushed to opposite edges:</p>
+<ul style="margin-bottom:0">
+<li>A <strong>Cancel</strong> button hugging the <strong>left</strong> edge.</li>
+<li>A <strong>Confirm</strong> button hugging the <strong>right</strong> edge.</li>
+<li>Maximum empty gap pushed <em>between</em> them, both centered vertically.</li>
+</ul>
+</div>
+<div class="card" style="margin:0">
+<h4 style="margin-top:0">📋 Build spec</h4>
+<ul style="margin-bottom:0">
+<li>Container: <code>Row</code> (the main axis is now horizontal)</li>
+<li>Arrangement: <code>SpaceBetween</code> (main / horizontal axis)</li>
+<li>Alignment: <code>CenterVertically</code> (cross axis)</li>
+<li>Two <code>Button</code> children: <code>"Cancel"</code>, <code>"Confirm"</code></li>
+<li>Container padding <code>16.dp</code>, no fill background</li>
+</ul>
+<p class="muted" style="margin-bottom:0">Watch the property names <em>rename</em> when you switch the container to <code>Row</code> — that axis flip is the single most-missed idea in Compose layout.</p>
+</div>
+</div>
+<p class="mt"><strong>Acceptance check</strong> — reveal after your screen matches:</p>
+<p data-reveal="" style="margin-top:0">
+✅ Container is <code>Row</code> · ✅ the map shows <code>horizontalArrangement = Arrangement.SpaceBetween</code> (NOT <code>verticalArrangement</code> — that's the tell you really switched axes) · ✅ <code>verticalAlignment = Alignment.CenterVertically</code> · ✅ two Buttons labelled Cancel and Confirm · ✅ the buttons sit at the far left and far right with the gap in the middle. Resize the window / device and confirm they stay pinned to the edges.
+</p>
+<p><strong>Now prove the rule.</strong> <code>SpaceBetween</code> puts <em>zero</em> space before the first child and after the last, and splits the leftover equally <em>between</em> children. Model where each child starts. Press <strong>Run</strong>.</p>
+<div class="codeblock" data-challenge="cpg-spacebetween" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// ---------- YOUR CODE ----------
+// Arrangement.SpaceBetween for a Row:
+//   • first child starts at offset 0
+//   • last child ends at `total`
+//   • the leftover space (total - sum of widths) is divided into (count - 1)
+//     EQUAL gaps placed BETWEEN children — none before the first, none after the last.
+// Return the start-offset (left edge) of each child, in order.
+// Assume children are laid left-to-right in list order. With 0 or 1 child,
+// the first child still starts at 0.
+fun spaceBetweenOffsets(total: Int, widths: List&lt;Int&gt;): List&lt;Int&gt; {
+    return emptyList() // &lt;- replace this
+}
+// -------- END YOUR CODE --------
+
+fun main() {
+    var pass = true
+    fun check(name: String, got: List&lt;Int&gt;, want: List&lt;Int&gt;) {
+        if (got == want) println("✓ passed: $name")
+        else { pass = false; println("✗ FAILED: $name — expected $want, got $got") }
+    }
+
+    // total 100, two 20-wide buttons: leftover 60, ONE gap -&gt; [0, 80]
+    check("two children pin to edges", spaceBetweenOffsets(100, listOf(20, 20)), listOf(0, 80))
+    // total 120, three 20-wide: leftover 60, TWO gaps of 30 -&gt; [0, 50, 100]
+    check("three children, equal gaps", spaceBetweenOffsets(120, listOf(20, 20, 20)), listOf(0, 50, 100))
+    // single child still starts at 0
+    check("single child at 0", spaceBetweenOffsets(100, listOf(40)), listOf(0))
+    // empty -&gt; empty
+    check("no children", spaceBetweenOffsets(100, emptyList()), emptyList())
+
+    if (pass) println("ALL TESTS PASSED 🎉") else println("Keep going — fix the ✗ lines above.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body">
+<p>Guard the tiny cases first: if <code>widths.size &lt;= 1</code>, the first child is at 0 (or the list is empty). Otherwise compute <code>val gap = (total - widths.sum()) / (widths.size - 1)</code>. Walk the list keeping a running cursor: each child's offset is the cursor; then advance the cursor by <code>width + gap</code> for the next one.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun spaceBetweenOffsets(total: Int, widths: List&lt;Int&gt;): List&lt;Int&gt; {
+    if (widths.isEmpty()) return emptyList()
+    if (widths.size == 1) return listOf(0)
+    val gap = (total - widths.sum()) / (widths.size - 1)
+    val out = mutableListOf&lt;Int&gt;()
+    var cursor = 0
+    for (w in widths) {
+        out.add(cursor)
+        cursor += w + gap
+    }
+    return out
+}</code></pre></div>
+<p class="mini-note">This is exactly the math the Compose layout pass runs for <code>Arrangement.SpaceBetween</code>. <code>SpaceAround</code> and <code>SpaceEvenly</code> only differ in where the leftover gaps go — try modelling those next.</p>
+</div>
+</div>
+</div>
+<!-- ---------- DRILL 3: Box overlay ---------- -->
+<h3 class="mt">Drill 3 — Recreate: image with an overlay caption</h3>
+<div class="grid grid-2">
+<div class="card card--amber" style="margin:0">
+<h4 style="margin-top:0">🖼️ Target screen</h4>
+<p class="muted" style="margin-top:0">A single hero image with a caption chip floating <em>on top of</em> it (not below it):</p>
+<ul style="margin-bottom:0">
+<li>A large <strong>image</strong> (~140 dp) as the background layer.</li>
+<li>A dark <strong>caption</strong> reading <code>"Overlay caption"</code> sitting <strong>on top</strong>, centered.</li>
+<li>The two children <strong>overlap</strong> — they do not stack vertically.</li>
+</ul>
+</div>
+<div class="card" style="margin:0">
+<h4 style="margin-top:0">📋 Build spec</h4>
+<ul style="margin-bottom:0">
+<li>Container: <code>Box</code> (children stack on the <strong>z-axis</strong>)</li>
+<li><code>contentAlignment = Alignment.Center</code></li>
+<li>Children, in order: <code>Image</code> (drawn first = behind), then <code>Text</code> (drawn last = in front)</li>
+<li>Give the caption a dark <code>background</code> + small <code>padding</code> so it reads against the image</li>
+</ul>
+<p class="muted" style="margin-bottom:0">In a <code>Box</code>, <strong>later children draw on top of earlier ones</strong> — child order <em>is</em> z-order. Try the <strong>Box overlay</strong> preset to compare.</p>
+</div>
+</div>
+<p class="mt"><strong>Acceptance check</strong> — reveal after your screen matches:</p>
+<p data-reveal="" style="margin-top:0">
+✅ Container is <code>Box</code> · ✅ the map shows <code>contentAlignment = Alignment.Center</code> · ✅ the Image child comes <em>before</em> the Text child in the list (so the caption renders on top, not behind) · ✅ the caption visibly overlaps the image rather than sitting beneath it · ✅ the caption has its own background + padding so it's readable. If the caption is hidden, you put the Text <em>before</em> the Image — move it down.
+</p>
+<p>Here is the real Compose for this exact screen — <em>predict</em> what renders, then press <strong>Run</strong> to confirm (Compose-on-web is experimental; if it won't compile, the simulator above and Android Studio are the reliable paths):</p>
+<div class="codeblock" data-run="compose">
+<div class="codeblock__lang">Kotlin + Compose · runnable</div>
+<pre><code>import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
+
+fun main() {
+    ComposeViewport(document.body!!) { App() }
+}
+
+@Composable
+fun App() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier.size(180.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // FIRST child = behind: a stand-in for the hero Image
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFB7DDCD))
+            )
+            // LAST child = on top: the caption chip
+            Text(
+                "Overlay caption",
+                color = Color.White,
+                modifier = Modifier
+                    .background(Color(0xFF073042))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+        }
+    }
+}</code></pre>
+</div>
+<!-- ---------- DRILL 4: Modifier-order pitfall ---------- -->
+<h3 class="mt">Drill 4 — The Modifier-order pitfall (size ⇄ padding)</h3>
+<div class="callout callout--warn">
+<span aria-hidden="true" class="callout__icon">⚠️</span>
+<div class="callout__body">
+<span class="callout__label">Wrong mental model: "Modifiers are a settings bag — order doesn't matter."</span>
+<p style="margin-bottom:0">A <code>Modifier</code> chain is <strong>not</strong> a bag of independent settings. Each modifier <em>wraps</em> the next and constrains it. Swap two and you get a <strong>different pixel result</strong> — and in production this shows up as a tap target that's the wrong size, a ripple that bleeds past the padding, or a box that's 8 dp bigger than the designer asked for. The simulator's <strong>padding ⇄ background</strong> swap makes the colored patch grow or shrink for the same reason.</p>
+</div>
+</div>
+<div class="grid grid-2">
+<div class="codeblock" data-lang="kotlin">
+<span class="codeblock__lang">size THEN padding</span>
+<pre><code>Box(
+    Modifier
+        .size(100.dp)     // box is fixed at 100×100
+        .padding(16.dp)   // padding eats INTO the 100
+)
+// → outer footprint = 100.dp
+//   inner content   = 68.dp  (100 − 16 − 16)</code></pre>
+</div>
+<div class="codeblock" data-lang="kotlin">
+<span class="codeblock__lang">padding THEN size</span>
+<pre><code>Box(
+    Modifier
+        .padding(16.dp)   // 16 reserved AROUND the box
+        .size(100.dp)     // box is 100×100 INSIDE that
+)
+// → outer footprint = 132.dp  (100 + 16 + 16)
+//   inner content   = 100.dp</code></pre>
+</div>
+</div>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">🏭</span>
+<div class="callout__body">
+<span class="callout__label">In production</span>
+<p style="margin-bottom:0">Same numbers, two different layouts. The rule: <strong>a modifier applies to everything that comes after it in the chain.</strong> <code>.size().padding()</code> shrinks the content inside a fixed box; <code>.padding().size()</code> sizes the content and then surrounds it with space. Put <code>.clickable {}</code> <em>before</em> <code>.padding()</code> and the padding becomes a dead zone you can't tap; put it <em>after</em> and the padding is part of the tap target. Order is a <em>design decision</em>, not a style preference.</p>
+</div>
+</div>
+<p><strong>Prove it.</strong> Model both chains. Given an inner box size and a padding, return the <strong>outer footprint</strong> the parent has to reserve for each order. Press <strong>Run</strong> until everything is green.</p>
+<div class="codeblock" data-challenge="cpg-modifier-order" data-run="kotlin" data-topic="compose-ui">
+<div class="codeblock__lang">Kotlin · runnable challenge</div>
+<pre><code>// ---------- YOUR CODE ----------
+// A modifier wraps everything AFTER it.
+//
+//  sizeThenPadding(size, pad):  .size(size).padding(pad)
+//     The box is fixed at `size`; padding is carved INSIDE it.
+//     -&gt; outer footprint stays `size`; the visible content is (size - 2*pad).
+//        (clamp content at 0 — it never goes negative.)
+//
+//  paddingThenSize(size, pad):  .padding(pad).size(size)
+//     Padding is reserved AROUND a box that is then `size`.
+//     -&gt; outer footprint = size + 2*pad; content stays `size`.
+fun sizeThenPadding(size: Int, pad: Int): Pair&lt;Int, Int&gt; {   // (outer, content)
+    return 0 to 0 // &lt;- replace this
+}
+
+fun paddingThenSize(size: Int, pad: Int): Pair&lt;Int, Int&gt; {   // (outer, content)
+    return 0 to 0 // &lt;- replace this
+}
+// -------- END YOUR CODE --------
+
+fun main() {
+    var pass = true
+    fun check(name: String, got: Pair&lt;Int, Int&gt;, want: Pair&lt;Int, Int&gt;) {
+        if (got == want) println("✓ passed: $name")
+        else { pass = false; println("✗ FAILED: $name — expected $want, got $got") }
+    }
+    fun checkTrue(name: String, got: Boolean) {
+        if (got) println("✓ passed: $name")
+        else { pass = false; println("✗ FAILED: $name — expected true, got false") }
+    }
+
+    // .size(100).padding(16): outer stays 100, content = 100-32 = 68
+    check("size→padding shrinks content", sizeThenPadding(100, 16), 100 to 68)
+    // .padding(16).size(100): outer = 100+32 = 132, content stays 100
+    check("padding→size grows footprint", paddingThenSize(100, 16), 132 to 100)
+    // the orders are NOT the same footprint
+    checkTrue("orders differ", sizeThenPadding(100, 16).first != paddingThenSize(100, 16).first)
+    // content can't go negative when padding swallows the box
+    check("content clamps at 0", sizeThenPadding(20, 40), 20 to 0)
+
+    if (pass) println("ALL TESTS PASSED 🎉") else println("Keep going — fix the ✗ lines above.")
+}</code></pre>
+</div>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">💡 Hint (open only if stuck)</button>
+<div class="accordion__body">
+<p><code>sizeThenPadding</code>: the outer footprint is just <code>size</code>; the content is <code>size - 2 * pad</code> but never below 0 — use <code>maxOf(0, size - 2 * pad)</code>. <code>paddingThenSize</code>: the content is <code>size</code> and the outer footprint is <code>size + 2 * pad</code>. Return each as a <code>Pair</code> with <code>outer to content</code>.</p>
+</div>
+</div>
+<div class="accordion__item">
+<button class="accordion__head" type="button">✅ Reference solution</button>
+<div class="accordion__body">
+<div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>fun sizeThenPadding(size: Int, pad: Int): Pair&lt;Int, Int&gt; =
+    size to maxOf(0, size - 2 * pad)
+
+fun paddingThenSize(size: Int, pad: Int): Pair&lt;Int, Int&gt; =
+    (size + 2 * pad) to size</code></pre></div>
+<p class="mini-note">Carry this back into the simulator: select a Text child, give it a background <em>and</em> padding, and hit the <strong>Modifier order</strong> swap. The colored patch changing size is this exact wrap-the-next-thing rule, made visible.</p>
+</div>
+</div>
+</div>
+<p class="muted mt" style="margin-bottom:0">You've got it when every challenge prints <strong>ALL TESTS PASSED 🎉</strong>, you can rebuild all three screens from memory in the simulator, and you can say <em>why</em> swapping two modifiers changes the result. Mark each one solved above to log it on your mastery path.</p>
+</section>
+</main>
+<!-- ========================= FOOTER ========================= -->
+<footer class="footer">
+<div class="wrap">
+<span><span class="footer__brand">COP4667 Android Development</span> · Jetpack Compose Layout &amp; State Playground</span>
+<span class="muted">Keiser University · B.S. Software Engineering · Built for face-to-face instruction. Code targets current Kotlin + Jetpack Compose (Material 3).</span>
+</div>
+</footer>
+<!-- Shared design-system behavior (copy buttons, tabs, quiz, flashcards, theme, present, etc.) -->
+<script src="../assets/app.js"></script>
+<script src="../assets/playground.js"></script>
+<script src="../assets/mastery.js"></script>
+<!-- ========================= PLAYGROUND LOGIC (page-specific) ========================= -->
+<script>
+(function () {
+  "use strict";
+
+  var STORE_KEY = "tg:cop4667:compose-playground:config";
+
+  // ----- arrangement / alignment option sets per container -----
+  var ARRANGEMENTS = [
+    { v: "Top",          label: "Top (start)" },
+    { v: "Center",       label: "Center" },
+    { v: "Bottom",       label: "Bottom (end)" },
+    { v: "SpaceBetween", label: "SpaceBetween" },
+    { v: "SpaceAround",  label: "SpaceAround" },
+    { v: "SpaceEvenly",  label: "SpaceEvenly" },
+    { v: "spacedBy8",    label: "spacedBy(8.dp)" },
+    { v: "spacedBy16",   label: "spacedBy(16.dp)" }
+  ];
+  // cross-axis alignment depends on container; labels adapt
+  var COLUMN_ALIGN = [
+    { v: "Start",  label: "Start (left)" },
+    { v: "Center", label: "CenterHorizontally" },
+    { v: "End",    label: "End (right)" }
+  ];
+  var ROW_ALIGN = [
+    { v: "Top",    label: "Top" },
+    { v: "Center", label: "CenterVertically" },
+    { v: "Bottom", label: "Bottom" }
+  ];
+
+  // default configuration
+  function defaultConfig() {
+    return {
+      container: "Column",
+      arrangement: "Top",
+      alignment: "Start",
+      boxAlign: "Center",
+      pad: 16,
+      fill: true,
+      bg: "",
+      bgCustom: "#e8f5e9",
+      state: false,
+      children: [
+        mkChild("Text",   { text: "Hello, Compose!" }),
+        mkChild("Button", { text: "Get started" })
+      ],
+      selected: 0
+    };
+  }
+
+  var idSeq = 1;
+  function mkChild(kind, opts) {
+    opts = opts || {};
+    return {
+      _id: idSeq++,
+      kind: kind,
+      text: opts.text != null ? opts.text : (kind === "Button" ? "Tap me" : "Text"),
+      size: opts.size != null ? opts.size : 88,        // for Image/Spacer
+      pad: opts.pad != null ? opts.pad : 0,
+      fillW: !!opts.fillW,
+      weight: !!opts.weight,
+      bg: opts.bg != null ? opts.bg : "",
+      bgCustom: opts.bgCustom != null ? opts.bgCustom : "#3ddc84",
+      orderPadFirst: opts.orderPadFirst != null ? opts.orderPadFirst : true
+    };
+  }
+
+  // ----- live state -----
+  var cfg = load() || defaultConfig();
+  // runtime-only counters for the state demo
+  var rt = { count: 0, recomp: 0 };
+
+  // ----- element refs -----
+  var $ = function (id) { return document.getElementById(id); };
+  var elContainer = $("ctl-container");
+  var elLinear    = $("ctl-linear");
+  var elBox       = $("ctl-box");
+  var elArr       = $("ctl-arrangement");
+  var elAlign     = $("ctl-alignment");
+  var elBoxAlign  = $("ctl-box-align");
+  var elPad       = $("ctl-pad");
+  var elPadOut    = $("out-pad");
+  var elFill      = $("ctl-fill");
+  var elBg        = $("ctl-bg");
+  var elBgCustom  = $("ctl-bg-custom");
+  var elState     = $("ctl-state");
+  var elChildList = $("child-list");
+  var elEditor    = $("child-editor");
+  var elDevice    = $("device-content");
+  var elCode      = $("gen-code");
+  var elSummary   = $("pg-summary");
+  var elMap       = $("map-lines");
+  var elStateBar  = $("state-bar");
+  var elStateCount= $("state-count");
+  var elStateRecomp = $("state-recomp");
+  var lblArr      = $("lbl-arr");
+  var lblAlign    = $("lbl-align");
+
+  // child editor refs
+  var ceTitle  = $("child-editor-title");
+  var ceTextRow= $("ce-text-row");
+  var ceText   = $("ce-text");
+  var ceSizeRow= $("ce-size-row");
+  var ceSize   = $("ce-size");
+  var ceSizeOut= $("ce-size-out");
+  var cePad    = $("ce-pad");
+  var cePadOut = $("ce-pad-out");
+  var ceFillw  = $("ce-fillw");
+  var ceWeightRow = $("ce-weight-row");
+  var ceWeight = $("ce-weight");
+  var ceBg     = $("ce-bg");
+  var ceBgCustom = $("ce-bg-custom");
+  var ceOrder  = $("ce-order");
+  var ceOrderText = $("ce-order-text");
+  var ceOrderSwap = $("ce-order-swap");
+
+  // ============================================================
+  //  PERSISTENCE
+  // ============================================================
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(cfg)); } catch (e) {}
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return null;
+      var c = JSON.parse(raw);
+      // re-seed ids so future additions stay unique
+      (c.children || []).forEach(function (ch) { ch._id = idSeq++; });
+      return c;
+    } catch (e) { return null; }
+  }
+
+  // ============================================================
+  //  OPTION HELPERS
+  // ============================================================
+  function fillSelect(sel, opts, value) {
+    sel.innerHTML = "";
+    opts.forEach(function (o) {
+      var opt = document.createElement("option");
+      opt.value = o.v; opt.textContent = o.label;
+      if (o.v === value) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    // if value missing, fall back to first
+    if (!opts.some(function (o) { return o.v === value; })) sel.selectedIndex = 0;
+  }
+
+  function alignOptionsFor(container) { return container === "Row" ? ROW_ALIGN : COLUMN_ALIGN; }
+
+  // map UI arrangement token -> Kotlin Arrangement expression
+  function arrangementExpr(token, container) {
+    switch (token) {
+      case "Center":       return "Arrangement.Center";
+      case "Bottom":       return container === "Row" ? "Arrangement.End" : "Arrangement.Bottom";
+      case "Top":          return container === "Row" ? "Arrangement.Start" : "Arrangement.Top";
+      case "SpaceBetween": return "Arrangement.SpaceBetween";
+      case "SpaceAround":  return "Arrangement.SpaceAround";
+      case "SpaceEvenly":  return "Arrangement.SpaceEvenly";
+      case "spacedBy8":    return "Arrangement.spacedBy(8.dp)";
+      case "spacedBy16":   return "Arrangement.spacedBy(16.dp)";
+      default:             return container === "Row" ? "Arrangement.Start" : "Arrangement.Top";
+    }
+  }
+  // map UI alignment token -> Kotlin Alignment expression
+  function alignmentExpr(token, container) {
+    if (container === "Row") {
+      if (token === "Top") return "Alignment.Top";
+      if (token === "Bottom") return "Alignment.Bottom";
+      return "Alignment.CenterVertically";
+    }
+    if (token === "Start") return "Alignment.Start";
+    if (token === "End") return "Alignment.End";
+    return "Alignment.CenterHorizontally";
+  }
+
+  // ============================================================
+  //  CSS mapping for the PREVIEW (flexbox emulates Compose)
+  // ============================================================
+  function previewArrangement(token) {
+    // returns { justify, gap }
+    switch (token) {
+      case "Center":       return { justify: "center", gap: 0 };
+      case "Bottom":       return { justify: "flex-end", gap: 0 };
+      case "Top":          return { justify: "flex-start", gap: 0 };
+      case "SpaceBetween": return { justify: "space-between", gap: 0 };
+      case "SpaceAround":  return { justify: "space-around", gap: 0 };
+      case "SpaceEvenly":  return { justify: "space-evenly", gap: 0 };
+      case "spacedBy8":    return { justify: "flex-start", gap: 8 };
+      case "spacedBy16":   return { justify: "flex-start", gap: 16 };
+      default:             return { justify: "flex-start", gap: 0 };
+    }
+  }
+  function previewAlign(token, container) {
+    // cross-axis -> align-items
+    if (container === "Row") {
+      if (token === "Top") return "flex-start";
+      if (token === "Bottom") return "flex-end";
+      return "center";
+    }
+    if (token === "Start") return "flex-start";
+    if (token === "End") return "flex-end";
+    return "center";
+  }
+  function boxAlignToFlex(token) {
+    // returns { ai (align-items), jc (justify-content) } for a flex Box emulation
+    var v = (token.indexOf("Top") === 0) ? "flex-start" : (token.indexOf("Bottom") === 0) ? "flex-end" : "center";
+    var h = (token.indexOf("Start") >= 0 && token !== "Start") ? "flex-start" : null;
+    // determine horizontal piece
+    if (token.indexOf("Start") >= 0) h = "flex-start";
+    else if (token.indexOf("End") >= 0) h = "flex-end";
+    else h = "center";
+    return { ai: h, jc: v };
+  }
+  function hexFromArgb(argb, custom) {
+    if (!argb) return null;
+    // argb like 0xFFE8F5E9 -> #E8F5E9
+    var m = /^0x[fF]{2}([0-9a-fA-F]{6})$/.exec(argb);
+    return m ? ("#" + m[1]) : custom;
+  }
+
+  // ============================================================
+  //  RENDER: build the children panel (control list)
+  // ============================================================
+  var KIND_ICON = { Text: "T", Button: "B", Image: "🖼", Spacer: "↕" };
+
+  function renderChildList() {
+    elChildList.innerHTML = "";
+    cfg.children.forEach(function (ch, i) {
+      var li = document.createElement("li");
+      li.className = "child-item" + (i === cfg.selected ? " is-selected" : "");
+
+      var icon = document.createElement("span");
+      icon.className = "child-item__icon"; icon.textContent = KIND_ICON[ch.kind] || "?";
+
+      var kind = document.createElement("button");
+      kind.type = "button";
+      kind.style.cssText = "background:none;border:none;font:inherit;cursor:pointer;text-align:left;padding:0;color:inherit;";
+      kind.innerHTML = '<span class="child-item__kind">' + ch.kind + '</span> ' +
+        '<span class="child-item__label">' + escapeHtml(childSummary(ch)) + '</span>';
+      kind.addEventListener("click", function () { selectChild(i); });
+
+      var up = miniBtn("↑", "Move up", function () { moveChild(i, -1); });
+      var down = miniBtn("↓", "Move down", function () { moveChild(i, 1); });
+      var del = miniBtn("✕", "Delete", function () { removeChild(i); });
+      del.classList.add("mini-btn--danger");
+      up.disabled = i === 0;
+      down.disabled = i === cfg.children.length - 1;
+      if (up.disabled) up.style.opacity = ".4";
+      if (down.disabled) down.style.opacity = ".4";
+
+      li.appendChild(icon);
+      li.appendChild(kind);
+      li.appendChild(up);
+      li.appendChild(down);
+      li.appendChild(del);
+      elChildList.appendChild(li);
+    });
+    if (!cfg.children.length) {
+      var empty = document.createElement("li");
+      empty.className = "muted";
+      empty.style.cssText = "font-size:var(--fs-sm);padding:6px 2px;";
+      empty.textContent = "No children yet — add one below.";
+      elChildList.appendChild(empty);
+    }
+  }
+  function childSummary(ch) {
+    if (ch.kind === "Text" || ch.kind === "Button") return '"' + ch.text + '"';
+    if (ch.kind === "Image") return ch.size + "dp";
+    if (ch.kind === "Spacer") return ch.size + "dp";
+    return "";
+  }
+  function miniBtn(txt, label, fn) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "mini-btn"; b.textContent = txt;
+    b.setAttribute("aria-label", label); b.title = label;
+    b.addEventListener("click", function (e) { e.stopPropagation(); fn(); });
+    return b;
+  }
+
+  // ============================================================
+  //  RENDER: the child Modifier editor
+  // ============================================================
+  function renderEditor() {
+    var ch = cfg.children[cfg.selected];
+    if (!ch) { elEditor.hidden = true; return; }
+    elEditor.hidden = false;
+    ceTitle.textContent = "Editing: " + ch.kind + " #" + (cfg.selected + 1);
+
+    var isTextual = (ch.kind === "Text" || ch.kind === "Button");
+    var isSized = (ch.kind === "Image" || ch.kind === "Spacer");
+
+    ceTextRow.hidden = !isTextual;
+    ceSizeRow.hidden = !isSized;
+    if (isTextual) ceText.value = ch.text;
+    if (isSized) { ceSize.value = ch.size; ceSizeOut.textContent = ch.size + "dp"; }
+
+    cePad.value = ch.pad; cePadOut.textContent = ch.pad + "dp";
+    ceFillw.checked = ch.fillW;
+    ceWeight.checked = ch.weight;
+    // weight only valid in Row/Column
+    ceWeightRow.style.display = (cfg.container === "Box") ? "none" : "";
+    ceBg.value = ch.bg;
+    ceBgCustom.value = ch.bgCustom;
+
+    // background+padding order is only meaningful when both present
+    var bothPresent = !!ch.bg && ch.pad > 0;
+    ceOrder.style.display = bothPresent ? "" : "none";
+    ceOrderText.textContent = ch.orderPadFirst ? "padding → background" : "background → padding";
+  }
+
+  // ============================================================
+  //  RENDER: the phone preview (flexbox emulation of Compose)
+  // ============================================================
+  function renderPreview() {
+    elDevice.innerHTML = "";
+    var box = document.createElement("div");
+    box.className = "cmp-container";
+
+    var pad = cfg.pad;
+    box.style.padding = pad + "px";
+
+    var bgHex = hexFromArgb(cfg.bg, cfg.bgCustom);
+    if (cfg.bg) box.style.background = bgHex;
+
+    if (cfg.container === "Box") {
+      box.style.display = "flex";
+      var ba = boxAlignToFlex(cfg.boxAlign);
+      box.style.justifyContent = ba.ai;   // horizontal
+      box.style.alignItems = ba.jc;       // vertical
+      box.style.position = "relative";
+      box.style.minHeight = "100%";
+      if (cfg.fill) { box.style.width = "100%"; }
+    } else {
+      box.style.display = "flex";
+      box.style.flexDirection = cfg.container === "Row" ? "row" : "column";
+      var arr = previewArrangement(cfg.arrangement);
+      box.style.justifyContent = arr.justify;
+      box.style.alignItems = previewAlign(cfg.alignment, cfg.container);
+      if (arr.gap) box.style.gap = arr.gap + "px";
+      if (cfg.fill) { box.style.minHeight = "100%"; box.style.width = "100%"; }
+    }
+
+    // children
+    cfg.children.forEach(function (ch, i) {
+      var node = buildPreviewNode(ch, i);
+      if (i === cfg.selected) node.classList.add("is-selected");
+      box.appendChild(node);
+    });
+
+    // state demo counter (injected as a real working element)
+    if (cfg.state) {
+      var counter = document.createElement("button");
+      counter.className = "cmp-button";
+      counter.type = "button";
+      counter.style.marginTop = "8px";
+      counter.textContent = "Clicked " + rt.count + " times";
+      counter.addEventListener("click", function () {
+        rt.count++;
+        rt.recomp++;
+        // re-render = recomposition
+        renderPreview();
+        updateStateBar(true);
+      });
+      box.appendChild(counter);
+    }
+
+    elDevice.appendChild(box);
+  }
+
+  function buildPreviewNode(ch, i) {
+    var node;
+    if (ch.kind === "Text") {
+      node = document.createElement("div");
+      node.className = "cmp-node cmp-text";
+      node.textContent = ch.text || "";
+    } else if (ch.kind === "Button") {
+      node = document.createElement("button");
+      node.type = "button";
+      node.className = "cmp-node cmp-button";
+      node.textContent = ch.text || "Button";
+    } else if (ch.kind === "Image") {
+      node = document.createElement("div");
+      node.className = "cmp-node cmp-image";
+      node.style.width = ch.size + "px";
+      node.style.height = ch.size + "px";
+      node.textContent = "🖼";
+    } else { // Spacer
+      node = document.createElement("div");
+      node.className = "cmp-node cmp-spacer";
+      if (cfg.container === "Row") { node.style.width = ch.size + "px"; node.style.height = "16px"; }
+      else { node.style.height = ch.size + "px"; node.style.width = "60px"; }
+    }
+
+    // apply padding/background respecting order (only Text/Button/Image carry bg/pad visibly)
+    if (ch.kind !== "Spacer") {
+      var bgHex = hexFromArgb(ch.bg, ch.bgCustom);
+      if (ch.orderPadFirst) {
+        // padding reserved first → background fills the inner content box
+        if (ch.pad > 0) node.style.padding = ch.pad + "px";
+        if (ch.bg) node.style.background = bgHex;
+        // emulate: in pad-first, the bg sits inside padding -> use background-clip content-box
+        if (ch.bg && ch.pad > 0) node.style.backgroundClip = "content-box";
+      } else {
+        // background first → fills outer box, padding inside it
+        if (ch.bg) { node.style.background = bgHex; node.style.backgroundClip = "border-box"; }
+        if (ch.pad > 0) node.style.padding = ch.pad + "px";
+      }
+      if (ch.bg && (ch.kind === "Text")) {
+        node.style.color = pickInk(bgHex);
+        node.style.borderRadius = "8px";
+      }
+    }
+
+    if (ch.fillW) node.style.width = "100%";
+    if (ch.weight && cfg.container !== "Box") {
+      node.style.flex = "1 1 0";
+      if (cfg.container === "Column") node.style.width = "100%";
+    }
+
+    node.addEventListener("click", function (e) {
+      // selecting via preview (but let the state counter button work too)
+      e.stopPropagation();
+      selectChild(i);
+    });
+    return node;
+  }
+
+  // choose readable ink for a bg
+  function pickInk(hex) {
+    if (!hex) return "#0E1A1F";
+    var c = hex.replace("#", "");
+    if (c.length === 3) c = c.split("").map(function (x){return x+x;}).join("");
+    var r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+    var lum = (0.299*r + 0.587*g + 0.114*b);
+    return lum > 150 ? "#0E1A1F" : "#FFFFFF";
+  }
+
+  // ============================================================
+  //  GENERATE: the Kotlin / Compose code
+  // ============================================================
+  function buildContainerModifier() {
+    var parts = [];
+    if (cfg.fill) parts.push(".fillMaxSize()");
+    if (cfg.bg) parts.push(".background(Color(" + cfg.bg + "))");
+    if (cfg.pad > 0) parts.push(".padding(" + cfg.pad + ".dp)");
+    return parts;
+  }
+
+  function buildChildModifier(ch) {
+    var parts = [];
+    if (ch.fillW) parts.push(".fillMaxWidth()");
+    if (ch.weight && cfg.container !== "Box") parts.push(".weight(1f)");
+    // ordered pair
+    var bgLine = ch.bg ? ".background(Color(" + ch.bg + "))" : null;
+    var padLine = ch.pad > 0 ? ".padding(" + ch.pad + ".dp)" : null;
+    if (ch.orderPadFirst) {
+      if (padLine) parts.push(padLine);
+      if (bgLine) parts.push(bgLine);
+    } else {
+      if (bgLine) parts.push(bgLine);
+      if (padLine) parts.push(padLine);
+    }
+    return parts;
+  }
+
+  function modifierString(parts, indent) {
+    // `indent` is the indent of the line holding `modifier = Modifier`.
+    // Chain continuation lines are nested one extra level (8 spaces) under it.
+    if (!parts.length) return null;
+    if (parts.length === 1) return "Modifier" + parts[0];
+    return "Modifier\n" + parts.map(function (p) { return indent + "        " + p; }).join("\n");
+  }
+
+  function childCode(ch, indent) {
+    var mods = buildChildModifier(ch);
+    var modArg = modifierString(mods, indent);
+    var lines = [];
+    if (ch.kind === "Text") {
+      if (modArg) {
+        lines.push(indent + 'Text(');
+        lines.push(indent + '    text = "' + esc(ch.text) + '",');
+        lines.push(indent + '    modifier = ' + modArg);
+        lines.push(indent + ')');
+      } else {
+        lines.push(indent + 'Text("' + esc(ch.text) + '")');
+      }
+    } else if (ch.kind === "Button") {
+      lines.push(indent + 'Button(');
+      lines.push(indent + '    onClick = { /* TODO */ }' + (modArg ? "," : ""));
+      if (modArg) lines.push(indent + '    modifier = ' + modArg);
+      lines.push(indent + ') {');
+      lines.push(indent + '    Text("' + esc(ch.text) + '")');
+      lines.push(indent + '}');
+    } else if (ch.kind === "Image") {
+      var imgMods = mods.slice();
+      imgMods.unshift(".size(" + ch.size + ".dp)");
+      var imgMod = modifierString(imgMods, indent);
+      lines.push(indent + 'Image(');
+      lines.push(indent + '    painter = painterResource(R.drawable.placeholder),');
+      lines.push(indent + '    contentDescription = null,');
+      lines.push(indent + '    modifier = ' + imgMod);
+      lines.push(indent + ')');
+    } else { // Spacer
+      var dim = cfg.container === "Row" ? "width" : "height";
+      lines.push(indent + 'Spacer(modifier = Modifier.' + dim + '(' + ch.size + '.dp))');
+    }
+    return lines.join("\n");
+  }
+
+  function generateCode() {
+    var ind = "    ";
+    var lines = [];
+    lines.push("@Composable");
+    lines.push("fun PlaygroundScreen() {");
+
+    // optional state
+    if (cfg.state) {
+      lines.push(ind + "var count by remember { mutableIntStateOf(0) } // primitive Int: autoboxing-free variant of mutableStateOf");
+      lines.push("");
+    }
+
+    var containerMods = buildContainerModifier();
+    var containerModStr = containerMods.length
+      ? ("Modifier\n" + containerMods.map(function (p) { return ind + "        " + p; }).join("\n"))
+      : null;
+
+    if (cfg.container === "Box") {
+      lines.push(ind + "Box(");
+      if (containerModStr) lines.push(ind + "    modifier = " + containerModStr + ",");
+      lines.push(ind + "    contentAlignment = Alignment." + cfg.boxAlign);
+      lines.push(ind + ") {");
+    } else {
+      lines.push(ind + cfg.container + "(");
+      if (containerModStr) lines.push(ind + "    modifier = " + containerModStr + ",");
+      var arrProp = cfg.container === "Row" ? "horizontalArrangement" : "verticalArrangement";
+      var alignProp = cfg.container === "Row" ? "verticalAlignment" : "horizontalAlignment";
+      lines.push(ind + "    " + arrProp + " = " + arrangementExpr(cfg.arrangement, cfg.container) + ",");
+      lines.push(ind + "    " + alignProp + " = " + alignmentExpr(cfg.alignment, cfg.container));
+      lines.push(ind + ") {");
+    }
+
+    var childIndent = ind + ind;
+    cfg.children.forEach(function (ch) {
+      lines.push(childCode(ch, childIndent));
+    });
+
+    if (cfg.state) {
+      lines.push(childIndent + "Button(onClick = { count++ }) {");
+      lines.push(childIndent + '    Text("Clicked $count times")');
+      lines.push(childIndent + "}");
+    }
+
+    lines.push(ind + "}");
+    lines.push("}");
+    return lines.join("\n");
+  }
+
+  // ============================================================
+  //  RENDER: the config↔code map + summary chip
+  // ============================================================
+  function renderMap() {
+    var rows = [];
+    rows.push(["Container", cfg.container]);
+    if (cfg.container === "Box") {
+      rows.push(["contentAlignment", "Alignment." + cfg.boxAlign]);
+    } else {
+      var arrProp = cfg.container === "Row" ? "horizontalArrangement" : "verticalArrangement";
+      var alignProp = cfg.container === "Row" ? "verticalAlignment" : "horizontalAlignment";
+      rows.push([arrProp, arrangementExpr(cfg.arrangement, cfg.container)]);
+      rows.push([alignProp, alignmentExpr(cfg.alignment, cfg.container)]);
+    }
+    var cm = buildContainerModifier();
+    rows.push(["container Modifier", cm.length ? "Modifier" + cm.join("") : "Modifier (empty)"]);
+    rows.push(["children", String(cfg.children.length)]);
+    if (cfg.state) rows.push(["state", "remember { mutableIntStateOf(0) }"]);
+
+    elMap.innerHTML = rows.map(function (r) {
+      return '<div class="map-line"><span class="badge badge--teal">' + escapeHtml(r[0]) +
+        '</span><code>' + escapeHtml(r[1]) + '</code></div>';
+    }).join("");
+  }
+
+  function renderSummary() {
+    var bits = [cfg.container, cfg.children.length + " child" + (cfg.children.length === 1 ? "" : "ren")];
+    if (cfg.state) bits.push("stateful");
+    elSummary.textContent = bits.join(" · ");
+  }
+
+  // ============================================================
+  //  STATE BAR (recomposition counter)
+  // ============================================================
+  function updateStateBar(flash) {
+    elStateBar.hidden = !cfg.state;
+    if (!cfg.state) return;
+    elStateCount.textContent = rt.count;
+    elStateRecomp.textContent = rt.recomp;
+    if (flash) {
+      elStateCount.parentElement.classList.remove("recompose-flash");
+      void elStateCount.parentElement.offsetWidth;
+      elStateCount.parentElement.classList.add("recompose-flash");
+    }
+  }
+
+  // ============================================================
+  //  MASTER RENDER
+  // ============================================================
+  function syncContainerControls() {
+    var isBox = cfg.container === "Box";
+    elLinear.hidden = isBox;
+    elBox.hidden = !isBox;
+    if (!isBox) {
+      // arrangement label flips with axis
+      lblArr.textContent = cfg.container === "Row" ? "horiz. Arrangement" : "vert. Arrangement";
+      lblAlign.textContent = cfg.container === "Row" ? "vert. Alignment" : "horiz. Alignment";
+      fillSelect(elArr, ARRANGEMENTS, cfg.arrangement);
+      fillSelect(elAlign, alignOptionsFor(cfg.container), cfg.alignment);
+    }
+    elBoxAlign.value = cfg.boxAlign;
+  }
+
+  function renderAll() {
+    elContainer.value = cfg.container;
+    elPad.value = cfg.pad; elPadOut.textContent = cfg.pad + "dp";
+    elFill.checked = cfg.fill;
+    elBg.value = cfg.bg;
+    elBgCustom.value = cfg.bgCustom;
+    elState.checked = cfg.state;
+
+    // clamp selection
+    if (cfg.selected >= cfg.children.length) cfg.selected = cfg.children.length - 1;
+    if (cfg.selected < 0) cfg.selected = 0;
+
+    syncContainerControls();
+    renderChildList();
+    renderEditor();
+    renderPreview();
+    elCode.textContent = generateCode();
+    renderMap();
+    renderSummary();
+    updateStateBar(false);
+    save();
+  }
+
+  // ============================================================
+  //  ACTIONS
+  // ============================================================
+  function selectChild(i) { cfg.selected = i; renderChildList(); renderEditor(); renderPreview(); save(); }
+  function moveChild(i, dir) {
+    var j = i + dir;
+    if (j < 0 || j >= cfg.children.length) return;
+    var tmp = cfg.children[i]; cfg.children[i] = cfg.children[j]; cfg.children[j] = tmp;
+    if (cfg.selected === i) cfg.selected = j;
+    else if (cfg.selected === j) cfg.selected = i;
+    renderAll();
+  }
+  function removeChild(i) {
+    cfg.children.splice(i, 1);
+    if (cfg.selected >= cfg.children.length) cfg.selected = cfg.children.length - 1;
+    renderAll();
+  }
+  function addChild(kind) {
+    cfg.children.push(mkChild(kind, {}));
+    cfg.selected = cfg.children.length - 1;
+    renderAll();
+  }
+
+  // ============================================================
+  //  PRESETS
+  // ============================================================
+  var PRESETS = {
+    profile: function () {
+      return {
+        container: "Column", arrangement: "spacedBy16", alignment: "Center",
+        boxAlign: "Center", pad: 24, fill: true, bg: "0xFFE8F5E9", bgCustom: "#e8f5e9",
+        state: false,
+        children: [
+          mkChild("Image",  { size: 96 }),
+          mkChild("Text",   { text: "Ada Lovelace" }),
+          mkChild("Text",   { text: "Android Developer" }),
+          mkChild("Button", { text: "Follow" })
+        ],
+        selected: 1
+      };
+    },
+    buttonrow: function () {
+      return {
+        container: "Row", arrangement: "SpaceBetween", alignment: "Center",
+        boxAlign: "Center", pad: 16, fill: false, bg: "", bgCustom: "#e8f5e9",
+        state: false,
+        children: [
+          mkChild("Button", { text: "Cancel" }),
+          mkChild("Button", { text: "Confirm" })
+        ],
+        selected: 0
+      };
+    },
+    modifier: function () {
+      return {
+        container: "Column", arrangement: "spacedBy16", alignment: "Start",
+        boxAlign: "Center", pad: 16, fill: true, bg: "", bgCustom: "#e8f5e9",
+        state: false,
+        children: [
+          mkChild("Text", { text: "padding then background", pad: 16, bg: "0xFF3DDC84", bgCustom: "#3ddc84", orderPadFirst: true }),
+          mkChild("Text", { text: "background then padding", pad: 16, bg: "0xFFFFB300", bgCustom: "#ffb300", orderPadFirst: false })
+        ],
+        selected: 0
+      };
+    },
+    box: function () {
+      return {
+        container: "Box", arrangement: "Top", alignment: "Start",
+        boxAlign: "Center", pad: 0, fill: true, bg: "0xFFE3F2FD", bgCustom: "#e3f2fd",
+        state: false,
+        children: [
+          mkChild("Image", { size: 140 }),
+          mkChild("Text",  { text: "Overlay caption", pad: 8, bg: "0xFF073042", bgCustom: "#073042" })
+        ],
+        selected: 1
+      };
+    }
+  };
+  function applyPreset(name) {
+    var p = PRESETS[name];
+    if (!p) return;
+    cfg = p();
+    // ensure ids
+    cfg.children.forEach(function (ch) { if (!ch._id) ch._id = idSeq++; });
+    rt.count = 0; rt.recomp = 0;
+    renderAll();
+  }
+
+  // ============================================================
+  //  EVENT WIRING
+  // ============================================================
+  elContainer.addEventListener("change", function () {
+    cfg.container = elContainer.value;
+    // sanitize cross-axis alignment against new option set
+    var opts = alignOptionsFor(cfg.container).map(function (o) { return o.v; });
+    if (opts.indexOf(cfg.alignment) === -1) cfg.alignment = (cfg.container === "Row") ? "Center" : "Start";
+    renderAll();
+  });
+  elArr.addEventListener("change", function () { cfg.arrangement = elArr.value; renderAll(); });
+  elAlign.addEventListener("change", function () { cfg.alignment = elAlign.value; renderAll(); });
+  elBoxAlign.addEventListener("change", function () { cfg.boxAlign = elBoxAlign.value; renderAll(); });
+  elPad.addEventListener("input", function () { cfg.pad = +elPad.value; elPadOut.textContent = cfg.pad + "dp"; renderPreview(); elCode.textContent = generateCode(); renderMap(); save(); });
+  elFill.addEventListener("change", function () { cfg.fill = elFill.checked; renderAll(); });
+  elBg.addEventListener("change", function () {
+    cfg.bg = elBg.value;
+    renderAll();
+  });
+  elBgCustom.addEventListener("input", function () {
+    cfg.bgCustom = elBgCustom.value;
+    cfg.bg = argbFromHex(elBgCustom.value);
+    elBg.value = ""; // custom overrides preset list
+    renderAll();
+  });
+  elState.addEventListener("change", function () {
+    cfg.state = elState.checked;
+    if (cfg.state) { rt.count = 0; rt.recomp = 0; }
+    renderAll();
+  });
+
+  // add buttons
+  Array.prototype.forEach.call(document.querySelectorAll("[data-add]"), function (b) {
+    b.addEventListener("click", function () { addChild(b.getAttribute("data-add")); });
+  });
+  // preset buttons
+  Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (b) {
+    b.addEventListener("click", function () { applyPreset(b.getAttribute("data-preset")); });
+  });
+  $("pg-reset").addEventListener("click", function () {
+    cfg = defaultConfig(); rt.count = 0; rt.recomp = 0; renderAll();
+  });
+
+  // child editor wiring
+  ceText.addEventListener("input", function () {
+    var ch = cfg.children[cfg.selected]; if (!ch) return;
+    ch.text = ceText.value;
+    renderChildList(); renderPreview(); elCode.textContent = generateCode(); save();
+  });
+  ceSize.addEventListener("input", function () {
+    var ch = cfg.children[cfg.selected]; if (!ch) return;
+    ch.size = +ceSize.value; ceSizeOut.textContent = ch.size + "dp";
+    renderChildList(); renderPreview(); elCode.textContent = generateCode(); save();
+  });
+  cePad.addEventListener("input", function () {
+    var ch = cfg.children[cfg.selected]; if (!ch) return;
+    ch.pad = +cePad.value; cePadOut.textContent = ch.pad + "dp";
+    renderEditor(); renderPreview(); elCode.textContent = generateCode(); save();
+  });
+  ceFillw.addEventListener("change", function () {
+    var ch = cfg.children[cfg.selected]; if (!ch) return;
+    ch.fillW = ceFillw.checked; renderPreview(); elCode.textContent = generateCode(); save();
+  });
+  ceWeight.addEventListener("change", function () {
+    var ch = cfg.children[cfg.selected]; if (!ch) return;
+    ch.weight = ceWeight.checked; renderPreview(); elCode.textContent = generateCode(); save();
+  });
+  ceBg.addEventListener("change", function () {
+    var ch = cfg.children[cfg.selected]; if (!ch) return;
+    ch.bg = ceBg.value; renderEditor(); renderPreview(); elCode.textContent = generateCode(); save();
+  });
+  ceBgCustom.addEventListener("input", function () {
+    var ch = cfg.children[cfg.selected]; if (!ch) return;
+    ch.bgCustom = ceBgCustom.value;
+    ch.bg = argbFromHex(ceBgCustom.value);
+    ceBg.value = "";
+    renderEditor(); renderPreview(); elCode.textContent = generateCode(); save();
+  });
+  ceOrderSwap.addEventListener("click", function () {
+    var ch = cfg.children[cfg.selected]; if (!ch) return;
+    ch.orderPadFirst = !ch.orderPadFirst;
+    renderEditor(); renderPreview(); elCode.textContent = generateCode(); save();
+  });
+
+  // ============================================================
+  //  HELPERS
+  // ============================================================
+  function argbFromHex(hex) {
+    var c = String(hex).replace("#", "");
+    if (c.length === 3) c = c.split("").map(function (x){return x+x;}).join("");
+    return "0xFF" + c.toUpperCase();
+  }
+  function esc(s) { return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"'); }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  // ============================================================
+  //  GO
+  // ============================================================
+  renderAll();
+})();
+</script>
+</body>
+</html>
