@@ -143,6 +143,47 @@
             (this triggers <b>recomposition</b>)
         </div>
 <p>The loop: <strong>state → UI → user event → new state → recomposition → new UI</strong>. This is "unidirectional data flow." Your job is to (a) hold the state and (b) provide event callbacks that change it.</p>
+<div class="accordion">
+<div class="accordion__item">
+<button class="accordion__head" type="button">🔬 Going deeper (optional) — how Compose actually works under the hood</button>
+<div class="accordion__body">
+<p class="muted">You don't need this to build apps — but if you like knowing <em>why</em> the rules exist, here is the real machine behind "change state → the UI updates." It is <strong>one loop with automatic dependency tracking</strong>:</p>
+<div aria-label="Compose state-to-screen pipeline" class="recompose-diagram" role="img">setContent { }  →  run composables  →  build UI tree  →  <b>layout</b>  →  <b>draw</b>
+      ↑                                                                  │
+      └─── state changes ◀── onClick / input writes state ◀──────────────┘
+           (only the composables that <b>read</b> that state re-run)</div>
+<p>Five pieces make that work:</p>
+<ol>
+<li><strong>A composable <em>emits</em> into a tree.</strong> When your <code>@Composable</code>s run, each <code>Text</code>/<code>Column</code>/… emits a <em>node</em> into an in-memory tree Compose keeps (the <em>slot table</em>) — "what the screen should be right now."</li>
+<li><strong>The compiler instruments every composable.</strong> The Compose compiler plugin rewrites each function to carry a hidden <code>$composer</code> and inserts <em>positional markers</em>, so Compose knows which slot in the tree each call belongs to across re-runs. That is what lets <code>remember</code> find its stored value again.</li>
+<li><strong>State reads are tracked; writes invalidate (the snapshot system).</strong> Reading <code>state.value</code> during composition quietly records "this composable depends on this state." Writing <code>state.value = …</code> notifies every composable that read it and flags them <em>invalid</em>. You never register a listener — <em>reading the state IS the subscription.</em></li>
+<li><strong>Recomposition re-runs only the invalid ones — and skips the rest.</strong> On the next frame Compose re-executes just the flagged composables (one whose inputs did not change is <em>skipped</em>), diffs the new nodes against the tree, and applies the <em>minimal</em> change. That is why bumping one counter doesn't redraw the whole screen.</li>
+<li><strong><code>remember</code> + the slot table = persistence.</strong> <code>remember { … }</code> stashes a value in that position's slot; on recomposition Compose reads it back instead of recomputing. No <code>remember</code> → no slot → the value resets every re-run (the misconception above, mechanically explained).</li>
+</ol>
+<p>Every frame (~16&nbsp;ms), the invalidated work flows through <strong>three phases</strong>:</p>
+<ol>
+<li><strong>Composition</strong> — run/recompose → update the tree of <em>what</em> to show.</li>
+<li><strong>Layout</strong> — measure &amp; place each node (this is where the <strong>modifier chain</strong> does its work — size, padding, position).</li>
+<li><strong>Drawing</strong> — paint the pixels.</li>
+</ol>
+<p class="muted">Compose skips phases it doesn't need (a color-only change can re-draw without re-composing), and many state writes in one frame <em>coalesce</em> into a single recomposition.</p>
+<p><strong>The analogy that makes it click — a spreadsheet:</strong></p>
+<ul>
+<li>A cell's formula ↔ a <code>@Composable</code> function</li>
+<li>A formula reads other cells ↔ a composable reads <code>State</code></li>
+<li>Change a cell → only its dependents recalc ↔ write <code>State</code> → only its readers recompose</li>
+<li>The sheet tracks the dependency graph for you ↔ the <strong>snapshot system</strong> tracks reads for you</li>
+</ul>
+<p>You never tell a spreadsheet "when A1 changes, update B1" — you declare <code>B1 = A1 * 2</code> and it works out the graph. Compose is that, for UI.</p>
+<div class="callout callout--clo">
+<span aria-hidden="true" class="callout__icon">🎯</span>
+<div class="callout__body">
+<span class="callout__label">Why this session's rules fall straight out of the machine</span>
+<p><strong>Keep composables side-effect-free</strong> — Compose decides when, whether, in what order, and on which thread to run them (it can skip, reorder, even parallelize). <strong>Always <code>remember</code> state</strong> — without a slot it can't survive a re-run. <strong>Events only change state</strong> — a write is the one thing that triggers invalidate → recompose; the click never touches the tree directly.</p>
+</div>
+</div>
+</div>
+</div>
 <h3 id="idea-remember">2 · <code>mutableStateOf</code> and <code>remember</code></h3>
 <p>
           Two separate problems, two tools:
