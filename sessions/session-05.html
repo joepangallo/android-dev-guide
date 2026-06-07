@@ -1159,6 +1159,25 @@ fun totalOf(bill: Double, pct: Double, roundUp: Boolean): Double =
         diagnose it in two seconds instead of twenty minutes.</p>
 <div class="accordion">
 <div class="accordion__item">
+<button class="accordion__head" type="button">“Compose is event-driven — <code>onClick</code> is basically a webhook/listener that updates the UI.”</button>
+<div class="accordion__body">
+<p><strong>Wrong model:</strong> "A tap fires an event, my handler runs and updates the UI — just like an old <code>setOnClickListener</code>, a callback, or a webhook."</p>
+<p><strong>Why it's wrong:</strong> that is the <em>old, imperative</em> View model (push an event → mutate the widget by hand). Compose is <strong>state-driven</strong>, not event-driven: <code>UI = f(state)</code>. An event's <em>only</em> job is to change state; the UI then updates because Compose re-runs (recomposes) every composable that <em>read</em> that state. The click never touches the UI directly — it is one step removed.</p>
+<div class="codeblock"><span class="codeblock__lang">Kotlin · old (imperative) vs Compose (state-driven)</span><pre><code>// OLD / webhook-style: the handler DIRECTLY mutates the widget
+button.setOnClickListener {
+    count++
+    counterText.text = "Count: $count"   // you update the UI by hand
+}
+
+// COMPOSE: the handler ONLY updates state — never touches the UI
+Button(onClick = { count++ }) {           // event's only job: change state
+    Text("Count: $count")                 // UI is DERIVED from state
+}</code></pre></div>
+<p><strong>Correct model:</strong> <em>unidirectional data flow</em> — state flows <strong>down</strong> into composables (they read it to render), events flow <strong>up</strong> (a callback updates whoever owns the state). Then <em>state change → recomposition → new UI</em>. Think spreadsheet: you declare <code>B1 = A1 * 2</code>; you never write "when A1 changes, update B1."</p>
+<p><strong>Symptom you'd see:</strong> someone with the event-driven model hunts for a way to "grab the <code>Text</code> and set it" inside <code>onClick</code> (there isn't one), or mutates a plain <code>var</code> expecting the screen to follow — and nothing changes, because nothing that was <em>read as state</em> was updated.</p>
+</div>
+</div>
+<div class="accordion__item">
 <button class="accordion__head" type="button">“<code>mutableStateOf</code> alone is enough — I can skip <code>remember</code>.”</button>
 <div class="accordion__body">
 <p><strong>Wrong model:</strong> "<code>mutableStateOf(0)</code> creates the state, so it persists." </p>
