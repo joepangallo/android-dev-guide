@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# COP4667 Teaching Guide — local server launcher (double-click on macOS).
+# Android Development Teaching Guide — local server launcher (double-click on macOS).
 #
 # WHY: the live "Run" buttons (challenge arena, runnable code) compile on
 # JetBrains' Kotlin server. That server refuses requests from a file:// page
@@ -18,7 +18,7 @@ if [ -z "$PY" ]; then
 fi
 URL="http://localhost:${PORT}/index.html"
 echo "────────────────────────────────────────────────────────────"
-echo "  COP4667 Android Development — Teaching Guide"
+echo "  Android Development — Teaching Guide"
 echo "  Serving at:  ${URL}"
 echo ""
 echo "  Keep this window OPEN while you use the guide."

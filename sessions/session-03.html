@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<meta content="COP4667 Android Development — Session 3: Activities, the Lifecycle, Intents &amp; Multi-Screen Navigation. live-coding, lab, and assessments." name="description"/>
-<title>Session 3 — Activities, Lifecycle, Intents &amp; Navigation | COP4667</title>
+<meta content="Android Development — Session 3: Activities, the Lifecycle, Intents &amp; Multi-Screen Navigation. live-coding, lab, and assessments." name="description"/>
+<title>Session 3 — Activities, Lifecycle, Intents &amp; Navigation | Android Development</title>
 <link href="../assets/style.css" rel="stylesheet"/>
 <link href="../assets/mastery.css" rel="stylesheet"/>
 <style>
@@ -52,7 +52,7 @@
 <div class="wrap">
 <a class="brand" href="../index.html">
 <span aria-hidden="true" class="brand__mark">▲</span>
-<span>COP4667<small>Android Development</small></span>
+<span>Android Development</span>
 </a>
 <nav aria-label="Primary" class="nav">
 <a href="../index.html">Hub</a>
@@ -338,7 +338,7 @@ context.startActivity(dial)
 // 3. Share plain text via the Android share sheet
 val share = Intent(Intent.ACTION_SEND).apply {
     type = "text/plain"
-    putExtra(Intent.EXTRA_TEXT, "Check out my COP4667 app idea!")
+    putExtra(Intent.EXTRA_TEXT, "Check out my Android app idea!")
 }
 context.startActivity(Intent.createChooser(share, "Share via"))</code></pre>
 </div>
@@ -1227,12 +1227,12 @@ fun main() {
           {
             "id": "rc3q4",
             "type": "single",
-            "prompt": "You want a button that lets the user share the text 'My COP4667 app' to any app they choose. Which Intent is correct?",
+            "prompt": "You want a button that lets the user share the text 'My Android app' to any app they choose. Which Intent is correct?",
             "options": [
-              { "id": "a", "text": "Intent(context, ShareActivity::class.java).putExtra(\"text\", \"My COP4667 app\")" },
-              { "id": "b", "text": "Intent(Intent.ACTION_SEND).apply { type = \"text/plain\"; putExtra(Intent.EXTRA_TEXT, \"My COP4667 app\") }" },
-              { "id": "c", "text": "Intent(Intent.ACTION_VIEW, Uri.parse(\"My COP4667 app\"))" },
-              { "id": "d", "text": "Intent(Intent.ACTION_DIAL).putExtra(Intent.EXTRA_TEXT, \"My COP4667 app\")" }
+              { "id": "a", "text": "Intent(context, ShareActivity::class.java).putExtra(\"text\", \"My Android app\")" },
+              { "id": "b", "text": "Intent(Intent.ACTION_SEND).apply { type = \"text/plain\"; putExtra(Intent.EXTRA_TEXT, \"My Android app\") }" },
+              { "id": "c", "text": "Intent(Intent.ACTION_VIEW, Uri.parse(\"My Android app\"))" },
+              { "id": "d", "text": "Intent(Intent.ACTION_DIAL).putExtra(Intent.EXTRA_TEXT, \"My Android app\")" }
             ],
             "correct": ["b"],
             "explanation": "Sharing arbitrary text to a user-chosen app is the textbook implicit ACTION_SEND with type=\"text/plain\" and EXTRA_TEXT, then optionally wrapped in createChooser. Option A is an EXPLICIT intent to a specific class — it can't let the user pick. ACTION_VIEW expects a URI to view, not free text. ACTION_DIAL is for phone numbers and ignores EXTRA_TEXT."

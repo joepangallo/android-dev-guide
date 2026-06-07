@@ -1,8 +1,8 @@
-# COP4667 — Android Development · Interactive Teaching Guide
+# Android Development · Interactive Teaching Guide
 
-A self-contained, interactive teaching guide for **COP4667 Android Development** (Keiser University, B.S. Software Engineering). Built with plain HTML/CSS/JS — no build step, no dependencies.
+A self-contained, interactive teaching guide for **Android Development**. Built with plain HTML/CSS/JS — no build step, no dependencies.
 
-**▶ Live site:** https://joepangallo.github.io/cop4667-android-guide/
+**▶ Live site:** https://joepangallo.github.io/android-dev-guide/
 
 ## What's inside
 

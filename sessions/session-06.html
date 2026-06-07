@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<meta content="COP4667 Android Development — Session 6 lesson plan: Material 3 theming, responsive/adaptive layout, Quiz 1, and Project Milestone 1." name="description"/>
-<title>Session 6 · Material 3 Theming &amp; Responsive Design — COP4667</title>
+<meta content="Android Development — Session 6 lesson plan: Material 3 theming, responsive/adaptive layout, Quiz 1, and Project Milestone 1." name="description"/>
+<title>Session 6 · Material 3 Theming &amp; Responsive Design — Android Development</title>
 <link href="../assets/style.css" rel="stylesheet"/>
 <link href="../assets/mastery.css" rel="stylesheet"/>
 <style>
@@ -49,7 +49,7 @@
 <div class="wrap">
 <a class="brand" href="../index.html">
 <span aria-hidden="true" class="brand__mark">🤖</span>
-<span>COP4667<small>Android Development</small></span>
+<span>Android Development</span>
 </a>
 <nav aria-label="Primary" class="nav">
 <a href="../index.html">Hub</a>
@@ -215,7 +215,7 @@ private val DarkColors = darkColorScheme(
 
 // 3) The theme composable wraps your app's content.
 @Composable
-fun KeiserFitTheme(
+fun FitTrackTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,          // Material You on Android 12+
     content: @Composable () -&gt; Unit
@@ -231,8 +231,8 @@ fun KeiserFitTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = KeiserTypography,   // defined in Type.kt
-        shapes = KeiserShapes,           // defined in Shape.kt
+        typography = FitTrackTypography,   // defined in Type.kt
+        shapes = FitTrackShapes,           // defined in Shape.kt
         content = content
     )
 }</code></pre></div>
@@ -243,8 +243,8 @@ fun KeiserFitTheme(
 <li><strong><code>content()</code></strong> — <em>calling</em> the slot is how you <strong>place</strong> the caller's UI at this exact spot in the tree. Here it happens indirectly via <code>MaterialTheme</code>; in your own slot you'd call <code>content()</code> yourself (see below).</li>
 </ul>
 <p>The caller supplies the slot as a <strong>trailing lambda</strong> — that's the <code>{ … }</code> block you've been writing after <code>Surface</code>, <code>Column</code>, and <code>Scaffold</code> all along. So this call passes <code>Greeting()</code> <em>into</em> the theme's slot:</p>
-<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · the caller fills the slot</span><pre><code>KeiserFitTheme {        // everything in these braces becomes `content`
-    Greeting()          // …and gets placed where KeiserFitTheme calls content()
+<div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · the caller fills the slot</span><pre><code>FitTrackTheme {        // everything in these braces becomes `content`
+    Greeting()          // …and gets placed where FitTrackTheme calls content()
 }</code></pre></div>
 <p>You can build your own slot composable with the exact same pattern — accept a <code>content</code> parameter, then call it where you want the caller's UI to land:</p>
 <div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · make your own slot</span><pre><code>@Composable
@@ -271,7 +271,7 @@ Labeled(label = "Heart rate") {
 <span aria-hidden="true" class="callout__icon">💡</span>
 <div class="callout__body">
 <span class="callout__label">Where the theme is applied</span>
-<p>Wrap your top-level content in <code>setContent { KeiserFitTheme { /* app */ } }</code> inside <code>MainActivity.onCreate</code>. Everything inside the lambda can now read <code>MaterialTheme.colorScheme</code>, <code>.typography</code>, and <code>.shapes</code>.</p>
+<p>Wrap your top-level content in <code>setContent { FitTrackTheme { /* app */ } }</code> inside <code>MainActivity.onCreate</code>. Everything inside the lambda can now read <code>MaterialTheme.colorScheme</code>, <code>.typography</code>, and <code>.shapes</code>.</p>
 </div>
 </div>
 <div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · ui/theme/Type.kt &amp; Shape.kt</span><pre><code>import androidx.compose.material3.Typography
@@ -282,14 +282,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val KeiserTypography = Typography(
+val FitTrackTypography = Typography(
     titleLarge = TextStyle(fontWeight = FontWeight.Bold,   fontSize = 22.sp, lineHeight = 28.sp),
     bodyLarge  = TextStyle(fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
     labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 16.sp)
     // Unspecified styles fall back to Material 3 defaults — that's fine.
 )
 
-val KeiserShapes = Shapes(
+val FitTrackShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
     small      = RoundedCornerShape(8.dp),
     medium     = RoundedCornerShape(14.dp),   // matches our card radius
@@ -313,7 +313,7 @@ val KeiserShapes = Shapes(
 // Useful for a settings screen and for demoing light/dark live.
 var userPrefersDark by rememberSaveable { mutableStateOf(false) }
 
-KeiserFitTheme(darkTheme = userPrefersDark, dynamicColor = false) {
+FitTrackTheme(darkTheme = userPrefersDark, dynamicColor = false) {
     Scaffold { padding -&gt;
         Column(Modifier.padding(padding)) {
             Switch(
@@ -380,7 +380,7 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 
 setContent {
-    KeiserFitTheme {
+    FitTrackTheme {
         val windowSize = calculateWindowSizeClass(this)
         when (windowSize.widthSizeClass) {
             WindowWidthSizeClass.Compact -&gt; WorkoutListScreen()            // phone: list only
@@ -478,7 +478,7 @@ Column(
 <div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · MainActivity.kt</span><pre><code>override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
-        KeiserFitTheme {                       // &lt;-- our custom theme
+        FitTrackTheme {                       // &lt;-- our custom theme
             Surface(color = MaterialTheme.colorScheme.background) {
                 AppNavHost()                   // the 2-screen nav from Session 3
             }
@@ -516,7 +516,7 @@ Column(
 <li class="step">
 <h4>Branch the top-level layout on width</h4>
 <div class="codeblock" data-lang="Kotlin"><span class="codeblock__lang">Kotlin · MainActivity.kt</span><pre><code>setContent {
-    KeiserFitTheme {
+    FitTrackTheme {
         val size = calculateWindowSizeClass(this)
         Surface(color = MaterialTheme.colorScheme.background) {
             if (size.widthSizeClass == WindowWidthSizeClass.Expanded) {
@@ -559,7 +559,7 @@ fun WorkoutListDetail() {
 @Preview(name = "Big font", fontScale = 1.5f)
 @Composable
 fun WorkoutListPreview() {
-    KeiserFitTheme {                 // ALWAYS wrap previews in your theme
+    FitTrackTheme {                 // ALWAYS wrap previews in your theme
         WorkoutList()
     }
 }</code></pre></div>
@@ -567,7 +567,7 @@ fun WorkoutListPreview() {
 <span aria-hidden="true" class="callout__icon">💡</span>
 <div class="callout__body">
 <span class="callout__label">Preview must be wrapped in the theme</span>
-<p>A preview that isn't wrapped in <code>KeiserFitTheme { }</code> falls back to default Material colors and "looks broken." If a student says "my preview is plain/ugly," check for the missing theme wrapper first.</p>
+<p>A preview that isn't wrapped in <code>FitTrackTheme { }</code> falls back to default Material colors and "looks broken." If a student says "my preview is plain/ugly," check for the missing theme wrapper first.</p>
 </div>
 </div>
 </section>
@@ -724,8 +724,8 @@ fun WorkoutListPreview() {
             "id": "q5",
             "type": "short",
             "prompt": "Name the composable function you wrap your previews in so they show your custom colors. (Use the lecture's theme name.)",
-            "correct": ["KeiserFitTheme", "KeiserFitTheme()", "YourAppTheme"],
-            "explanation": "Always wrap @Preview content in your app's theme composable (e.g., KeiserFitTheme { ... }); otherwise the preview falls back to default Material colors."
+            "correct": ["FitTrackTheme", "FitTrackTheme()", "YourAppTheme"],
+            "explanation": "Always wrap @Preview content in your app's theme composable (e.g., FitTrackTheme { ... }); otherwise the preview falls back to default Material colors."
           }
         ]
       }
@@ -742,7 +742,7 @@ fun WorkoutListPreview() {
         {"front": "Modifier.weight(2f) does what?", "back": "Inside a Row/Column, it claims 2 shares of the remaining space relative to siblings' weights.", "tag": "Layout"},
         {"front": "remember vs rememberSaveable", "back": "Both cache a value across recompositions; rememberSaveable also survives config changes/process death by saving to the saved-instance-state bundle.", "tag": "State"},
         {"front": "What is recomposition?", "back": "Compose re-running composable functions when the state they read changes, to update the UI.", "tag": "State"},
-        {"front": "Why wrap @Preview in your theme?", "back": "Otherwise the preview uses default Material colors and looks wrong. KeiserFitTheme { ... } makes the preview match the running app.", "tag": "Preview"}
+        {"front": "Why wrap @Preview in your theme?", "back": "Otherwise the preview uses default Material colors and looks wrong. FitTrackTheme { ... } makes the preview match the running app.", "tag": "Preview"}
       ]
       </script>
 </section>
@@ -1174,10 +1174,10 @@ fun main() {
 <footer class="footer">
 <div class="wrap">
 <div>
-<span class="footer__brand">COP4667 Android Development</span> · Session 6 of 12 · Week 2 — Building UIs with Jetpack Compose
+<span class="footer__brand">Android Development</span> · Session 6 of 12 · Week 2 — Building UIs with Jetpack Compose
     </div>
 <div class="muted">
-      Keiser University · B.S. Software Engineering · 3.0 credit hours · Teaching guide
+      3.0 credit hours · Teaching guide
     </div>
 <div>
 <a href="../index.html">↑ Course Hub</a> ·
