@@ -176,9 +176,9 @@
 <header>
 <div class="topbar">
 <div class="wrap">
-<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<a aria-label="Android Development course hub" class="brand" href="../index.html">
 <span aria-hidden="true" class="brand__mark">A</span>
-<span>COP4667<small>Android Development</small></span>
+<span>Android Development</span>
 </a>
 <nav aria-label="Primary" class="nav">
 <a href="../index.html">Hub</a>
@@ -1522,11 +1522,11 @@ fun main() {
 <footer class="footer">
 <div class="wrap">
 <div>
-<span class="footer__brand">COP4667 · Android Development</span><br/>
+<span class="footer__brand">Android Development</span><br/>
 <span class="muted">Lab tool — Networking Pipeline Visualizer (HTTP → JSON → UI) · CLO 5 &amp; CLO 6</span>
 </div>
 <div class="muted">
-        Keiser University · B.S. Software Engineering · Face-to-Face<br/>
+        Face-to-Face<br/>
         Built with Kotlin + Jetpack Compose + Material 3. Official docs: <a href="https://developer.android.com/courses/android-basics-compose/unit-5" rel="noopener" target="_blank">Android Basics Unit 5 — Connect to the internet</a>.
       </div>
 </div>
@@ -1564,7 +1564,7 @@ fun main() {
     var resetBtn = $("#vizReset");
     var outcomeBtns = $all(".seg [data-outcome]");
 
-    var STORE_KEY = "tg:cop4667:viz-outcome:retrofit-flow";
+    var STORE_KEY = "tg:android-dev:viz-outcome:retrofit-flow";
     var outcome = "loading"; // loading | success | error
     try { var saved = localStorage.getItem(STORE_KEY); if (saved) outcome = saved; } catch (e) {}
 
