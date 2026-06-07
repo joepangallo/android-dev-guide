@@ -1,5 +1,5 @@
 /* ==========================================================================
-   COP4667 Android Development — Teaching Guide Interactivity (app.js)
+   Android Development — Teaching Guide Interactivity (app.js)
    --------------------------------------------------------------------------
    Vanilla JS, no dependencies. Auto-inits on DOMContentLoaded.
    Exposes window.TG with all public helpers.
@@ -24,7 +24,7 @@
    *  Small utilities
    * ---------------------------------------------------------------------- */
   var TG = {};
-  var STORAGE_PREFIX = "tg:cop4667:";
+  var STORAGE_PREFIX = "tg:android-dev:";
 
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }

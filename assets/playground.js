@@ -1,5 +1,5 @@
 /* ==========================================================================
-   COP4667 Android Development — Teaching Guide
+   Android Development — Teaching Guide
    playground.js — LIVE, EDITABLE, RUNNABLE code (progressive enhancement)
    --------------------------------------------------------------------------
    Turns any  <div class="codeblock" data-run="kotlin|compose"> … </div>

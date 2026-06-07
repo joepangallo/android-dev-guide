@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Session 10 — Networking, REST APIs, JSON &amp; Retrofit · COP4667</title>
-<meta content="COP4667 Android Development — Session 10 of 12. Networking, REST APIs, JSON parsing, and Retrofit with Kotlin coroutines and Jetpack Compose. Live-coding demo, hands-on API consumer lab, overview." name="description"/>
+<title>Session 10 — Networking, REST APIs, JSON &amp; Retrofit · Android Development</title>
+<meta content="Android Development — Session 10 of 12. Networking, REST APIs, JSON parsing, and Retrofit with Kotlin coroutines and Jetpack Compose. Live-coding demo, hands-on API consumer lab, overview." name="description"/>
 <link href="../assets/style.css" rel="stylesheet"/>
 <link href="../assets/mastery.css" rel="stylesheet"/>
 <style>
@@ -44,6 +44,12 @@
     .timeblock__body summary { cursor: pointer; font-weight: 700; color: var(--teal-2); }
     [data-theme="dark"] .timeblock__body summary { color: var(--green); }
     .mini-legend { display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: var(--fs-sm); color: var(--muted); }
+    .stack-walkthrough { grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); }
+    .stack-walkthrough :not(pre) > code {
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
   </style>
 </head>
 <body>
@@ -52,9 +58,9 @@
   ===================================================================== -->
 <header class="topbar no-print">
 <div class="wrap">
-<a aria-label="COP4667 course hub" class="brand" href="../index.html">
+<a aria-label="Android Development course hub" class="brand" href="../index.html">
 <span aria-hidden="true" class="brand__mark">🤖</span>
-<span>COP4667<small>Android Development</small></span>
+<span>Android Development</span>
 </a>
 <nav aria-label="Primary" class="nav">
 <a href="../index.html">Hub</a>
@@ -821,6 +827,108 @@ fun QuoteCard(quote: Quote) {
 </div>
 </li>
 </ol>
+<h3 id="network-stack-walkthrough">Read the network stack, every line explained</h3>
+<p class="muted">After the app runs once, slow down and read the code as a data path. The goal is not to memorize Retrofit syntax; the goal is to know what every line is responsible for, where errors can happen, and which layer is allowed to know about HTTP.</p>
+<div class="stack-walkthrough grid grid-2">
+<div class="card">
+<h4 class="card__title">1. Gradle + manifest: make networking possible</h4>
+<ul>
+<li><strong><code>kotlin("plugin.serialization") version "2.2.20"</code></strong> adds compile-time support for Kotlin serialization annotations. Keep this version aligned with the Kotlin version, because the compiler plugin is tied to the compiler.</li>
+<li><strong><code>implementation("com.squareup.retrofit2:retrofit:3.0.0")</code></strong> adds Retrofit, the library that turns annotated Kotlin interfaces into HTTP calls.</li>
+<li><strong><code>implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")</code></strong> adds the JSON parser that knows how to create Kotlin data classes from a JSON string.</li>
+<li><strong><code>implementation("com.squareup.retrofit2:converter-kotlinx-serialization:3.0.0")</code></strong> connects those two worlds: Retrofit downloads bytes, the converter asks kotlinx.serialization to decode them.</li>
+<li><strong><code>logging-interceptor</code></strong> is a teaching and debugging tool. It prints the request and response in Logcat so you can see whether the failure is "no request happened," "the server answered with an error," or "JSON parsing failed."</li>
+<li><strong><code>lifecycle-viewmodel-compose</code></strong> gives Compose-friendly lifecycle tools such as <code>viewModel()</code> and lifecycle-aware collection. Networking results should flow through the ViewModel, not through a composable-local variable.</li>
+<li><strong><code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code></strong> is the OS permission gate. Without it, the app is not allowed to open the network socket, even if every Kotlin file is correct.</li>
+</ul>
+</div>
+<div class="card">
+<h4 class="card__title">2. Model file: teach Kotlin the shape of the JSON</h4>
+<ul>
+<li><strong><code>import kotlinx.serialization.Serializable</code></strong> brings in the annotation that tells the compiler to generate JSON encode/decode code for this class.</li>
+<li><strong><code>@Serializable</code></strong> goes on each class that should be created from JSON. If you forget it, Retrofit can download the response but the converter cannot build your object.</li>
+<li><strong><code>data class QuoteResponse(...)</code></strong> models the top-level object returned by the quotes endpoint. The API does not return a bare list; it returns an object with fields such as <code>count</code> and <code>results</code>.</li>
+<li><strong><code>val count: Int</code></strong> says the JSON field named <code>count</code> must decode into an integer. If the server sends text there, decoding fails, which is good: the model no longer matches reality.</li>
+<li><strong><code>val results: List&lt;Quote&gt;</code></strong> says the interesting part of the response is a list of quote objects. The repository later unwraps this so the UI does not care about the response envelope.</li>
+<li><strong><code>@SerialName("_id") val id: String</code></strong> maps the JSON key <code>_id</code> to the nicer Kotlin property name <code>id</code>. Use this whenever a JSON key is ugly, reserved, or not idiomatic Kotlin.</li>
+<li><strong><code>val tags: List&lt;String&gt; = emptyList()</code></strong> gives a safe default. If the API omits <code>tags</code>, the app still gets an empty list instead of a crash.</li>
+</ul>
+</div>
+<div class="card">
+<h4 class="card__title">3. Retrofit service: describe the request, do not perform it yet</h4>
+<ul>
+<li><strong><code>interface QuoteApiService</code></strong> is only a contract. There is no hand-written class body; Retrofit generates the runtime implementation for you.</li>
+<li><strong><code>@GET("quotes")</code></strong> says this function performs an HTTP GET request to the relative path <code>quotes</code>. Combined with <code>BASE_URL</code>, the final URL starts as <code>https://api.quotable.io/quotes</code>.</li>
+<li><strong><code>suspend fun getQuotes(...)</code></strong> means this call can pause without blocking the main thread. You must call it from a coroutine, which is why the ViewModel uses <code>viewModelScope.launch</code>.</li>
+<li><strong><code>@Query("limit") limit: Int = 20</code></strong> appends <code>?limit=20</code> by default. The parameter stays typed as an <code>Int</code> in Kotlin; Retrofit handles turning it into URL text.</li>
+<li><strong><code>: QuoteResponse</code></strong> is the decoded return type. By the time this function returns, the HTTP body has already been parsed into your Kotlin model or an exception has been thrown.</li>
+</ul>
+</div>
+<div class="card">
+<h4 class="card__title">4. Retrofit singleton: build the client once</h4>
+<ul>
+<li><strong><code>private const val BASE_URL = "https://api.quotable.io/"</code></strong> must end with a slash. Retrofit joins this base with the relative path in <code>@GET("quotes")</code>.</li>
+<li><strong><code>Json { ignoreUnknownKeys = true }</code></strong> tells the decoder to ignore JSON fields your model does not list. That makes the app resilient when the server adds extra fields later.</li>
+<li><strong><code>OkHttpClient.Builder()</code></strong> creates the underlying HTTP client Retrofit will use for real network traffic.</li>
+<li><strong><code>.addInterceptor(HttpLoggingInterceptor().apply { ... })</code></strong> attaches request/response logging. <code>apply</code> configures the interceptor object and then returns that same object to <code>addInterceptor</code>.</li>
+<li><strong><code>object QuoteApi</code></strong> makes one process-wide holder for the Retrofit service. This prevents rebuilding the client every time a screen appears.</li>
+<li><strong><code>val service: QuoteApiService by lazy { ... }</code></strong> creates the service the first time someone asks for it, then reuses it. <code>by lazy</code> is Kotlin's "build once, cache forever" pattern.</li>
+<li><strong><code>Retrofit.Builder().baseUrl(...).client(...).addConverterFactory(...).build()</code></strong> assembles the three required pieces: where requests go, how HTTP is performed, and how JSON becomes Kotlin.</li>
+<li><strong><code>.create(QuoteApiService::class.java)</code></strong> asks Retrofit to generate an implementation of your interface. This is the moment the annotation-only interface becomes callable code.</li>
+</ul>
+</div>
+<div class="card">
+<h4 class="card__title">5. Repository: hide Retrofit from the rest of the app</h4>
+<ul>
+<li><strong><code>interface QuoteRepository</code></strong> describes what the app needs: "give me quotes." It does not mention HTTP, Retrofit, URLs, or JSON.</li>
+<li><strong><code>suspend fun getQuotes(limit: Int = 20): List&lt;Quote&gt;</code></strong> keeps the repository asynchronous because the real implementation may hit the network, disk, or both.</li>
+<li><strong><code>class NetworkQuoteRepository(...)</code></strong> is the production implementation. The name admits where it gets data, but callers only depend on the interface.</li>
+<li><strong><code>private val service: QuoteApiService = QuoteApi.service</code></strong> supplies the real Retrofit service by default while still allowing a fake service in a test or classroom demo.</li>
+<li><strong><code>service.getQuotes(limit).results</code></strong> is the translation boundary: Retrofit returns the API envelope, and the repository returns only the list the screen actually needs.</li>
+</ul>
+</div>
+<div class="card">
+<h4 class="card__title">6. ViewModel: turn work into screen state</h4>
+<ul>
+<li><strong><code>private val repository: QuoteRepository = NetworkQuoteRepository()</code></strong> gives the ViewModel a data source. In a larger app, dependency injection would provide it; here the default keeps the sample readable.</li>
+<li><strong><code>private val _uiState = MutableStateFlow&lt;QuoteUiState&gt;(QuoteUiState.Loading)</code></strong> creates the private writable state holder. The screen starts in <code>Loading</code> because no network response has arrived yet.</li>
+<li><strong><code>val uiState: StateFlow&lt;QuoteUiState&gt; = _uiState.asStateFlow()</code></strong> exposes a read-only view. Compose can observe the state, but only the ViewModel can write it.</li>
+<li><strong><code>init { loadQuotes() }</code></strong> kicks off the first load when the ViewModel is created, so the screen has data without the user pressing a button.</li>
+<li><strong><code>_uiState.value = QuoteUiState.Loading</code></strong> resets the UI before each attempt. Retry should visibly return to the loading state, not leave stale content pretending nothing is happening.</li>
+<li><strong><code>viewModelScope.launch { ... }</code></strong> starts a coroutine tied to the ViewModel lifecycle. When the ViewModel is cleared, this work is cancelled automatically.</li>
+<li><strong><code>try { QuoteUiState.Success(repository.getQuotes()) }</code></strong> is the happy path: await the suspend repository call, then wrap the data in a success state.</li>
+<li><strong><code>catch (e: IOException)</code></strong> handles connectivity and transport problems separately, which lets you show a useful "check your network" message.</li>
+<li><strong><code>catch (e: Exception)</code></strong> catches the remaining unexpected failures, such as decoding issues. Do not stop at this generic branch only; students need to learn that offline is a normal, expected mobile state.</li>
+</ul>
+</div>
+<div class="card">
+<h4 class="card__title">7. Compose route and list: state becomes pixels</h4>
+<ul>
+<li><strong><code>fun QuoteRoute(viewModel: QuoteViewModel = viewModel())</code></strong> is a screen-level entry point. It obtains the ViewModel and connects it to stateless UI.</li>
+<li><strong><code>val uiState by viewModel.uiState.collectAsStateWithLifecycle()</code></strong> collects the public <code>StateFlow</code> and turns it into Compose state. When the flow changes, this composable recomposes; when the screen is stopped, collection pauses.</li>
+<li><strong><code>QuoteScreen(uiState = uiState, onRetry = viewModel::loadQuotes)</code></strong> passes a value down and an event callback up. <code>viewModel::loadQuotes</code> is a function reference: "call this ViewModel function when retry is clicked."</li>
+<li><strong><code>LazyColumn(...)</code></strong> renders only the visible rows plus a small buffer, which is why it is the right list container for API results.</li>
+<li><strong><code>items(quotes, key = { it.id })</code></strong> gives each row a stable identity. Stable keys help Compose keep row state attached to the correct item when the list changes.</li>
+<li><strong><code>QuoteCard(quote)</code></strong> keeps each row small and readable. The list decides <em>which</em> items appear; the card decides <em>how one item</em> appears.</li>
+</ul>
+</div>
+<div class="card card--teal">
+<h4 class="card__title">One request, traced from tap to pixel</h4>
+<ol>
+<li>The user opens the screen or taps Retry.</li>
+<li><code>QuoteRoute</code> calls or references <code>viewModel.loadQuotes()</code>.</li>
+<li>The ViewModel sets <code>Loading</code>, so Compose shows progress.</li>
+<li><code>viewModelScope</code> launches the suspend work off the direct UI path.</li>
+<li>The repository asks the Retrofit service for quotes.</li>
+<li>Retrofit + OkHttp perform <code>GET /quotes?limit=20</code>.</li>
+<li>The converter decodes JSON into <code>QuoteResponse</code>.</li>
+<li>The repository unwraps <code>results</code> into <code>List&lt;Quote&gt;</code>.</li>
+<li>The ViewModel stores <code>Success(list)</code> or <code>Error(message)</code>.</li>
+<li>Compose observes the new state and re-renders the spinner, list, or error view.</li>
+</ol>
+<p class="muted">If a student can narrate this path without looking, they understand the whole networking lesson.</p>
+</div>
+</div>
 </section>
 <!-- ==============================================================
            8. HANDS-ON LAB
@@ -1549,11 +1657,11 @@ fun main() {
 <footer class="footer">
 <div class="wrap">
 <div>
-<span class="footer__brand">COP4667 Android Development</span> · Session 10 of 12 ·
+<span class="footer__brand">Android Development</span> · Session 10 of 12 ·
         Networking, REST APIs, JSON &amp; Retrofit
       </div>
 <div class="muted">
-        Keiser University · B.S. Software Engineering · Jetpack Compose + Kotlin ·
+        Jetpack Compose + Kotlin ·
         <a href="../index.html">Course Hub</a>
 </div>
 </div>

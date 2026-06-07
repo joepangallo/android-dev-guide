@@ -1,5 +1,5 @@
 /* ==========================================================================
-   COP4667 Android Development — Teaching Guide
+   Android Development — Teaching Guide
    mastery.js — the shared MASTERY ENGINE  (companion to mastery.css)
    --------------------------------------------------------------------------
    A dependency-free, vanilla-JS learning instrument that works from file://.

@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Session 1 · Welcome, the Android Ecosystem &amp; Your First App · COP4667</title>
-<meta content="COP4667 Android Development — Session 1 of 12. Course overview, the Android ecosystem, installing and touring Android Studio, anatomy of a Compose project, and building your first @Composable 'Hello Android' app. live-coding, lab." name="description"/>
+<title>Session 1 · Welcome, the Android Ecosystem &amp; Your First App · Android Development</title>
+<meta content="Android Development — Session 1 of 12. Course overview, the Android ecosystem, installing and touring Android Studio, anatomy of a Compose project, and building your first @Composable 'Hello Android' app. live-coding, lab." name="description"/>
 <link href="../assets/style.css" rel="stylesheet"/>
 <link href="../assets/mastery.css" rel="stylesheet"/>
 <style>
@@ -39,11 +39,9 @@
 <!-- ====================== TOP NAV ====================== -->
 <header class="topbar no-print">
 <div class="wrap">
-<a aria-label="COP4667 teaching guide home" class="brand" href="../index.html">
+<a aria-label="Course home" class="brand" href="../index.html">
 <span aria-hidden="true" class="brand__mark">▶</span>
-<span>COP4667
-          <small>Android Development</small>
-</span>
+<span>Android Development</span>
 </a>
 <nav aria-label="Primary" class="nav">
 <a href="../index.html">Hub</a>
@@ -123,7 +121,7 @@
 <!-- Big idea 1 -->
 <h3 id="idea-course">1 · Course overview &amp; the term project</h3>
 <div class="card">
-<p>COP4667 is a hands-on, project-driven course. We meet 3 days a week for 4 hours, ~4 weeks. There is no textbook — the <a href="https://developer.android.com/courses/android-basics-compose/course">official Android Basics with Compose</a> course and the Android Developer docs are our reference.</p>
+<p>This is a hands-on, project-driven course. We meet 3 days a week for 4 hours, ~4 weeks. There is no textbook — the <a href="https://developer.android.com/courses/android-basics-compose/course">official Android Basics with Compose</a> course and the Android Developer docs are our reference.</p>
 <div class="kpi-grid">
 <div class="kpi"><span class="kpi__num">12</span><span class="kpi__label">sessions</span></div>
 <div class="kpi"><span class="kpi__num">4</span><span class="kpi__label">hr blocks</span></div>
@@ -160,7 +158,7 @@
 <p>Two numbers you will set in every project and should understand today:</p>
 <div class="codeblock"><span class="codeblock__lang">Gradle (Kotlin DSL)</span><pre><code>android {
     defaultConfig {
-        applicationId = "edu.keiser.cop4667.hello"
+        applicationId = "com.example.hello"
         minSdk = 24        // oldest Android version your app supports (Android 7.0)
         targetSdk = 36     // the version you tested/built against (Android 16)
         versionCode = 1
@@ -212,7 +210,7 @@
 ├─ <span class="dir">manifests/</span>
 │   └─ AndroidManifest.xml      <span class="note"># declares app, activities, permissions</span>
 ├─ <span class="dir">kotlin+java/</span>
-│   └─ edu.keiser.cop4667.hello/
+│   └─ com.example.hello/
 │       ├─ MainActivity.kt      <span class="note"># entry point; hosts your Compose UI</span>
 │       └─ ui.theme/            <span class="note"># Color.kt, Theme.kt, Type.kt (Material 3)</span>
 ├─ <span class="dir">res/</span>
@@ -270,11 +268,11 @@
 }
 
 android {
-    namespace = "edu.keiser.cop4667.hello"
+    namespace = "com.example.hello"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "edu.keiser.cop4667.hello"
+        applicationId = "com.example.hello"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -295,8 +293,8 @@ dependencies {
 <h4 id="gradle-catalog-walkthrough">build.gradle.kts (app) — the four ideas in this file</h4>
 <ul>
 <li><strong><code>alias(libs.plugins.android.application)</code></strong> — <code>libs.plugins.android.application</code> is a name defined in the version catalog (<code>gradle/libs.versions.toml</code>); <code>alias(…)</code> just applies the plugin that name points to. Same idea as the dependencies — the plugin id and its version live in the TOML file, not here.</li>
-<li><strong><code>namespace = "edu.keiser.cop4667.hello"</code></strong> — a <em>build-time</em> identity: it is the package Gradle uses to generate the <code>R</code> class (the index of your resources) and to root your Kotlin package. It is not what identifies the app on the device.</li>
-<li><strong><code>applicationId = "edu.keiser.cop4667.hello"</code></strong> — the app's unique <em>install</em> ID on the device and on Google Play; two apps can't share one. It often matches <code>namespace</code> here, but they answer different questions — see the note below.</li>
+<li><strong><code>namespace = "com.example.hello"</code></strong> — a <em>build-time</em> identity: it is the package Gradle uses to generate the <code>R</code> class (the index of your resources) and to root your Kotlin package. It is not what identifies the app on the device.</li>
+<li><strong><code>applicationId = "com.example.hello"</code></strong> — the app's unique <em>install</em> ID on the device and on Google Play; two apps can't share one. It often matches <code>namespace</code> here, but they answer different questions — see the note below.</li>
 <li><strong><code>implementation(libs.androidx.core.ktx)</code></strong> — adds a dependency that is on the classpath at both compile time and runtime, in <em>every</em> build type (debug and release). <code>libs.androidx.core.ktx</code> is — again — a catalog lookup, no version number in sight.</li>
 <li><strong><code>implementation(platform(libs.androidx.compose.bom))</code></strong> — applies the Compose <strong>BOM</strong> (Bill of Materials). The <code>platform(…)</code> wrapper says "use this only to pin versions," so the Compose lines under it (<code>material3</code>, <code>ui</code>, …) are listed <em>without a version each</em> and the BOM guarantees they're a mutually-compatible set.</li>
 <li><strong><code>debugImplementation(libs.androidx.ui.tooling)</code></strong> — same as <code>implementation</code> but included <em>only in debug builds</em>. <code>ui-tooling</code> powers the <code>@Preview</code> renderer; you want it while developing but kept out of the shipped release build.</li>
@@ -363,8 +361,8 @@ fun Hello() {
 <div class="codeblock"><span class="codeblock__lang">Kotlin · composables nest to form a tree</span><pre><code>@Composable
 fun MiniCard() {
     Column {                          // Column stacks its children top-to-bottom
-        Text("COP4667")               // child 1
-        Text("Android Development")   // child 2
+        Text("Android Development")   // child 1
+        Text("Jetpack Compose")       // child 2
         Text("Welcome!")              // child 3
     }
 }</code></pre></div>
@@ -380,7 +378,7 @@ fun MiniCard() {
 <p><strong>Recomposition</strong> is simply the name for that re-running: when data a composable reads changes, Compose re-invokes the composable (and only the parts that actually need updating) to produce the new UI. We make this concrete in Session 5 — for today, hold onto: <em>UI is a function of state; change the state and Compose redraws.</em> <span class="muted">(This is why Compose is <strong>state-driven</strong>, not "event-driven" — a tap only changes state; Session 5 unpacks that <a href="session-05.html#master-misconceptions">common misconception</a>.)</span></p>
 
 <p>Now let's read the file Android Studio generated for you, <strong>line by line</strong>. Here is the whole thing first:</p>
-<div class="codeblock"><span class="codeblock__lang">Kotlin · MainActivity.kt</span><pre><code>package edu.keiser.cop4667.hello
+<div class="codeblock"><span class="codeblock__lang">Kotlin · MainActivity.kt</span><pre><code>package com.example.hello
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -394,7 +392,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import edu.keiser.cop4667.hello.ui.theme.HelloTheme
+import com.example.hello.ui.theme.HelloTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -431,7 +429,7 @@ fun GreetingPreview() {
 <p>It looks like a lot, but it is really just two ideas: <strong>(A)</strong> an Activity that hands the screen to Compose, and <strong>(B)</strong> two composable functions you can read. Here is every line.</p>
 
 <p><strong>The <code>package</code> and <code>import</code> lines</strong> — a "table of contents" for the file:</p>
-<div class="codeblock"><span class="codeblock__lang">Kotlin · package + imports</span><pre><code>package edu.keiser.cop4667.hello                       // this file's address inside your app
+<div class="codeblock"><span class="codeblock__lang">Kotlin · package + imports</span><pre><code>package com.example.hello                       // this file's address inside your app
 
 import android.os.Bundle                               // the "saved state" type onCreate receives
 import androidx.activity.ComponentActivity             // the Activity base class that supports Compose
@@ -445,7 +443,7 @@ import androidx.compose.runtime.Composable             // the @Composable annota
 import androidx.compose.ui.Modifier                    // the Modifier type (size / padding / …)
 import androidx.compose.ui.tooling.preview.Preview     // the @Preview annotation
 import androidx.compose.ui.unit.dp                     // the 'dp' unit, used as 24.dp
-import edu.keiser.cop4667.hello.ui.theme.HelloTheme    // YOUR app's generated theme wrapper</code></pre></div>
+import com.example.hello.ui.theme.HelloTheme    // YOUR app's generated theme wrapper</code></pre></div>
 <p>You won't type these by hand: the moment you use a name like <code>Text</code>, Android Studio offers to add its <code>import</code> (put the cursor on the red name and press <kbd>⌥</kbd>+<kbd>Enter</kbd>). Each line just tells the compiler <em>where</em> that name lives.</p>
 
 <p><strong>(A) The Activity</strong> — the screen Android actually launches (it is the destination of the <em>manifest → Activity → <code>onCreate</code></em> chain from idea 4):</p>
@@ -574,7 +572,7 @@ class MainActivity : AppCompatActivity() {
 </li>
 <li class="step">
 <h4>Name it and set the package</h4>
-<p>Name: <code>Hello Android</code>. Package name: <code>edu.keiser.cop4667.hello</code>. Language is <strong>Kotlin</strong> (fixed for Compose). Minimum SDK: <strong>API 24</strong>. Build configuration language: <strong>Kotlin DSL</strong>. Click Finish.</p>
+<p>Name: <code>Hello Android</code>. Package name: <code>com.example.hello</code>. Language is <strong>Kotlin</strong> (fixed for Compose). Minimum SDK: <strong>API 24</strong>. Build configuration language: <strong>Kotlin DSL</strong>. Click Finish.</p>
 </li>
 <li class="step">
 <h4>Pick a device and Run</h4>
@@ -602,7 +600,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(text = "Hello, $name!", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-        Text(text = "Welcome to COP4667 — your first Compose app.")
+        Text(text = "Welcome to Android Development — your first Compose app.")
     }
 }</code></pre></div>
 <div class="callout callout--tip">
@@ -668,7 +666,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 <div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>@Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
-        text = "Hi, I'm Jordan — building Android in COP4667!",
+        text = "Hi, I'm Jordan — building my first Android app!",
         modifier = modifier.padding(24.dp)
     )
 }</code></pre></div>
@@ -679,7 +677,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 <div class="codeblock"><span class="codeblock__lang">Kotlin</span><pre><code>import androidx.compose.ui.graphics.Color
 
 Text(
-    text = "Hi, I'm Jordan — building Android in COP4667!",
+    text = "Hi, I'm Jordan — building my first Android app!",
     color = Color(0xFF20B265),     // Android-green-ish
     modifier = modifier.padding(24.dp)
 )</code></pre></div>
@@ -902,7 +900,7 @@ fun greet(name: String): String {
 fun main() {
     val cases = listOf(
         "Android" to "Hello, Android!",
-        "COP4667" to "Hello, COP4667!",
+        "Compose" to "Hello, Compose!",
         "Ada"     to "Hello, Ada!"
     )
     var allPass = true
@@ -1174,11 +1172,11 @@ fun main() {
 <footer class="footer">
 <div class="wrap">
 <div>
-<span class="footer__brand">COP4667 Android Development</span> · Session 1 of 12 ·
+<span class="footer__brand">Android Development</span> · Session 1 of 12 ·
         <span class="muted">Week 1: Foundations — Android Essentials &amp; Ecosystem</span>
 </div>
 <div class="muted">
-        Keiser University · B.S. Software Engineering · 3.0 credit hours ·
+        3.0 credit hours ·
         <a href="../index.html">Course Hub</a> · <a href="session-02.html">Next: Session 2 →</a>
 </div>
 </div>

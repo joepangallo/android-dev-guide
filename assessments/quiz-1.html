@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<meta content="COP4667 Android Development — Quiz 1: a 15-question assessment on Weeks 1-2 material (Kotlin fundamentals, Activity lifecycle, explicit vs implicit intents, Jetpack Compose basics, and state). Self-check with detailed explanations." name="description"/>
+<meta content="Android Development — Quiz 1: a 15-question assessment on Weeks 1-2 material (Kotlin fundamentals, Activity lifecycle, explicit vs implicit intents, Jetpack Compose basics, and state). Self-check with detailed explanations." name="description"/>
 <title>Quiz 1 — Kotlin, Lifecycle, Intents, Compose &amp; State (Weeks 1-2)</title>
 <link href="../assets/style.css" rel="stylesheet"/>
 <style>
@@ -46,7 +46,7 @@
 <div class="wrap">
 <a class="brand" href="../index.html">
 <span aria-hidden="true" class="brand__mark">🤖</span>
-<span>COP4667<small>Android Development</small></span>
+<span>Android Development</span>
 </a>
 <nav aria-label="Primary" class="nav">
 <a href="../index.html">Hub</a>
@@ -175,7 +175,7 @@
 <div class="callout__body">
 <span class="callout__label">Pass vs. score</span>
 <p>The quiz engine's "Passed / Keep studying" banner uses the 70% pass line. That is the
-              <strong>C/D boundary</strong> on the Keiser scale — so "Passed" here means you scored at least a
+              <strong>C/D boundary</strong> on the grading scale — so "Passed" here means you scored at least a
               C. Aim higher: a B requires 12/15 and an A requires 14/15.</p>
 </div>
 </div>
@@ -280,7 +280,7 @@ startActivity(implicit)
 // Implicit share
 val share = Intent(Intent.ACTION_SEND).apply {
     type = "text/plain"
-    putExtra(Intent.EXTRA_TEXT, "Check out COP4667!")
+    putExtra(Intent.EXTRA_TEXT, "Check out this app!")
 }
 startActivity(Intent.createChooser(share, "Share via"))</code></pre>
 </div>
@@ -611,10 +611,10 @@ fun CounterScreen() {
 <footer class="footer">
 <div class="wrap">
 <div>
-<span class="footer__brand">COP4667 Android Development</span> · Quiz 1 · Weeks 1–2 — Kotlin, Lifecycle, Intents, Compose &amp; State
+<span class="footer__brand">Android Development</span> · Quiz 1 · Weeks 1–2 — Kotlin, Lifecycle, Intents, Compose &amp; State
     </div>
 <div class="muted">
-      Keiser University · B.S. Software Engineering · 3.0 credit hours
+      3.0 credit hours
     </div>
 <div>
 <a href="../index.html">↑ Course Hub</a> ·
