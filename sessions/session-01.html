@@ -371,7 +371,7 @@ fun MiniCard() {
 <p><strong>The four rules every <code>@Composable</code> follows.</strong> Internalize these and almost all of the day-one confusion disappears:</p>
 <ul class="obj-list">
 <li><span class="obj-num">1</span><span><strong>It emits; it doesn't return.</strong> A composable's "output" is UI drawn on the screen. Its Kotlin return type is <code>Unit</code> (nothing) — you never write <code>return Text(…)</code>. Compare: a normal function <code>fun add(a: Int, b: Int): Int</code> hands you back a number; <code>Greeting(…)</code> hands you back nothing and instead <em>puts text on the screen</em>.</span></li>
-<li><span class="obj-num">2</span><span><strong>It can only be called from another <code>@Composable</code>.</strong> Calling <code>Text()</code> inside <code>Greeting()</code> is fine. Calling <code>Greeting()</code> from a plain function or from <code>main()</code> is a compiler error. That is exactly why the Activity uses <code>setContent { … }</code> — that lambda is the official doorway from ordinary code into "composable land."</span></li>
+<li><span class="obj-num">2</span><span><strong>It can only be called from composable context.</strong> That means either inside another <code>@Composable</code> function, or inside a lambda whose type is <code>@Composable () -&gt; Unit</code>. Calling <code>Text()</code> inside <code>Greeting()</code> is fine. Calling <code>Greeting()</code> directly from a plain function or from <code>main()</code> is a compiler error. That is exactly why the Activity uses <code>setContent { … }</code>: <code>setContent</code> is not composable, but its <code>content</code> parameter is a composable lambda, so that block is the official doorway from ordinary Android code into "composable land."</span></li>
 <li><span class="obj-num">3</span><span><strong>Name it like a UI noun, in <code>PascalCase</code>.</strong> <code>Greeting</code>, <code>Text</code>, <code>Column</code>, <code>Surface</code> — each names a <em>thing on the screen</em>, so it reads like a noun and is capitalized. (The rare composable that returns a value uses <code>camelCase</code> instead.)</span></li>
 <li><span class="obj-num">4</span><span><strong>It must be safe to re-run at any time.</strong> Compose may call your composable many times, skip it, or even run it on a background thread. So keep it fast and <strong>free of side effects</strong> — no network calls, no counters, no writing to outside variables in the body. Side-effecting work goes in a dedicated effect handler (Session 5).</span></li>
 </ul>
@@ -555,7 +555,7 @@ class MainActivity : AppCompatActivity() {
 <span aria-hidden="true" class="callout__icon">💡</span>
 <div class="callout__body">
 <span class="callout__label">Recap — the five things to nail today</span>
-<p><strong>1.</strong> A <code>@Composable</code> <em>emits</em> UI; it returns <code>Unit</code>, not a value. <strong>2.</strong> A composable can only be called from another composable — <code>setContent { }</code> is the doorway in. <strong>3.</strong> Composables <em>nest</em> to form a UI tree, and their names are <code>PascalCase</code> nouns. <strong>4.</strong> <code>@Preview</code> renders a parameter-less composable in the IDE — fast visual feedback, but <strong>Run</strong> on a device is the real test. <strong>5.</strong> <em>UI is a function of state</em>: change the inputs and Compose re-runs (recomposes) to redraw.</p>
+<p><strong>1.</strong> A <code>@Composable</code> <em>emits</em> UI; it returns <code>Unit</code>, not a value. <strong>2.</strong> A composable can only be called from composable context: another composable, or a composable lambda such as the one passed to <code>setContent { }</code>. <strong>3.</strong> Composables <em>nest</em> to form a UI tree, and their names are <code>PascalCase</code> nouns. <strong>4.</strong> <code>@Preview</code> renders a parameter-less composable in the IDE — fast visual feedback, but <strong>Run</strong> on a device is the real test. <strong>5.</strong> <em>UI is a function of state</em>: change the inputs and Compose re-runs (recomposes) to redraw.</p>
 </div>
 </div>
 </div>
@@ -790,7 +790,7 @@ Text(
                 "type": "short",
                 "prompt": "What annotation marks a Kotlin function as one that emits Jetpack Compose UI? (Include the @ symbol.)",
                 "correct": ["@Composable", "Composable"],
-                "explanation": "@Composable marks a function as composable UI. It can only be called from another @Composable function."
+                "explanation": "@Composable marks a function as composable UI. It can only be called from composable context: another @Composable function, or a composable lambda such as the content block passed to setContent { ... }."
               }
             ]
           }

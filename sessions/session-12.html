@@ -159,6 +159,13 @@ void greet(String who) {
 }</code></pre></div>
 </div>
 <p><strong>The Compose mental model</strong> is the heart of the whole course. Old Android (Views/XML) was <em>imperative</em>: you found a widget by id and mutated it (<code>textView.setText(...)</code>). Compose is <em>declarative</em>: you write a function that describes the UI <em>for a given state</em>, and the framework re-runs (recomposes) that function whenever the state changes.</p>
+<div class="callout callout--info">
+<span aria-hidden="true" class="callout__icon">ℹ️</span>
+<div class="callout__body">
+<span class="callout__label">Why <code>Greeting()</code> works inside <code>onCreate()</code></span>
+<p><code>onCreate()</code> itself is <strong>not</strong> composable, so it cannot directly call <code>Greeting()</code>. The bridge is <code>setContent { ... }</code>: <code>setContent</code> is a normal Activity function, but its <code>content</code> parameter is a composable lambda, essentially <code>@Composable () -&gt; Unit</code>. That makes the code inside the braces a composable context, so it may call <code>@Composable</code> functions. The same rule applies to <code>@Preview</code> functions — a preview function is annotated <code>@Composable</code>, so it may call <code>Greeting()</code> with sample data.</p>
+</div>
+</div>
 <div aria-label="Compose vs legacy Views" class="tabs" role="tablist">
 <button class="tab" data-tab="ui-compose">Jetpack Compose (declarative)</button>
 <button class="tab" data-tab="ui-views">Legacy Views (imperative)</button>

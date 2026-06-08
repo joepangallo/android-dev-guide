@@ -365,6 +365,34 @@ main { display: block; padding: var(--space-6) 0 var(--space-7); }
   margin: 0 0 var(--space-4);
   max-width: 64ch;
 }
+.hero a,
+.session-hero a {
+  color: #FFFFFF;
+  border-bottom-color: rgba(255,255,255,.55);
+  font-weight: 700;
+}
+.hero a:hover,
+.session-hero a:hover {
+  color: #FFE9B8;
+  border-bottom-color: currentColor;
+}
+.hero .btn:not(.btn--ghost),
+.session-hero .btn:not(.btn--ghost) {
+  color: var(--teal);
+  border-color: var(--green);
+}
+.hero .btn--ghost,
+.session-hero .btn--ghost {
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.35);
+  color: #FFFFFF;
+}
+.hero .btn--ghost:hover,
+.session-hero .btn--ghost:hover {
+  background: rgba(255,255,255,.2);
+  border-color: rgba(255,255,255,.65);
+  color: #FFFFFF;
+}
 .hero-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1043,8 +1071,22 @@ main { display: block; padding: var(--space-6) 0 var(--space-7); }
   padding: var(--space-4);
   margin: var(--space-4) 0;
   background: var(--surface-2);
+  min-inline-size: 0;
 }
-.quiz__q-prompt { font-weight: 700; margin-bottom: var(--space-3); display: flex; gap: 8px; }
+.quiz__q-prompt {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  float: left;
+  padding: 0;
+  margin: 0 0 var(--space-3);
+  font-weight: 700;
+  line-height: 1.35;
+}
 .quiz__q-prompt .quiz__num {
   flex: 0 0 auto;
   display: inline-grid; place-items: center;
@@ -1052,7 +1094,7 @@ main { display: block; padding: var(--space-6) 0 var(--space-7); }
   background: var(--teal-2); color: #DDF6F2;
   border-radius: 50%; font-size: var(--fs-xs); font-weight: 800;
 }
-.quiz__options { display: grid; gap: var(--space-2); list-style: none; padding: 0; margin: 0; }
+.quiz__options { clear: both; display: grid; gap: var(--space-2); list-style: none; padding: 0; margin: 0; }
 .quiz__option {
   display: flex; align-items: flex-start; gap: var(--space-3);
   padding: var(--space-3);
@@ -1254,6 +1296,8 @@ main { display: block; padding: var(--space-6) 0 var(--space-7); }
   font-size: var(--fs-sm);
   font-weight: 600;
   border-left: 3px solid transparent;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
 }
 .tg-toc a:hover { background: var(--surface-2); color: var(--ink); }
 .tg-toc a.is-active { color: var(--link); border-left-color: var(--green); background: color-mix(in srgb, var(--green) 8%, transparent); }
