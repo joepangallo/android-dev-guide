@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="Kotlin homework assignment with five problems covering var and val, functions, filters, and higher-order functions." name="description"/>
+<title>Kotlin Fundamentals Homework</title>
+<link href="../assets/style.css" rel="stylesheet"/>
+<style>
+  .homework-layout {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: var(--space-5);
+    align-items: start;
+  }
+
+  .homework-rail {
+    position: sticky;
+    top: 76px;
+  }
+
+  .problem-list {
+    counter-reset: problem;
+    display: grid;
+    gap: var(--space-5);
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+  }
+
+  .problem {
+    counter-increment: problem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: var(--space-5);
+  }
+
+  .problem__title {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: 0;
+  }
+
+  .problem__title::before {
+    content: "Problem " counter(problem);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--teal-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 800;
+    padding: 2px 8px;
+    text-transform: uppercase;
+  }
+
+  [data-theme="dark"] .problem__title::before {
+    color: var(--green);
+  }
+
+  .requirements {
+    list-style: none;
+    margin: var(--space-3) 0;
+    padding: 0;
+  }
+
+  .requirements li {
+    border-bottom: 1px dashed var(--line);
+    padding: 8px 0;
+  }
+
+  .requirements li:last-child {
+    border-bottom: 0;
+  }
+
+  .starter {
+    margin-top: var(--space-3);
+  }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--space-3);
+  }
+
+  @media (max-width: 980px) {
+    .homework-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .homework-rail {
+      position: static;
+    }
+  }
+</style>
+</head>
+<body>
+<header class="topbar no-print">
+<div class="wrap">
+<a aria-label="Course home" class="brand" href="../index.html">
+<span aria-hidden="true" class="brand__mark">K</span>
+<span>Android Development</span>
+</a>
+<nav aria-label="Primary" class="nav">
+<a href="../index.html">Hub</a>
+<a href="../labs/kotlin-cheatsheet.html">Kotlin Cheatsheet</a>
+<a aria-current="page" class="active" href="kotlin-fundamentals-homework.html">Kotlin Homework</a>
+<a href="https://play.kotlinlang.org/" rel="noopener" target="_blank">Kotlin Playground</a>
+<button aria-pressed="false" class="nav__btn" data-toggle-theme="" type="button">
+<span class="tg-toggle-label">Light</span>
+</button>
+</nav>
+</div>
+</header>
+
+<main class="wrap" id="main">
+<section aria-labelledby="hero-title" class="hero slide" id="top">
+<div class="hero-meta">
+<span class="pill">Kotlin fundamentals</span>
+<span class="pill">5 problems</span>
+<span class="pill">Practice in Kotlin Playground</span>
+</div>
+<h1 class="hero-title" id="hero-title">Kotlin Fundamentals Homework</h1>
+<p class="hero-sub">
+  Complete five short Kotlin programs that practice <code>var</code>/<code>val</code>, functions,
+  collection filters, and higher-order functions. Use the
+  <a href="https://play.kotlinlang.org/" rel="noopener" target="_blank">Kotlin Playground</a>
+  to write and run each solution.
+</p>
+<div class="hero-meta">
+<span class="clo-tag">CLO 3</span>
+<span class="pill pill--accent">Submit one Kotlin file or Playground link</span>
+</div>
+</section>
+
+<div class="homework-layout">
+<aside aria-label="Assignment overview" class="homework-rail no-print">
+<div class="card">
+<p class="card__title">Quick links</p>
+<nav aria-label="Section index" data-toc="main"></nav>
+</div>
+</aside>
+
+<div>
+<section aria-labelledby="directions-title" class="slide">
+<h2 id="directions-title">Directions</h2>
+<div class="grid grid-2">
+<div class="card card--accent">
+<p class="card__title">What to submit</p>
+<ul>
+<li>A single Kotlin file containing solutions for all five problems, or a shareable Kotlin Playground link.</li>
+<li>Each problem should have its own function, such as <code>problem1()</code>, <code>problem2()</code>, and so on.</li>
+<li>Your <code>main()</code> function should call all five problem functions so everything runs at once.</li>
+<li>Include short comments only where your logic may need explanation.</li>
+</ul>
+</div>
+<div class="card card--teal">
+<p class="card__title">Scoring focus</p>
+<div class="meta-grid">
+<div class="kpi"><span class="kpi__num">20%</span><span class="kpi__label"><code>var</code> / <code>val</code></span></div>
+<div class="kpi"><span class="kpi__num">25%</span><span class="kpi__label">Functions</span></div>
+<div class="kpi"><span class="kpi__num">25%</span><span class="kpi__label">Filters</span></div>
+<div class="kpi"><span class="kpi__num">30%</span><span class="kpi__label">Higher-order functions</span></div>
+</div>
+</div>
+</div>
+<div class="callout callout--info" role="note">
+<span aria-hidden="true" class="callout__icon">i</span>
+<div class="callout__body">
+<span class="callout__label">Kotlin Playground</span>
+<p>Open <a href="https://play.kotlinlang.org/" rel="noopener" target="_blank">https://play.kotlinlang.org/</a>, paste your code, run it, then submit the code or a shareable Playground link.</p>
+</div>
+</div>
+</section>
+
+<section aria-labelledby="problems-title" class="slide">
+<h2 id="problems-title">Problems</h2>
+<ol class="problem-list">
+<li class="problem">
+<h3 class="problem__title">Mutable and read-only values</h3>
+<p>Create a small program that tracks a student's score on three attempts.</p>
+<ul class="requirements">
+<li>Use <code>val</code> for values that should not change: student name, course name, and maximum score.</li>
+<li>Use <code>var</code> for values that should change: current attempt number and current score.</li>
+<li>Update the attempt number and score at least twice.</li>
+<li>Print a clear final summary, such as <code>Ada finished Kotlin Basics with 86/100 on attempt 3</code>.</li>
+</ul>
+<div class="starter">
+<p class="tag">Starter idea</p>
+<pre><code class="language-kotlin">fun problem1() {
+    val studentName = "Ada"
+    val courseName = "Kotlin Basics"
+    val maxScore = 100
+
+    var attempt = 1
+    var score = 72
+
+    // Update attempt and score here.
+
+    println("$studentName finished $courseName with $score/$maxScore on attempt $attempt")
+}</code></pre>
+</div>
+</li>
+
+<li class="problem">
+<h3 class="problem__title">Write functions for score reporting</h3>
+<p>Write reusable functions instead of doing all the math inside <code>main()</code>.</p>
+<ul class="requirements">
+<li>Create a function named <code>percent(score: Int, maxScore: Int): Double</code>.</li>
+<li>Create a function named <code>letterGrade(percent: Double): String</code> that returns <code>A</code>, <code>B</code>, <code>C</code>, <code>D</code>, or <code>F</code>.</li>
+<li>Create a function named <code>scoreReport(name: String, score: Int, maxScore: Int): String</code>.</li>
+<li>Call <code>scoreReport</code> for at least three students and print each result.</li>
+</ul>
+<div class="starter">
+<p class="tag">Starter idea</p>
+<pre><code class="language-kotlin">fun percent(score: Int, maxScore: Int): Double {
+    return score.toDouble() / maxScore * 100
+}
+
+fun letterGrade(percent: Double): String {
+    // Fill in the grade rules.
+    return "F"
+}
+
+fun scoreReport(name: String, score: Int, maxScore: Int): String {
+    val pct = percent(score, maxScore)
+    val grade = letterGrade(pct)
+    return "$name: $score/$maxScore, ${pct.toInt()}%, grade $grade"
+}
+
+fun problem2() {
+    val maxScore = 100
+
+    println(scoreReport("Ada", 92, maxScore))
+    println(scoreReport("Grace", 84, maxScore))
+    println(scoreReport("Linus", 68, maxScore))
+}</code></pre>
+</div>
+</li>
+
+<li class="problem">
+<h3 class="problem__title">Filter a list of assignments</h3>
+<p>Use Kotlin collection filters to select only the data you need.</p>
+<ul class="requirements">
+<li>Start with this list: <code>listOf(95, 82, 67, 74, 59, 100, 88, 63)</code>.</li>
+<li>Create a list named <code>passingScores</code> containing scores greater than or equal to 70.</li>
+<li>Create a list named <code>excellentScores</code> containing scores greater than or equal to 90.</li>
+<li>Create a list named <code>needsRevision</code> containing scores below 70.</li>
+<li>Print all three lists with labels.</li>
+</ul>
+<div class="starter">
+<p class="tag">Starter idea</p>
+<pre><code class="language-kotlin">fun problem3() {
+    val scores = listOf(95, 82, 67, 74, 59, 100, 88, 63)
+
+    val passingScores = scores.filter { score -&gt; score &gt;= 70 }
+    // Create the other filtered lists.
+
+    println("Passing: $passingScores")
+}</code></pre>
+</div>
+</li>
+
+<li class="problem">
+<h3 class="problem__title">Pass a function as an argument</h3>
+<p>Practice a higher-order function by passing filtering rules into one reusable function.</p>
+<ul class="requirements">
+<li>Create a function named <code>printMatchingScores</code>.</li>
+<li>It must accept a list of scores, a label, and a predicate function: <code>(Int) -&gt; Boolean</code>.</li>
+<li>Inside the function, use <code>filter</code> with the predicate and print the matching scores.</li>
+<li>Call the function three times: passing scores, failing scores, and perfect scores.</li>
+</ul>
+<div class="starter">
+<p class="tag">Starter idea</p>
+<pre><code class="language-kotlin">fun printMatchingScores(
+    scores: List&lt;Int&gt;,
+    label: String,
+    rule: (Int) -&gt; Boolean
+) {
+    val matches = scores.filter(rule)
+    println("$label: $matches")
+}
+
+fun problem4() {
+    val scores = listOf(95, 82, 67, 74, 59, 100, 88, 63)
+
+    printMatchingScores(scores, "Passing") { it &gt;= 70 }
+    // Add failing and perfect score calls.
+}</code></pre>
+</div>
+</li>
+
+<li class="problem">
+<h3 class="problem__title">Mini project: study task analyzer</h3>
+<p>Combine <code>val</code>/<code>var</code>, functions, filters, and higher-order functions in one program.</p>
+<ul class="requirements">
+<li>Create a <code>data class StudyTask(val title: String, val minutes: Int, val completed: Boolean)</code>.</li>
+<li>Create at least six study tasks.</li>
+<li>Use <code>var</code> to track total completed minutes as you process completed tasks.</li>
+<li>Write a higher-order function named <code>tasksMatching</code> that accepts a list of tasks and a predicate: <code>(StudyTask) -&gt; Boolean</code>.</li>
+<li>Use <code>tasksMatching</code> to print completed tasks, incomplete tasks, and tasks that take 30 minutes or more.</li>
+<li>Print the total minutes spent on completed tasks.</li>
+</ul>
+<div class="starter">
+<p class="tag">Starter idea</p>
+<pre><code class="language-kotlin">data class StudyTask(
+    val title: String,
+    val minutes: Int,
+    val completed: Boolean
+)
+
+fun tasksMatching(
+    tasks: List&lt;StudyTask&gt;,
+    rule: (StudyTask) -&gt; Boolean
+): List&lt;StudyTask&gt; {
+    return tasks.filter(rule)
+}
+
+fun problem5() {
+    val tasks = listOf(
+        StudyTask("Read Kotlin notes", 25, true),
+        StudyTask("Practice filters", 35, false),
+        // Add at least four more tasks.
+    )
+
+    var completedMinutes = 0
+    val completed = tasksMatching(tasks) { it.completed }
+
+    completed.forEach { task -&gt;
+        completedMinutes += task.minutes
+    }
+
+    println("Completed tasks: $completed")
+    println("Completed minutes: $completedMinutes")
+}</code></pre>
+</div>
+</li>
+</ol>
+</section>
+
+<section aria-labelledby="main-title" class="slide">
+<h2 id="main-title">Suggested main function</h2>
+<p>Use one <code>main()</code> function to run every problem in order.</p>
+<pre><code class="language-kotlin">fun main() {
+    problem1()
+    problem2()
+    problem3()
+    problem4()
+    problem5()
+}</code></pre>
+</section>
+</div>
+</div>
+</main>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>
